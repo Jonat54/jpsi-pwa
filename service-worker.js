@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.27';
+const CACHE_NAME = 'jpsi-cache-v1.3.28';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
@@ -89,7 +89,7 @@ function normalizeUrl(url) {
 }
 
 self.addEventListener('install', (evt) => {
-  console.log('🔄 Service Worker: Installation v1.3.27...');
+  console.log('🔄 Service Worker: Installation v1.3.28...');
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('📦 Service Worker: Mise en cache des fichiers...');
@@ -104,7 +104,7 @@ self.addEventListener('install', (evt) => {
 });
 
 self.addEventListener('activate', (evt) => {
-  console.log('🔄 Service Worker: Activation v1.3.27...');
+  console.log('🔄 Service Worker: Activation v1.3.28...');
   evt.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -130,7 +130,7 @@ self.addEventListener('fetch', (evt) => {
   if (url.host.includes('supabase.co')) return;
   if (url.protocol === 'blob:' || url.protocol === 'data:') return;
 
-  // 1) Navigations (HTML) - Cache-First béton (iOS-friendly)
+  // 1) Navigations (HTML) - Cache Only strict pour Safari iOS 18
   if (evt.request.mode === 'navigate') {
     evt.respondWith((async () => {
       try {
@@ -165,29 +165,12 @@ self.addEventListener('fetch', (evt) => {
         
         // Si trouvé en cache, retourner immédiatement
         if (cached) {
-          console.log('✅ Navigation depuis cache (iOS-friendly)');
+          console.log('✅ Navigation depuis cache (Safari iOS 18)');
           return cached;
         }
         
-        // Si pas en cache, essayer le réseau UNIQUEMENT pour la première visite
-        console.log('🔄 Tentative réseau pour navigation...');
-        const net = await fetch(evt.request);
-        
-        // Mettre en cache silencieusement
-        try {
-          const cache = await caches.open(CACHE_NAME);
-          await cache.put(normalizedUrl, net.clone());
-          console.log('✅ Page mise en cache:', normalizedUrl);
-        } catch (cacheError) {
-          console.log('⚠️ Erreur mise en cache:', cacheError);
-        }
-        
-        return net;
-        
-      } catch (error) {
-        console.log('❌ Erreur navigation (iOS-friendly):', error);
-        
-        // Retourner une page d'erreur simple
+        // Si pas en cache, retourner une page d'erreur simple (PAS de réseau)
+        console.log('❌ Page non trouvée en cache - Mode Cache Only strict');
         return new Response(`
           <!DOCTYPE html>
           <html>
@@ -195,11 +178,67 @@ self.addEventListener('fetch', (evt) => {
             <meta charset="utf-8">
             <title>Hors ligne</title>
             <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                text-align: center;
+                padding: 50px;
+                background: #f6f7f9;
+                color: #333;
+              }
+              .container {
+                max-width: 400px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                padding: 40px 20px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+              }
+              h1 { color: #9B2423; margin-bottom: 20px; }
+              p { margin-bottom: 15px; line-height: 1.6; }
+              .btn {
+                background: #9B2423;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-block;
+                margin: 10px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>Mode hors ligne</h1>
+              <p>Cette page n'est pas disponible hors ligne.</p>
+              <p>Veuillez vous reconnecter pour accéder à cette fonctionnalité.</p>
+              <a href="/index.html" class="btn">Retour à l'accueil</a>
+            </div>
+          </body>
+          </html>
+        `, {
+          status: 503,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        });
+        
+      } catch (error) {
+        console.log('❌ Erreur navigation (Safari iOS 18):', error);
+        
+        // Retourner une page d'erreur simple
+        return new Response(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Erreur</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
           </head>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h1>Mode hors ligne</h1>
-            <p>Cette page n'est pas disponible hors ligne.</p>
-            <p>Veuillez vous reconnecter pour accéder à cette fonctionnalité.</p>
+            <h1>Erreur</h1>
+            <p>Une erreur est survenue lors du chargement de la page.</p>
+            <p>Veuillez réessayer.</p>
           </body>
           </html>
         `, {
