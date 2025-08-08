@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.30';
+const CACHE_NAME = 'jpsi-cache-v1.3.31';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
@@ -51,7 +51,7 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener('install', (evt) => {
-  console.log('🔄 Service Worker: Installation v1.3.30...');
+  console.log('🔄 Service Worker: Installation v1.3.31...');
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('📦 Service Worker: Mise en cache des fichiers...');
@@ -66,7 +66,7 @@ self.addEventListener('install', (evt) => {
 });
 
 self.addEventListener('activate', (evt) => {
-  console.log('🔄 Service Worker: Activation v1.3.30...');
+  console.log('🔄 Service Worker: Activation v1.3.31...');
   evt.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -92,37 +92,30 @@ self.addEventListener('fetch', (evt) => {
   if (url.host.includes('supabase.co')) return;
   if (url.protocol === 'blob:' || url.protocol === 'data:') return;
 
-  // 1) Navigations (HTML) - Solution GPT 5 modifiée pour Safari iOS 18
+  // 1) Navigations (HTML) - Solution simplifiée pour Safari iOS 18
   if (evt.request.mode === 'navigate') {
     evt.respondWith((async () => {
       try {
-        // 1) N'essaie PAS de "matcher" la requête de navigation sur des URL différentes.
-        //    Serre uniquement l'app-shell *fichier* connu.
+        // Essayer les pages candidates dans l'ordre
         const candidates = ['/index.html', '/accueil.html'];
 
         for (const path of candidates) {
           const res = await caches.match(path);
-          if (!res) continue;
-
-          // 2) Safari iOS: rejeter UNIQUEMENT les vraies redirections 30x
-          //    Accepter les réponses avec flag redirected (normal sur iOS)
-          const bad = res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400);
-          if (bad) {
-            console.log('❌ Réponse rejetée (vraie redirection):', path);
-            continue;
+          if (res) {
+            // Accepter TOUTES les réponses du cache (sans filtrage strict)
+            console.log('✅ Navigation depuis cache (Safari iOS 18):', path);
+            
+            // Re-construire une Response "propre" pour éviter les problèmes Safari
+            const buf = await res.arrayBuffer();
+            return new Response(buf, {
+              status: 200,
+              headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            });
           }
-
-          // 3) Re-construire une Response "propre" (évite l'état interne redirection)
-          const buf = await res.arrayBuffer();
-          console.log('✅ Navigation depuis cache (Safari iOS 18):', path);
-          return new Response(buf, {
-            status: 200,
-            headers: { 'Content-Type': 'text/html; charset=utf-8' }
-          });
         }
 
-        // 4) À défaut: renvoyer une page d'erreur *locale* (pas de réseau)
-        console.log('❌ Aucune page valide trouvée en cache');
+        // Si aucune page trouvée, retourner une page d'erreur
+        console.log('❌ Aucune page trouvée en cache');
         return new Response(`
           <!DOCTYPE html>
           <html>
