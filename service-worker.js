@@ -1,7 +1,8 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.31';
+const CACHE_NAME = 'jpsi-cache-v1.3.32';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
+  '/login.html',
   '/accueil.html',
   '/verification.html',
   '/newVerification.html',
@@ -51,7 +52,7 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener('install', (evt) => {
-  console.log('🔄 Service Worker: Installation v1.3.31...');
+  console.log('🔄 Service Worker: Installation v1.3.32...');
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('📦 Service Worker: Mise en cache des fichiers...');
@@ -66,7 +67,7 @@ self.addEventListener('install', (evt) => {
 });
 
 self.addEventListener('activate', (evt) => {
-  console.log('🔄 Service Worker: Activation v1.3.31...');
+  console.log('🔄 Service Worker: Activation v1.3.32...');
   evt.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -97,7 +98,7 @@ self.addEventListener('fetch', (evt) => {
     evt.respondWith((async () => {
       try {
         // Essayer les pages candidates dans l'ordre
-        const candidates = ['/index.html', '/accueil.html'];
+        const candidates = ['/index.html', '/login.html', '/accueil.html'];
 
         for (const path of candidates) {
           const res = await caches.match(path);
