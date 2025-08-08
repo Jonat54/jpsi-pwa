@@ -506,6 +506,66 @@
       
       <div class="setting-item">
         <div class="setting-info">
+          <div class="setting-label">Diagnostic PWA</div>
+          <div class="setting-description">Diagnostic complet du Service Worker et du cache</div>
+        </div>
+        <div class="setting-control">
+          <button onclick="openDiagnosticPWA()" style="
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 12px;
+          ">
+            🔧 Diagnostiquer
+          </button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Test Cache</div>
+          <div class="setting-description">Test spécifique du cache et du mode hors ligne</div>
+        </div>
+        <div class="setting-control">
+          <button onclick="openTestCache()" style="
+            background: #17a2b8; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 12px;
+          ">
+            🗄️ Tester Cache
+          </button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Test Hors Ligne</div>
+          <div class="setting-description">Test simple du mode hors ligne</div>
+        </div>
+        <div class="setting-control">
+          <button onclick="openTestOffline()" style="
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 12px;
+          ">
+            🌐 Tester Hors Ligne
+          </button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
           <div class="setting-label">Diagnostic iOS</div>
           <div class="setting-description">Diagnostic spécifique pour iPhone/iPad et installation PWA</div>
         </div>
@@ -827,6 +887,19 @@ Développé avec ❤️ pour la sécurité incendie
     // Tester les fonctionnalités PWA
     function testPWA() {
       window.location.href = 'test-pwa.html';
+    }
+
+    // Pages de diagnostic
+    function openDiagnosticPWA() {
+      window.location.href = 'diagnostic-pwa.html';
+    }
+
+    function openTestCache() {
+      window.location.href = 'test-cache.html';
+    }
+
+    function openTestOffline() {
+      window.location.href = 'test-offline-simple.html';
     }
 
     // Mettre à jour le statut toutes les 5 secondes

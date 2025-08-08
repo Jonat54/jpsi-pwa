@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Cache - JPSI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f6f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #9B2423;
+            margin: 0;
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .button {
+            background: #9B2423;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #7a1d1c;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .network-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        .network-online {
+            background: #4CAF50;
+            color: white;
+        }
+        .network-offline {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="network-indicator" id="networkIndicator">🌐 En ligne</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🗄️ Test Cache - JPSI</h1>
+            <p>Diagnostic du cache et du mode hors ligne</p>
+        </div>
+
+        <div class="test-section">
+            <h3>📱 Service Worker</h3>
+            <div id="serviceWorkerStatus"></div>
+            <button class="button" onclick="testServiceWorker()">Tester Service Worker</button>
+            <button class="button" onclick="updateServiceWorker()">Forcer Mise à Jour</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🗄️ Cache</h3>
+            <div id="cacheStatus"></div>
+            <button class="button" onclick="testCache()">Tester Cache</button>
+            <button class="button" onclick="clearCache()">Vider Cache</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🌐 Réseau</h3>
+            <div id="networkStatus"></div>
+            <button class="button" onclick="testNetwork()">Tester Réseau</button>
+            <button class="button" onclick="simulateOffline()">Simuler Hors Ligne</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Test Navigation</h3>
+            <button class="button" onclick="testNavigation()">Tester Navigation</button>
+            <button class="button" onclick="testOfflineNavigation()">Test Navigation Hors Ligne</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Logs</h3>
+            <div class="log" id="logs"></div>
+            <button class="button" onclick="clearLogs()">Effacer Logs</button>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${message}`);
+            document.getElementById('logs').textContent = logs.join('\n');
+            console.log(message);
+        }
+
+        function clearLogs() {
+            logs = [];
+            document.getElementById('logs').textContent = '';
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function updateNetworkIndicator() {
+            const indicator = document.getElementById('networkIndicator');
+            const isOnline = navigator.onLine;
+            indicator.textContent = isOnline ? '🌐 En ligne' : '❌ Hors ligne';
+            indicator.className = `network-indicator ${isOnline ? 'network-online' : 'network-offline'}`;
+        }
+
+        // Test Service Worker
+        async function testServiceWorker() {
+            addLog('🔧 Test Service Worker...');
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    addLog('✅ Service Worker supporté');
+                    
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    
+                    if (registration) {
+                        addLog('✅ Service Worker enregistré');
+                        addLog(`📋 Scope: ${registration.scope}`);
+                        addLog(`📋 État: ${registration.active ? 'Actif' : 'Inactif'}`);
+                        
+                        if (registration.active) {
+                            showStatus('serviceWorkerStatus', '✅ Service Worker actif et fonctionnel', 'success');
+                        } else {
+                            showStatus('serviceWorkerStatus', '⚠️ Service Worker enregistré mais inactif', 'warning');
+                        }
+                    } else {
+                        addLog('❌ Service Worker non enregistré');
+                        showStatus('serviceWorkerStatus', '❌ Service Worker non enregistré', 'error');
+                    }
+                } else {
+                    addLog('❌ Service Worker non supporté');
+                    showStatus('serviceWorkerStatus', '❌ Service Worker non supporté', 'error');
+                }
+            } catch (error) {
+                addLog(`❌ Erreur Service Worker: ${error.message}`);
+                showStatus('serviceWorkerStatus', `❌ Erreur: ${error.message}`, 'error');
+            }
+        }
+
+        // Forcer la mise à jour du Service Worker
+        async function updateServiceWorker() {
+            addLog('🔄 Forcer mise à jour Service Worker...');
+            
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    await registration.update();
+                    addLog('✅ Mise à jour Service Worker déclenchée');
+                    showStatus('serviceWorkerStatus', '✅ Mise à jour déclenchée', 'success');
+                } else {
+                    addLog('❌ Service Worker non trouvé');
+                }
+            } catch (error) {
+                addLog(`❌ Erreur mise à jour: ${error.message}`);
+            }
+        }
+
+        // Test Cache
+        async function testCache() {
+            addLog('🗄️ Test Cache...');
+            
+            try {
+                if ('caches' in window) {
+                    addLog('✅ Cache API supportée');
+                    
+                    const cache = await caches.open('jpsi-cache-v1.3.14');
+                    const keys = await cache.keys();
+                    
+                    addLog(`✅ Cache ouvert: ${keys.length} fichiers`);
+                    
+                    if (keys.length > 0) {
+                        addLog('📋 Fichiers en cache:');
+                        for (const request of keys.slice(0, 10)) {
+                            addLog(`  📄 ${request.url.split('/').pop()}`);
+                        }
+                        
+                        showStatus('cacheStatus', `✅ Cache fonctionne (${keys.length} fichiers)`, 'success');
+                    } else {
+                        addLog('⚠️ Cache vide');
+                        showStatus('cacheStatus', '⚠️ Cache vide', 'warning');
+                    }
+                } else {
+                    addLog('❌ Cache API non supportée');
+                    showStatus('cacheStatus', '❌ Cache API non supportée', 'error');
+                }
+            } catch (error) {
+                addLog(`❌ Erreur Cache: ${error.message}`);
+                showStatus('cacheStatus', `❌ Erreur Cache: ${error.message}`, 'error');
+            }
+        }
+
+        // Vider le cache
+        async function clearCache() {
+            addLog('🗑️ Vidage du cache...');
+            
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        addLog(`🗑️ Cache supprimé: ${cacheName}`);
+                    }
+                    showStatus('cacheStatus', '✅ Cache vidé avec succès', 'success');
+                }
+            } catch (error) {
+                addLog(`❌ Erreur vidage cache: ${error.message}`);
+                showStatus('cacheStatus', `❌ Erreur vidage: ${error.message}`, 'error');
+            }
+        }
+
+        // Test réseau
+        function testNetwork() {
+            addLog('🌐 Test réseau...');
+            
+            const isOnline = navigator.onLine;
+            addLog(`📡 Statut: ${isOnline ? 'En ligne' : 'Hors ligne'}`);
+            
+            updateNetworkIndicator();
+            
+            if (isOnline) {
+                showStatus('networkStatus', '✅ Connexion réseau active', 'success');
+            } else {
+                showStatus('networkStatus', '❌ Pas de connexion réseau', 'error');
+            }
+        }
+
+        // Simuler hors ligne
+        function simulateOffline() {
+            addLog('🔄 Simulation mode hors ligne...');
+            
+            // Simuler la perte de connexion
+            Object.defineProperty(navigator, 'onLine', {
+                writable: true,
+                value: false
+            });
+            
+            // Déclencher l'événement offline
+            window.dispatchEvent(new Event('offline'));
+            
+            updateNetworkIndicator();
+            showStatus('networkStatus', '❌ Mode hors ligne simulé', 'error');
+            addLog('✅ Mode hors ligne activé');
+        }
+
+        // Test navigation
+        function testNavigation() {
+            addLog('🧪 Test navigation...');
+            addLog('🔄 Redirection vers extSite.html...');
+            
+            setTimeout(() => {
+                window.location.href = 'extSite.html';
+            }, 1000);
+        }
+
+        // Test navigation hors ligne
+        function testOfflineNavigation() {
+            addLog('🧪 Test navigation hors ligne...');
+            
+            // Simuler hors ligne
+            Object.defineProperty(navigator, 'onLine', {
+                writable: true,
+                value: false
+            });
+            
+            addLog('🔄 Redirection vers extSite.html (hors ligne)...');
+            
+            setTimeout(() => {
+                window.location.href = 'extSite.html';
+            }, 1000);
+        }
+
+        // Écouter les événements réseau
+        window.addEventListener('online', () => {
+            addLog('🌐 Connexion rétablie');
+            updateNetworkIndicator();
+        });
+
+        window.addEventListener('offline', () => {
+            addLog('❌ Connexion perdue');
+            updateNetworkIndicator();
+        });
+
+        // Enregistrer le Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js', {
+                scope: '/'
+            }).then(function(registration) {
+                addLog('✅ Service Worker enregistré');
+            }).catch(function(err) {
+                addLog('❌ Erreur Service Worker: ' + err.message);
+            });
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            addLog('🚀 Test cache démarré');
+            updateNetworkIndicator();
+        });
+    </script>
+</body>
+</html>
