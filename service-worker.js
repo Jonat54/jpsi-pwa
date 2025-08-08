@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.23';
+const CACHE_NAME = 'jpsi-cache-v1.3.24';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
@@ -92,7 +92,7 @@ self.addEventListener('fetch', (evt) => {
   if (url.host.includes('supabase.co')) return;
   if (url.protocol === 'blob:' || url.protocol === 'data:') return;
 
-  // 1) Navigations (HTML) - Cache First avec mise à jour silencieuse
+  // 1) Navigations (HTML) - Cache Only pour éviter les redirections
   if (evt.request.mode === 'navigate') {
     evt.respondWith((async () => {
       // Chercher d'abord dans le cache
@@ -118,38 +118,18 @@ self.addEventListener('fetch', (evt) => {
         }
       }
       
-      // Retourner immédiatement le cache si trouvé
+      // Retourner le cache si trouvé
       if (cached) {
         console.log('✅ Navigation depuis cache');
-        
-        // Mise à jour silencieuse en arrière-plan (seulement si en ligne)
-        if (navigator.onLine) {
-          try {
-            const net = await fetch(evt.request);
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(evt.request, net.clone());
-            console.log('🔄 Cache mis à jour silencieusement');
-          } catch (error) {
-            console.log('⚠️ Échec mise à jour silencieuse');
-          }
-        }
-        
         return cached;
       }
       
-      // Si pas en cache, essayer le réseau
-      try {
-        const net = await fetch(evt.request);
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(evt.request, net.clone());
-        return net;
-      } catch (error) {
-        console.log('❌ Erreur réseau, page non trouvée');
-        return new Response('Page non disponible hors ligne', { 
-          status: 503,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-        });
-      }
+      // Si pas en cache, retourner une page d'erreur simple
+      console.log('❌ Page non trouvée en cache');
+      return new Response('Page non disponible hors ligne', { 
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      });
     })());
     return;
   }
