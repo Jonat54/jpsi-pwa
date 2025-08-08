@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.28';
+const CACHE_NAME = 'jpsi-cache-v1.3.29';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
@@ -50,46 +50,8 @@ const FILES_TO_CACHE = [
   '/icons/icon-512x512.png'
 ];
 
-// Fonction de normalisation des URLs pour iOS
-function normalizeUrl(url) {
-  const normalized = new URL(url);
-  
-  // Supprimer les paramètres de requête
-  normalized.search = '';
-  
-  // Normaliser les chemins
-  let path = normalized.pathname;
-  
-  // Supprimer les trailing slashes sauf pour la racine
-  if (path.length > 1 && path.endsWith('/')) {
-    path = path.slice(0, -1);
-  }
-  
-  // Gérer les cas spéciaux pour iOS
-  if (path === '' || path === '/') {
-    path = '/index.html';
-  }
-  
-  // Ajouter .html si nécessaire (pour les pages principales)
-  const mainPages = [
-    '/accueil', '/verification', '/newVerification', '/verificationSummary',
-    '/verificationHistory', '/verificationDetail', '/ongoingInterventions',
-    '/verifSite', '/extSite', '/extDetail', '/eclairageSite', '/eclairageDetail',
-    '/alarmeSite', '/desenfumageList', '/desenfumageDetail', '/addEfu',
-    '/addClient', '/addSite', '/ListClients', '/client', '/detailSite',
-    '/audits', '/newAudit', '/auditHistory', '/auditDetail', '/inventairePDF'
-  ];
-  
-  if (mainPages.includes(path)) {
-    path += '.html';
-  }
-  
-  normalized.pathname = path;
-  return normalized.toString();
-}
-
 self.addEventListener('install', (evt) => {
-  console.log('🔄 Service Worker: Installation v1.3.28...');
+  console.log('🔄 Service Worker: Installation v1.3.29...');
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('📦 Service Worker: Mise en cache des fichiers...');
@@ -104,7 +66,7 @@ self.addEventListener('install', (evt) => {
 });
 
 self.addEventListener('activate', (evt) => {
-  console.log('🔄 Service Worker: Activation v1.3.28...');
+  console.log('🔄 Service Worker: Activation v1.3.29...');
   evt.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -130,47 +92,36 @@ self.addEventListener('fetch', (evt) => {
   if (url.host.includes('supabase.co')) return;
   if (url.protocol === 'blob:' || url.protocol === 'data:') return;
 
-  // 1) Navigations (HTML) - Cache Only strict pour Safari iOS 18
+  // 1) Navigations (HTML) - Solution GPT 5 pour Safari iOS 18
   if (evt.request.mode === 'navigate') {
     evt.respondWith((async () => {
       try {
-        // Normaliser l'URL pour iOS
-        const normalizedUrl = normalizeUrl(evt.request.url);
-        console.log('🔄 URL normalisée:', normalizedUrl);
-        
-        // Essayer d'abord le cache avec l'URL normalisée
-        let cached = await caches.match(normalizedUrl);
-        
-        // Si pas trouvé, essayer avec l'URL originale
-        if (!cached) {
-          cached = await caches.match(evt.request.url);
-        }
-        
-        // Si toujours pas trouvé, essayer avec le pathname
-        if (!cached) {
-          cached = await caches.match(url.pathname);
-        }
-        
-        // Si toujours pas trouvé, essayer les pages de fallback
-        if (!cached) {
-          const fallbackPages = ['/index.html', '/accueil.html'];
-          for (const page of fallbackPages) {
-            cached = await caches.match(page);
-            if (cached) {
-              console.log(`✅ Page de fallback trouvée: ${page}`);
-              break;
-            }
+        // 1) N'essaie PAS de "matcher" la requête de navigation sur des URL différentes.
+        //    Serre uniquement l'app-shell *fichier* connu.
+        const candidates = ['/index.html', '/accueil.html'];
+
+        for (const path of candidates) {
+          const res = await caches.match(path);
+          if (!res) continue;
+
+          // 2) Safari iOS: rejeter toute réponse "redirected"/30x/opaqueredirect
+          const bad = res.redirected || res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400);
+          if (bad) {
+            console.log('❌ Réponse rejetée (redirected):', path);
+            continue;
           }
+
+          // 3) Re-construire une Response "propre" (évite l'état interne redirection)
+          const buf = await res.arrayBuffer();
+          console.log('✅ Navigation depuis cache (Safari iOS 18):', path);
+          return new Response(buf, {
+            status: 200,
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
         }
-        
-        // Si trouvé en cache, retourner immédiatement
-        if (cached) {
-          console.log('✅ Navigation depuis cache (Safari iOS 18)');
-          return cached;
-        }
-        
-        // Si pas en cache, retourner une page d'erreur simple (PAS de réseau)
-        console.log('❌ Page non trouvée en cache - Mode Cache Only strict');
+
+        // 4) À défaut: renvoyer une page d'erreur *locale* (pas de réseau)
+        console.log('❌ Aucune page valide trouvée en cache');
         return new Response(`
           <!DOCTYPE html>
           <html>
