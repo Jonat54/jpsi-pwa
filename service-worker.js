@@ -1,6 +1,6 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.14';
+const CACHE_NAME = 'jpsi-cache-v1.3.16';
 const FILES_TO_CACHE = [
-  '/',
+  // ⚠️ PAS de '/' ici
   '/index.html',
   '/accueil.html',
   '/verification.html',
@@ -29,7 +29,7 @@ const FILES_TO_CACHE = [
   '/auditDetail.html',
   '/inventairePDF.html',
   '/manifest.json',
-  '/service-worker.js',
+  // ⚠️ PAS de '/service-worker.js' ici
   '/img/logo.png',
   '/img/entete.png',
   '/img/logobon.png',
@@ -51,7 +51,7 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener('install', (evt) => {
-  console.log('🔄 Service Worker: Installation v1.3.14...');
+        console.log('🔄 Service Worker: Installation v1.3.15...');
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('📦 Service Worker: Mise en cache des fichiers...');
@@ -66,7 +66,7 @@ self.addEventListener('install', (evt) => {
 });
 
 self.addEventListener('activate', (evt) => {
-  console.log('🔄 Service Worker: Activation v1.3.14...');
+        console.log('🔄 Service Worker: Activation v1.3.15...');
   evt.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -83,95 +83,66 @@ self.addEventListener('activate', (evt) => {
 });
 
 self.addEventListener('fetch', (evt) => {
-  // Ne gérer que les requêtes GET
-  if (evt.request.method !== 'GET') {
-    return;
-  }
-  
-  // Ne pas intercepter les requêtes Supabase (API)
-  if (evt.request.url.includes('supabase.co')) {
-    return;
-  }
-  
-  // Ne pas intercepter les requêtes de génération PDF
-  if (evt.request.url.includes('blob:') || evt.request.url.includes('data:')) {
-    return;
-  }
-  
-  console.log('🌐 Service Worker: Interception requête:', evt.request.url);
-  
-  evt.respondWith(
-    caches.match(evt.request).then((cachedResponse) => {
-      // Mode hors ligne - Stratégie Cache Only
-      if (!navigator.onLine) {
-        console.log('❌ Service Worker: Mode hors ligne détecté');
-        if (cachedResponse) {
-          console.log('💾 Service Worker: Ressource depuis le cache (hors ligne)');
-          return cachedResponse;
-        } else {
-          console.log('⚠️ Service Worker: Ressource non trouvée en cache');
-          // Pour les pages HTML, retourner index.html
-          if (evt.request.destination === 'document') {
-            return caches.match('/index.html');
-          }
-          // Pour les autres ressources, retourner une erreur
-          return new Response('Ressource non disponible hors ligne', { 
-            status: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'text/plain' }
-          });
+  const url = new URL(evt.request.url);
+
+  // Laisse passer le SW lui-même
+  if (url.pathname.endsWith('/service-worker.js')) return;
+
+  // Ne gère pas Supabase ni blob/data
+  if (url.host.includes('supabase.co')) return;
+  if (url.protocol === 'blob:' || url.protocol === 'data:') return;
+
+  // 1) Navigations (HTML) - Compatible Safari iOS
+  if (evt.request.mode === 'navigate') {
+    evt.respondWith((async () => {
+      try {
+        const net = await fetch(evt.request);
+        // Safari iOS gère différemment les redirections
+        // On évite de manipuler la propriété 'redirected'
+        return net;
+      } catch (error) {
+        console.log('❌ Erreur réseau, utilisation du cache (Safari iOS)');
+        // Hors ligne → renvoie toujours la page finale depuis le cache
+        const cached = await caches.match('/index.html');
+        if (cached) {
+          return cached;
         }
-      }
-      
-      // Mode en ligne - Stratégie Network First pour les pages HTML
-      if (evt.request.destination === 'document') {
-        console.log('📄 Service Worker: Page HTML détectée (en ligne)');
-        
-        return fetch(evt.request)
-          .then((networkResponse) => {
-            console.log('✅ Service Worker: Réponse réseau obtenue');
-            // Mettre à jour le cache avec la nouvelle version
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(evt.request, networkResponse.clone());
-              console.log('💾 Service Worker: Cache mis à jour');
-            });
-            return networkResponse;
-          })
-          .catch((error) => {
-            console.log('❌ Service Worker: Erreur réseau, utilisation du cache');
-            if (cachedResponse) {
-              return cachedResponse;
-            } else {
-              console.error('❌ Service Worker: Aucun cache disponible');
-              return caches.match('/index.html');
-            }
-          });
-      }
-      
-      // Stratégie Cache First pour les assets statiques
-      if (cachedResponse) {
-        console.log('💾 Service Worker: Ressource depuis le cache');
-        return cachedResponse;
-      }
-      
-      console.log('🌐 Service Worker: Tentative réseau pour ressource');
-      return fetch(evt.request).then((networkResponse) => {
-        // Mettre à jour le cache
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(evt.request, networkResponse.clone());
-          console.log('💾 Service Worker: Nouvelle ressource mise en cache');
-        });
-        return networkResponse;
-      }).catch((error) => {
-        console.error('❌ Service Worker: Erreur réseau pour ressource:', error);
-        return new Response('Erreur réseau', { 
+        // Fallback simple pour Safari iOS
+        return new Response('Mode hors ligne - Reconnectez-vous', { 
           status: 503,
-          statusText: 'Service Unavailable',
-          headers: { 'Content-Type': 'text/plain' }
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
+      }
+    })());
+    return;
+  }
+
+  // 2) Assets (cache-first + maj silencieuse) - Compatible Safari iOS
+  evt.respondWith((async () => {
+    try {
+      const cached = await caches.match(evt.request);
+      if (cached) {
+        console.log('💾 Ressource depuis le cache (Safari iOS)');
+        return cached;
+      }
+      
+      const net = await fetch(evt.request);
+      // Mise en cache silencieuse pour Safari iOS
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(evt.request, net.clone());
+      } catch (cacheError) {
+        console.log('⚠️ Erreur mise en cache (Safari iOS):', cacheError);
+      }
+      return net;
+    } catch (error) {
+      console.log('❌ Erreur réseau pour ressource (Safari iOS):', error);
+      return new Response('Ressource non disponible', { 
+        status: 404,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
       });
-    })
-  );
+    }
+  })());
 });
 
 // Écouter les messages du client
