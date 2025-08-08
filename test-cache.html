@@ -314,32 +314,32 @@
             addLog('✅ Mode hors ligne activé');
         }
 
-        // Test navigation
-        function testNavigation() {
-            addLog('🧪 Test navigation...');
-            addLog('🔄 Redirection vers extSite.html...');
-            
-            setTimeout(() => {
-                window.location.href = 'extSite.html';
-            }, 1000);
-        }
+                 // Test navigation
+         function testNavigation() {
+             addLog('🧪 Test navigation...');
+             addLog('🔄 Redirection vers extSite.html avec paramètres réels...');
+             
+             setTimeout(() => {
+                 window.location.href = 'extSite.html?siteId=5&interventionId=61';
+             }, 1000);
+         }
 
-        // Test navigation hors ligne
-        function testOfflineNavigation() {
-            addLog('🧪 Test navigation hors ligne...');
-            
-            // Simuler hors ligne
-            Object.defineProperty(navigator, 'onLine', {
-                writable: true,
-                value: false
-            });
-            
-            addLog('🔄 Redirection vers extSite.html (hors ligne)...');
-            
-            setTimeout(() => {
-                window.location.href = 'extSite.html';
-            }, 1000);
-        }
+                 // Test navigation hors ligne
+         function testOfflineNavigation() {
+             addLog('🧪 Test navigation hors ligne...');
+             
+             // Simuler hors ligne
+             Object.defineProperty(navigator, 'onLine', {
+                 writable: true,
+                 value: false
+             });
+             
+             addLog('🔄 Redirection vers extSite.html avec paramètres réels (hors ligne)...');
+             
+             setTimeout(() => {
+                 window.location.href = 'extSite.html?siteId=5&interventionId=61';
+             }, 1000);
+         }
 
         // Écouter les événements réseau
         window.addEventListener('online', () => {
