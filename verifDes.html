@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Vérification Désenfumage</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .equipment-info {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    
+    .equipment-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .equipment-icon {
+      width: 60px;
+      height: 60px;
+      background: #9B2423;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    
+    .equipment-details {
+      flex: 1;
+    }
+    
+    .equipment-number {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #23272b;
+      margin-bottom: 0.25rem;
+    }
+    
+    .equipment-location {
+      font-size: 1rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    
+    .equipment-type {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      font-style: italic;
+    }
+    
+    .verification-form {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 2rem;
+    }
+    
+    .form-section {
+      margin-bottom: 2rem;
+    }
+    
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #23272b;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+      box-shadow: 0 0 0 3px rgba(155, 36, 35, 0.1);
+    }
+    
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .form-help {
+      display: block;
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+    
+    .radio-group {
+      display: flex;
+      gap: 2rem;
+      margin-top: 0.5rem;
+    }
+    
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+    
+    .radio-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #9B2423;
+    }
+    
+    .radio-option label {
+      font-size: 1rem;
+      color: #374151;
+      cursor: pointer;
+    }
+    
+    .buttons-container {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 2px solid #e5e7eb;
+    }
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #e5e7eb;
+      border-radius: 50%;
+      border-top-color: #9B2423;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 1rem;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .error {
+      text-align: center;
+      padding: 3rem;
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+    
+    /* Optimisations pour iPad */
+    @media (min-width: 768px) {
+      .container {
+        padding: 2.5rem;
+      }
+      
+      .header-card {
+        padding: 2.5rem;
+      }
+      
+      .equipment-info,
+      .verification-form {
+        padding: 2.5rem;
+      }
+      
+      .form-input,
+      .form-select,
+      .form-textarea {
+        padding: 1rem 1.25rem;
+        font-size: 1.1rem;
+      }
+      
+      .btn {
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()">←</button>
+      <div>
+        <h1 class="header-title">
+          Vérification Désenfumage
+          <span class="header-subtitle" id="equipmentInfo">Chargement...</span>
+        </h1>
+      </div>
+    </div>
+
+    <div id="content">
+      <div class="loading">Chargement des informations...</div>
+    </div>
+  </div>
+
+  <script>
+    // Utiliser la configuration Supabase existante
+    let supabaseClient = null;
+    
+    let currentSite = null;
+    let currentDesenfumage = null;
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        // Initialiser Supabase
+        supabaseClient = window.supabaseClient;
+        if (!supabaseClient) {
+          // Attendre que Supabase soit initialisé
+          await new Promise(resolve => {
+            const checkSupabase = () => {
+              if (window.supabaseClient) {
+                supabaseClient = window.supabaseClient;
+                resolve();
+              } else {
+                setTimeout(checkSupabase, 100);
+              }
+            };
+            checkSupabase();
+          });
+        }
+        
+        // Récupérer les paramètres de l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const siteId = urlParams.get('site');
+        const desenfumageId = urlParams.get('desenfumage');
+        
+        if (!siteId || !desenfumageId) {
+          throw new Error('Paramètres manquants');
+        }
+        
+        console.log('Chargement pour site:', siteId, 'désenfumage:', desenfumageId);
+        
+        // Charger les données
+        await loadSiteData(siteId);
+        await loadDesenfumageData(desenfumageId);
+        
+      } catch (error) {
+        console.error('Erreur d\'initialisation:', error);
+        showError('Erreur d\'initialisation: ' + error.message);
+      }
+    });
+
+    // Charger les données du site
+    async function loadSiteData(siteId) {
+      try {
+        console.log('Chargement du site:', siteId);
+        
+        const { data: site, error } = await supabaseClient
+          .from('sites')
+          .select('*')
+          .eq('id_site', siteId)
+          .single();
+
+        if (error) {
+          console.error('Erreur site:', error);
+          throw error;
+        }
+
+        currentSite = site;
+        console.log('Site chargé:', site);
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement du site:', error);
+        throw error;
+      }
+    }
+
+    // Charger les données du désenfumage
+    async function loadDesenfumageData(desenfumageId) {
+      try {
+        console.log('Chargement du désenfumage:', desenfumageId);
+        
+        const { data: desenfumage, error } = await supabaseClient
+          .from('desenfumages')
+          .select('*')
+          .eq('id_desenfumage', desenfumageId)
+          .single();
+
+        if (error) {
+          console.error('Erreur désenfumage:', error);
+          throw error;
+        }
+
+        currentDesenfumage = desenfumage;
+        console.log('Désenfumage chargé:', desenfumage);
+        
+        displayVerificationForm();
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement du désenfumage:', error);
+        throw error;
+      }
+    }
+
+    // Afficher le formulaire de vérification
+    function displayVerificationForm() {
+      const content = document.getElementById('content');
+      const equipmentInfo = document.getElementById('equipmentInfo');
+      
+      // Mettre à jour le titre
+      equipmentInfo.textContent = `${currentSite.nom_site} - ${currentDesenfumage.num_des || 'N/A'}`;
+      
+      content.innerHTML = `
+        <div class="equipment-info">
+          <div class="equipment-header">
+            <div class="equipment-icon">🚪</div>
+            <div class="equipment-details">
+              <div class="equipment-number">Désenfumage ${currentDesenfumage.num_des || 'N/A'}</div>
+              <div class="equipment-location">${currentDesenfumage.localisation_des || 'Localisation non spécifiée'}</div>
+              <div class="equipment-type">${currentDesenfumage.equipement_desenfumage || 'Type non spécifié'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="verification-form">
+          <form id="verificationForm" onsubmit="saveVerification(event)">
+            <div class="form-section">
+              <h2 class="section-title">État de fonctionnement</h2>
+              <div class="form-group">
+                <label for="functioning" class="form-label">État de fonctionnement</label>
+                <select id="functioning" name="functioning" class="form-select" required>
+                  <option value="">Sélectionnez un état</option>
+                  <option value="Fonctionnel">Fonctionnel</option>
+                  <option value="Défaillant">Défaillant</option>
+                  <option value="En maintenance">En maintenance</option>
+                  <option value="Hors service">Hors service</option>
+                </select>
+                <small class="form-help">Cette vérification sera enregistrée avec la date du jour</small>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h2 class="section-title">Observations</h2>
+              <div class="form-group">
+                <label for="observations" class="form-label">Observations et remarques</label>
+                <textarea id="observations" name="observations" class="form-textarea" placeholder="Décrivez l'état, les anomalies, les actions effectuées..."></textarea>
+              </div>
+            </div>
+
+            <div class="buttons-container">
+              <button type="button" class="btn btn-secondary" onclick="goBack()">
+                Annuler
+              </button>
+              <button type="submit" class="btn btn-primary" id="saveButton">
+                <span id="saveButtonText">Enregistrer la vérification</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+    }
+
+    // Sauvegarder la vérification
+    async function saveVerification(event) {
+      event.preventDefault();
+      
+      if (!currentSite || !currentDesenfumage) {
+        alert('❌ Données non chargées');
+        return;
+      }
+      
+      const formData = new FormData(event.target);
+      const functioning = formData.get('functioning');
+      const observations = formData.get('observations');
+      
+      if (!functioning) {
+        alert('Veuillez sélectionner l\'état de fonctionnement');
+        return;
+      }
+      
+      const verificationDate = new Date().toISOString();
+      
+      console.log('💾 État de fonctionnement:', functioning);
+      console.log('💾 Date de vérification:', verificationDate);
+      
+      const saveButton = document.getElementById('saveButton');
+      const saveButtonText = document.getElementById('saveButtonText');
+      saveButton.disabled = true;
+      saveButtonText.textContent = 'Enregistrement...';
+      
+      try {
+        // Mettre à jour la date de vérification dans la table desenfumages
+        const { error: updateError } = await supabaseClient
+          .from('desenfumages')
+          .update({ 
+            last_des: verificationDate
+          })
+          .eq('id_desenfumage', currentDesenfumage.id_desenfumage);
+        
+        if (updateError) {
+          console.error('❌ Erreur mise à jour désenfumage:', updateError);
+          throw updateError;
+        }
+        
+        console.log('✅ Vérification enregistrée avec succès');
+        console.log('✅ Date de vérification enregistrée:', verificationDate);
+        
+        alert('✅ Vérification enregistrée avec succès !\n\n' +
+              `État: ${functioning}\n` +
+              `Date: ${new Date(verificationDate).toLocaleDateString('fr-FR')}`);
+        
+        goBack();
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la sauvegarde:', error);
+        alert('❌ Erreur lors de la sauvegarde: ' + error.message);
+      } finally {
+        saveButton.disabled = false;
+        saveButtonText.textContent = 'Enregistrer la vérification';
+      }
+    }
+
+    // Retourner à la page précédente
+    function goBack() {
+      if (currentSite) {
+        window.location.href = 'desenfumageList.html?site=' + encodeURIComponent(currentSite.id_site);
+      } else {
+        window.history.back();
+      }
+    }
+
+    // Afficher une erreur
+    function showError(message) {
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="error">
+          <h3>Erreur</h3>
+          <p>${message}</p>
+          <button class="btn btn-secondary" onclick="goBack()">Retour</button>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html> 

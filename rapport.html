@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bon de Vérification - JPSI</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      line-height: 1.4;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 210mm;
+      height: 297mm;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      border-radius: 8px;
+      padding: 6mm 12mm;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* En-tête avec nouvelle image */
+    .header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 4mm;
+      padding: 1mm;
+      background: white;
+      flex-shrink: 0;
+    }
+
+    .header-image {
+      width: auto;
+      height: auto;
+      max-height: 30mm;
+      max-width: 100%;
+    }
+
+    /* Coordonnées client et site */
+    .client-site-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2mm;
+      gap: 3mm;
+      flex-shrink: 0;
+    }
+
+    .info-box {
+      flex: 1;
+      border: 1px solid #000;
+      padding: 1mm;
+      background: white;
+      border-radius: 3px;
+    }
+
+    .info-box h3 {
+      font-size: 9pt;
+      font-weight: bold;
+      margin-bottom: 1mm;
+      text-align: center;
+      background: #333;
+      color: white;
+      padding: 1mm;
+      margin: -2mm -2mm 1mm -2mm;
+      border-radius: 3px 3px 0 0;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.3mm;
+      font-size: 10pt;
+    }
+
+    .info-label {
+      font-weight: bold;
+      min-width: 25mm;
+    }
+
+    .info-value {
+      text-align: right;
+      flex: 1;
+    }
+
+    /* Numéro de bon de vérification */
+    .verification-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3mm;
+      margin: 1mm 0;
+      padding: 1mm;
+      border: 1px solid #000;
+      background: white;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .verification-number h2 {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #333;
+      margin: 0;
+    }
+
+    #verificationNumberDisplay {
+      color: #000;
+      font-weight: bold;
+    }
+
+    .number-input {
+      font-size: 16pt;
+      font-weight: bold;
+      padding: 2mm 4mm;
+      border: 1px solid #000;
+      border-radius: 3px;
+      text-align: center;
+      width: 50mm;
+      background: white;
+    }
+
+    .number-input:focus {
+      outline: none;
+      border-color: #333;
+    }
+
+    /* Tableau des équipements */
+    .equipment-section {
+      margin-bottom: 0;
+      margin-top: 2mm;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .equipment-section h2 {
+      font-size: 10pt;
+      font-weight: bold;
+      margin-bottom: 1mm;
+      text-align: center;
+      background: #333;
+      color: white;
+      padding: 1mm;
+      border-radius: 3px;
+    }
+
+    .equipment-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+      margin-bottom: 2mm;
+      border: 1px solid #000;
+      background: white;
+      table-layout: fixed;
+    }
+
+    .equipment-table th {
+      background: #333;
+      color: white;
+      padding: 1mm 1.5mm;
+      text-align: center;
+      font-weight: bold;
+      border: 1px solid #000;
+      font-size: 8pt;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+
+    .equipment-table td {
+      padding: 1mm 1.5mm;
+      border: 1px solid #000;
+      text-align: center;
+      vertical-align: middle;
+      background: white;
+      font-size: 8pt;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .equipment-count {
+      text-align: center;
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* Observations */
+    .observations-section {
+      margin-bottom: 1mm;
+      margin-top: 4mm;
+      flex-shrink: 0;
+    }
+
+    .observations-section h2 {
+      font-size: 10pt;
+      font-weight: bold;
+      margin-bottom: 1mm;
+      text-align: center;
+      background: #333;
+      color: white;
+      padding: 1mm;
+      border-radius: 3px;
+    }
+
+    .observations-box {
+      border: 1px solid #000;
+      min-height: 10mm;
+      padding: 1mm;
+      background: white;
+      border-radius: 3px;
+    }
+
+    .observation-text {
+      font-size: 11pt;
+      color: #666;
+    }
+
+    .no-observations {
+      text-align: center;
+      color: #999;
+      font-style: italic;
+      padding: 10mm;
+    }
+
+    /* Signatures */
+    .signatures-section {
+      display: flex;
+      justify-content: space-between;
+      gap: 3mm;
+      margin-top: 1mm;
+      margin-bottom: 8mm;
+      flex-shrink: 0;
+    }
+
+    .signature-box {
+      flex: 1;
+      border: 1px solid #000;
+      padding: 1mm;
+      background: white;
+      border-radius: 3px;
+      min-height: 12mm;
+    }
+
+    .signature-title {
+      font-size: 7pt;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 0.5mm;
+      color: #333;
+    }
+
+    .signature-text {
+      font-size: 5pt;
+      color: #666;
+      line-height: 1.0;
+      margin-bottom: 2mm;
+      text-align: justify;
+    }
+
+    .signature-line {
+      padding-top: 1mm;
+      font-size: 7pt;
+      font-weight: bold;
+      color: #333;
+      text-align: center;
+      min-height: 18mm;
+    }
+
+    /* Disclaimer */
+    .disclaimer-section {
+      text-align: center;
+      font-size: 6pt;
+      color: #666;
+      line-height: 0.4;
+      flex-shrink: 0;
+      margin-top: auto;
+      padding-top: 4mm;
+    }
+
+    .disclaimer-text {
+      margin-bottom: 0.5mm;
+    }
+
+    /* Modale de signature */
+    .signature-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .signature-modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #000;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 500px;
+    }
+
+    .signature-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .signature-modal-title {
+      font-size: 16pt;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .signature-modal-close {
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .signature-modal-close:hover {
+      color: #000;
+    }
+
+    .signature-canvas-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    #signatureCanvas {
+      border: 1px solid #000;
+      background: white;
+      cursor: crosshair;
+    }
+
+    .signature-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .signature-btn {
+      padding: 10px 20px;
+      border: 1px solid #000;
+      background: white;
+      color: #333;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 12pt;
+    }
+
+    .signature-btn:hover {
+      background: #f0f0f0;
+    }
+
+    .signature-btn.primary {
+      background: #333;
+      color: white;
+    }
+
+    .signature-btn.primary:hover {
+      background: #555;
+    }
+
+    /* Boutons d'action */
+    .action-buttons {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body { padding: 10px; }
+      .container { 
+        width: 100%; 
+        height: auto;
+        padding: 10mm;
+      }
+      .client-site-info { flex-direction: column; }
+      .action-buttons { position: static; margin-bottom: 20px; }
+    }
+
+    /* Optimisations pour l'impression */
+    @media print {
+      body { 
+        background: white; 
+        padding: 0;
+      }
+      .container { 
+        box-shadow: none; 
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        padding: 12mm;
+      }
+      .action-buttons { display: none; }
+      .number-input { border: none; background: transparent; }
+    }
+
+    /* États vides */
+    .empty-state {
+      text-align: center;
+      color: #999;
+      font-style: italic;
+      padding: 5mm;
+      border: 1px dashed #ccc;
+      background: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="action-buttons">
+    <button class="btn btn-secondary" onclick="window.history.back()">← Retour</button>
+    <button class="btn" onclick="saveBonVerification()">💾 Enregistrer</button>
+    <button class="btn" onclick="window.print()">🖨️ Imprimer</button>
+            <button class="btn" onclick="testLibraries()">🧪 Test</button>
+        <button class="btn" onclick="shareByEmail()">📧 Partager</button>
+  </div>
+
+  <!-- Modale de signature -->
+  <div id="signatureModal" class="signature-modal">
+    <div class="signature-modal-content">
+      <div class="signature-modal-header">
+        <div class="signature-modal-title" id="signatureModalTitle">Signature du client</div>
+        <span class="signature-modal-close" onclick="closeSignatureModal()">&times;</span>
+      </div>
+      <div class="signature-canvas-container">
+        <canvas id="signatureCanvas" width="400" height="200"></canvas>
+      </div>
+      <div class="signature-buttons">
+        <button class="signature-btn" onclick="clearSignature()">Effacer</button>
+        <button class="signature-btn primary" onclick="saveSignature()">Valider</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- En-tête avec nouvelle image -->
+    <div class="header">
+      <img src="img/entete.png" alt="En-tête JPSI" class="header-image">
+    </div>
+
+    <!-- Coordonnées client et site -->
+    <div class="client-site-info">
+      <div class="info-box">
+        <h3>COORDONNÉES CLIENT</h3>
+        <div id="clientInfo">
+          <div class="info-item">
+            <span class="info-label">Code :</span>
+            <span class="info-value" id="clientCode">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Nom :</span>
+            <span class="info-value" id="clientName">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Adresse :</span>
+            <span class="info-value" id="clientAddress">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Code postal :</span>
+            <span class="info-value" id="clientPostal">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Ville :</span>
+            <span class="info-value" id="clientCity">-</span>
+          </div>
+        </div>
+      </div>
+      <div class="info-box">
+        <h3>COORDONNÉES SITE</h3>
+        <div id="siteInfo">
+          <div class="info-item">
+            <span class="info-label">Numéro :</span>
+            <span class="info-value" id="siteNumber">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Nom :</span>
+            <span class="info-value" id="siteName">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Adresse :</span>
+            <span class="info-value" id="siteAddress">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Code postal :</span>
+            <span class="info-value" id="sitePostal">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Ville :</span>
+            <span class="info-value" id="siteCity">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Numéro de bon de vérification -->
+    <div class="verification-number">
+      <h2>BON DE VÉRIFICATION N° <span id="verificationNumberDisplay"></span></h2>
+      <input type="text" class="number-input" id="verificationNumber" placeholder="Entrez le numéro" value="" style="display: none;">
+    </div>
+
+    <!-- Tableau des équipements -->
+    <div class="equipment-section">
+      <h2>ÉQUIPEMENTS CONTRÔLÉS</h2>
+      <table class="equipment-table" id="equipmentTable">
+        <thead>
+          <tr>
+            <th>Type d'équipement</th>
+            <th>Quantité</th>
+          </tr>
+        </thead>
+        <tbody id="equipmentTableBody">
+          <tr>
+            <td colspan="2" style="text-align: center; color: #999; font-style: italic;">Chargement des équipements...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Observations -->
+    <div class="observations-section">
+      <h2>OBSERVATIONS</h2>
+      <div class="observations-box" id="observationsBox">
+        <div class="no-observations">Aucune observation particulière</div>
+      </div>
+    </div>
+
+    <!-- Signatures -->
+    <div class="signatures-section">
+      <div class="signature-box" onclick="openSignatureModal('client')" style="cursor: pointer;">
+        <div class="signature-title">Nom et signature du client</div>
+        <div class="signature-text">
+          Je reconnais l'exactitude des quantitatifs indiqués, des travaux réalisés, et prend connaissance des travaux à réaliser.
+        </div>
+        <div class="signature-line" id="clientSignatureLine">
+          <span style="color: #999; font-style: italic;">Cliquez pour signer</span>
+        </div>
+      </div>
+      
+      <div class="signature-box" onclick="openSignatureModal('technician')" style="cursor: pointer;">
+        <div class="signature-title">Nom et signature du technicien</div>
+        <div class="signature-text">
+          Je reconnais avoir informé le client des opérations de maintenance faites ou à effectuer, ainsi que des travaux à réaliser.
+        </div>
+        <div class="signature-line" id="technicianSignatureLine">
+          <span style="color: #999; font-style: italic;">Cliquez pour signer</span>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Variables globales
+    let currentClient = null;
+    let currentSite = null;
+    let equipmentData = {};
+    
+    // Fonction pour envoyer un email via Supabase Edge Function
+    async function sendEmail(emailData) {
+      try {
+        const { data, error } = await supabase.functions.invoke('resend-email', {
+          body: emailData
+        });
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        return data;
+      } catch (error) {
+        console.error('❌ Erreur envoi email:', error);
+        throw error;
+      }
+    }
+
+    async function loadRapport() {
+      // Récupérer le dernier numéro de bon de vérification et l'incrémenter
+      try {
+                // Test de connexion et permissions
+        console.log('🔧 Test de connexion Supabase...');
+        
+        // Test 1: Vérifier si on peut accéder à une table simple
+        const { data: testClients, error: testError } = await supabase
+          .from('clients')
+          .select('count')
+          .limit(1);
+        
+        console.log('🔧 Test clients:', testClients);
+        console.log('🔧 Erreur test:', testError);
+        
+        // Test 2: Vérifier la table BV avec une requête simple
+        const { data: allBV, error: countError } = await supabase
+          .from('BV')
+          .select('*');
+
+        console.log('📊 Tous les BV:', allBV);
+        console.log('📊 Erreur count:', countError);
+        
+        // Récupérer le dernier num_bv de la table BV avec SQL direct
+        const { data: lastBV, error: bvError } = await supabase
+          .rpc('get_last_bv_number');
+
+        console.log('🔍 Dernier BV récupéré:', lastBV);
+        console.log('🔍 Erreur BV:', bvError);
+
+        let nextNumber = 1;
+        if (lastBV && lastBV.length > 0 && lastBV[0].num_bv) {
+          nextNumber = parseInt(lastBV[0].num_bv) + 1;
+          console.log('🔢 Numéro extrait:', lastBV[0].num_bv);
+          console.log('🔢 Prochain numéro:', nextNumber);
+        } else {
+          console.log('⚠️ Aucun BV trouvé ou num_bv manquant');
+        }
+
+        // Formater le numéro au format année-numéro sur 4 chiffres
+        const currentYear = new Date().getFullYear();
+        const formattedNumber = `${currentYear}-${nextNumber.toString().padStart(4, '0')}`;
+
+        // Mettre à jour l'affichage du numéro
+        document.getElementById('verificationNumberDisplay').textContent = formattedNumber;
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const siteId = urlParams.get('site');
+        
+        if (!siteId) {
+          showError('Aucun site sélectionné.');
+          return;
+        }
+
+        // Charger les informations du site et client
+        const { data: site, error: siteError } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id_site', siteId)
+          .single();
+
+        if (siteError || !site) {
+          showError('Erreur lors du chargement du site.');
+          return;
+        }
+
+        const { data: client } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id_client', site.id_client)
+          .single();
+
+        currentClient = client;
+        currentSite = site;
+
+        // Mettre à jour les informations client et site
+        updateClientSiteInfo(client, site);
+
+        // Charger tous les équipements et agents
+        const [eclairages, extincteurs, agents, alarmes, installationsDesenfumage] = await Promise.all([
+          supabase.from('eclairages').select('*').eq('id_site', siteId),
+          supabase.from('extincteurs').select('*').eq('id_site', siteId),
+          supabase.from('AgentExtincteur').select('*'),
+          supabase.from('alarmes').select('*').eq('id_site', siteId),
+          supabase.rpc('get_installations_site', { id_site_param: siteId })
+        ]);
+
+        // Créer le mapping des agents
+        const agentMap = {};
+        if (agents.data) {
+          agents.data.forEach(a => { agentMap[a.id_agt] = a.long_agt; });
+        }
+
+        // Stocker les données
+        equipmentData = {
+          eclairages: eclairages.data || [],
+          extincteurs: extincteurs.data || [],
+          alarmes: alarmes.data || [],
+          desenfumages: installationsDesenfumage.data?.[0]?.installations || [],
+          agentMap: agentMap
+        };
+
+        // Mettre à jour le tableau des équipements
+        updateEquipmentTable();
+
+        // Générer les observations
+        generateObservations();
+
+      } catch (error) {
+        console.error('Erreur:', error);
+        showError('Erreur lors du chargement des données.');
+      }
+    }
+
+    function updateClientSiteInfo(client, site) {
+      // Informations client
+      document.getElementById('clientCode').textContent = client ? client.code_client || '-' : '-';
+      document.getElementById('clientName').textContent = client ? client.nom_client || '-' : '-';
+      document.getElementById('clientAddress').textContent = client ? client.adr_client || '-' : '-';
+      document.getElementById('clientPostal').textContent = client ? client.cp_client || '-' : '-';
+      document.getElementById('clientCity').textContent = client ? client.ville_client || '-' : '-';
+
+      // Informations site
+      document.getElementById('siteNumber').textContent = site.num_site || '-';
+      document.getElementById('siteName').textContent = site.nom_site || '-';
+      document.getElementById('siteAddress').textContent = site.adr_site || '-';
+      document.getElementById('sitePostal').textContent = site.cp_site || '-';
+      document.getElementById('siteCity').textContent = site.ville_site || '-';
+    }
+
+    function updateEquipmentTable() {
+      const tbody = document.getElementById('equipmentTableBody');
+      let html = '';
+
+      // EXTINCTEURS par agent
+      if (equipmentData.extincteurs.length > 0) {
+        const extincteursByAgent = groupExtincteursByAgent();
+        Object.entries(extincteursByAgent).forEach(([agentId, extincteurs]) => {
+          const agentName = equipmentData.agentMap[agentId] || `Agent ${agentId}`;
+          const count = extincteurs.length;
+          
+          html += `
+            <tr>
+              <td>Extincteur ${agentName}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // ÉCLAIRAGES par famille
+      if (equipmentData.eclairages.length > 0) {
+        const eclairagesByFamily = groupEclairagesByFamily();
+        Object.entries(eclairagesByFamily).forEach(([family, eclairages]) => {
+          const count = eclairages.length;
+          
+          html += `
+            <tr>
+              <td>Eclairage de sécurité - ${family}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // ALARMES par type
+      if (equipmentData.alarmes.length > 0) {
+        const alarmesByType = groupAlarmesByType();
+        Object.entries(alarmesByType).forEach(([type, alarmes]) => {
+          const count = alarmes.length;
+          
+          html += `
+            <tr>
+              <td>Alarme ${type}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // DÉSENFUMAGES par installation
+      if (equipmentData.desenfumages.length > 0) {
+        const desenfumagesByType = groupDesenfumagesByType();
+        Object.entries(desenfumagesByType).forEach(([type, desenfumages]) => {
+          const count = desenfumages.length;
+          
+          html += `
+            <tr>
+              <td>Installation désenfumage ${type}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // Si aucun équipement
+      if (html === '') {
+        html = '<tr><td colspan="2" style="text-align: center; color: #999; font-style: italic;">Aucun équipement enregistré</td></tr>';
+      }
+
+      tbody.innerHTML = html;
+    }
+
+    // Fonctions de groupement par famille
+    function groupExtincteursByAgent() {
+      const groups = {};
+      equipmentData.extincteurs.forEach(ext => {
+        const agentId = ext.agent_ext || 'Autre';
+        if (!groups[agentId]) groups[agentId] = [];
+        groups[agentId].push(ext);
+      });
+      return groups;
+    }
+
+    function groupEclairagesByFamily() {
+      const groups = {};
+      equipmentData.eclairages.forEach(ecl => {
+        const family = ecl.family_ecl || 'Autre';
+        if (!groups[family]) groups[family] = [];
+        groups[family].push(ecl);
+      });
+      return groups;
+    }
+
+    function groupAlarmesByType() {
+      const groups = {};
+      equipmentData.alarmes.forEach(al => {
+        const type = al.type_alarme || 'Autre';
+        if (!groups[type]) groups[type] = [];
+        groups[type].push(al);
+      });
+      return groups;
+    }
+
+    function groupDesenfumagesByType() {
+      const groups = {};
+      equipmentData.desenfumages.forEach(installation => {
+        // Utiliser le nom de l'installation ou le numéro comme type
+        const type = installation.nom || installation.numero || 'Installation sans nom';
+        if (!groups[type]) groups[type] = [];
+        groups[type].push(installation);
+      });
+      return groups;
+    }
+
+
+
+    function generateObservations() {
+      const container = document.getElementById('observationsBox');
+      let observationsByType = {};
+      
+      // Collecter les observations par type d'équipement
+      equipmentData.extincteurs.forEach(ext => {
+        if (ext.obs_ext && ext.obs_ext.trim() !== '') {
+          const obs = ext.obs_ext.trim();
+          if (!observationsByType[obs]) {
+            observationsByType[obs] = {
+              type: 'Extincteur',
+              numbers: []
+            };
+          }
+          observationsByType[obs].numbers.push(ext.num_ext || 'N/A');
+        }
+      });
+
+      equipmentData.eclairages.forEach(ecl => {
+        if (ecl.obs_ecl && ecl.obs_ecl.trim() !== '') {
+          const obs = ecl.obs_ecl.trim();
+          if (!observationsByType[obs]) {
+            observationsByType[obs] = {
+              type: 'Eclairage de sécurité',
+              numbers: []
+            };
+          }
+          observationsByType[obs].numbers.push(ecl.num_ecl || 'N/A');
+        }
+      });
+
+      equipmentData.alarmes.forEach(al => {
+        if (al.notes_alarme && al.notes_alarme.trim() !== '') {
+          const obs = al.notes_alarme.trim();
+          if (!observationsByType[obs]) {
+            observationsByType[obs] = {
+              type: 'Alarme',
+              numbers: []
+            };
+          }
+          observationsByType[obs].numbers.push(al.type_alarme || 'N/A');
+        }
+      });
+
+      equipmentData.desenfumages.forEach(installation => {
+        if (installation.observations && installation.observations.trim() !== '') {
+          const obs = installation.observations.trim();
+          if (!observationsByType[obs]) {
+            observationsByType[obs] = {
+              type: 'Installation désenfumage',
+              numbers: []
+            };
+          }
+          observationsByType[obs].numbers.push(installation.numero || 'N/A');
+        }
+      });
+
+      if (Object.keys(observationsByType).length === 0) {
+        container.innerHTML = '<div class="no-observations">Aucune observation particulière</div>';
+        return;
+      }
+
+      // Afficher les observations regroupées
+      let html = '';
+      Object.entries(observationsByType).forEach(([observation, data]) => {
+        const numbersText = data.numbers.join(', ');
+        html += `<strong>${data.type} n°${numbersText}</strong> : ${observation}<br><br>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function showError(message) {
+      document.getElementById('clientCode').textContent = 'Erreur';
+      document.getElementById('clientName').textContent = message;
+    }
+
+    // Gestion du numéro de vérification
+    document.getElementById('verificationNumber').addEventListener('input', function(e) {
+      // Permettre seulement les lettres et chiffres
+      this.value = this.value.replace(/[^A-Za-z0-9-]/g, '');
+    });
+
+    // Variables pour la signature
+    let isDrawing = false;
+    let signatureCanvas = null;
+    let signatureContext = null;
+    let currentSignatureLine = null;
+
+    // Ouvrir la modale de signature
+    function openSignatureModal(signatureType) {
+      currentSignatureLine = signatureType === 'client' ? 'clientSignatureLine' : 'technicianSignatureLine';
+      const modalTitle = signatureType === 'client' ? 'Signature du client' : 'Signature du technicien';
+      
+      document.getElementById('signatureModalTitle').textContent = modalTitle;
+      document.getElementById('signatureModal').style.display = 'block';
+      signatureCanvas = document.getElementById('signatureCanvas');
+      
+      if (!signatureCanvas) {
+        console.error('❌ Canvas de signature non trouvé');
+        return;
+      }
+      
+      // Configurer le canvas avec dimensions fixes
+      signatureCanvas.width = 400;
+      signatureCanvas.height = 200;
+      signatureCanvas.style.width = '100%';
+      signatureCanvas.style.height = '200px';
+      
+      // Style de base pour iPad
+      signatureCanvas.style.touchAction = 'none';
+      
+      signatureContext = signatureCanvas.getContext('2d');
+      signatureContext.strokeStyle = '#000';
+      signatureContext.lineWidth = 3;
+      signatureContext.lineCap = 'round';
+      
+      // Effacer le canvas
+      signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+      
+      // Ajouter les événements de dessin
+      signatureCanvas.addEventListener('mousedown', startDrawing);
+      signatureCanvas.addEventListener('mousemove', draw);
+      signatureCanvas.addEventListener('mouseup', stopDrawing);
+      signatureCanvas.addEventListener('mouseout', stopDrawing);
+      
+      // Support tactile simple
+      signatureCanvas.addEventListener('touchstart', startDrawingTouch);
+      signatureCanvas.addEventListener('touchmove', drawTouch);
+      signatureCanvas.addEventListener('touchend', stopDrawing);
+      
+      console.log('✅ Modal de signature ouverte');
+    }
+
+    // Fermer la modale de signature
+    function closeSignatureModal() {
+      document.getElementById('signatureModal').style.display = 'none';
+      // Retirer les événements
+      if (signatureCanvas) {
+        signatureCanvas.removeEventListener('mousedown', startDrawing);
+        signatureCanvas.removeEventListener('mousemove', draw);
+        signatureCanvas.removeEventListener('mouseup', stopDrawing);
+        signatureCanvas.removeEventListener('mouseout', stopDrawing);
+        signatureCanvas.removeEventListener('touchstart', startDrawingTouch);
+        signatureCanvas.removeEventListener('touchmove', drawTouch);
+        signatureCanvas.removeEventListener('touchend', stopDrawing);
+      }
+    }
+
+    // Commencer le dessin
+    function startDrawing(e) {
+      isDrawing = true;
+      
+      const rect = signatureCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      signatureContext.beginPath();
+      signatureContext.moveTo(x, y);
+    }
+
+    // Dessiner
+    function draw(e) {
+      if (!isDrawing) return;
+      
+      const rect = signatureCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      signatureContext.lineTo(x, y);
+      signatureContext.stroke();
+    }
+
+    // Support tactile
+    function startDrawingTouch(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      startDrawing(mouseEvent);
+    }
+
+    function drawTouch(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent('mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      draw(mouseEvent);
+    }
+
+    // Arrêter le dessin
+    function stopDrawing() {
+      isDrawing = false;
+      signatureContext.beginPath();
+    }
+
+    // Effacer la signature
+    function clearSignature() {
+      signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    }
+
+    // Sauvegarder la signature
+    function saveSignature() {
+      const signatureData = signatureCanvas.toDataURL();
+      const signatureLine = document.getElementById(currentSignatureLine);
+              signatureLine.innerHTML = '<img src="' + signatureData + '" style="max-width: 100%; max-height: 50px; width: auto; border: 1px solid #ccc; background: white; padding: 3px;">';
+      closeSignatureModal();
+    }
+
+    // Fermer la modale en cliquant à l'extérieur
+    window.onclick = function(event) {
+      const modal = document.getElementById('signatureModal');
+      if (event.target === modal) {
+        closeSignatureModal();
+      }
+    }
+
+    // Fonction pour enregistrer le bon de vérification
+    async function saveBonVerification() {
+      const formattedNumber = document.getElementById('verificationNumberDisplay').textContent;
+      
+      if (!currentSite || !formattedNumber) {
+        alert('Impossible d\'enregistrer : données manquantes');
+        return;
+      }
+
+      try {
+        // Utiliser la fonction RPC pour enregistrer le BV
+        const { data: savedBV, error } = await supabase
+          .rpc('insert_bon_verification', {
+            num_bv_param: formattedNumber,
+            id_site_param: currentSite.id_site
+          });
+
+        if (error) {
+          console.error('❌ Erreur lors de l\'enregistrement:', error);
+          alert('❌ Erreur lors de l\'enregistrement du bon de vérification');
+          return;
+        }
+
+        console.log('✅ Bon de vérification enregistré avec succès:', savedBV);
+        alert('✅ Bon de vérification enregistré avec succès !\nNuméro : ' + formattedNumber);
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        alert('❌ Erreur lors de l\'enregistrement');
+      }
+    }
+
+    // Fonction de test des bibliothèques
+    function testLibraries() {
+      console.log('🧪 Test des bibliothèques...');
+      
+      if (typeof html2canvas === 'undefined') {
+        alert('❌ html2canvas n\'est pas chargé');
+        console.error('html2canvas non défini');
+      } else {
+        console.log('✅ html2canvas chargé');
+      }
+      
+      if (typeof window.jspdf === 'undefined') {
+        alert('❌ jsPDF n\'est pas chargé');
+        console.error('jsPDF non défini');
+      } else {
+        console.log('✅ jsPDF chargé');
+        console.log('jsPDF version:', window.jspdf.version);
+      }
+      
+      if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
+        alert('✅ Toutes les bibliothèques sont chargées !');
+      }
+    }
+
+    // Fonction pour partager par email avec EmailJS
+    async function shareByEmail() {
+      // Vérifier que les bibliothèques sont chargées
+      if (typeof html2canvas === 'undefined') {
+        alert('❌ Erreur : html2canvas n\'est pas chargé. Veuillez recharger la page.');
+        return;
+      }
+      
+      if (typeof window.jspdf === 'undefined') {
+        alert('❌ Erreur : jsPDF n\'est pas chargé. Veuillez recharger la page.');
+        return;
+      }
+      
+
+
+      // Demander l'email du destinataire
+      const recipientEmail = prompt('Entrez l\'adresse email du destinataire :');
+      if (!recipientEmail) return;
+
+      // Afficher un message de chargement
+      const loadingMsg = document.createElement('div');
+      loadingMsg.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        z-index: 10000;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      `;
+      loadingMsg.innerHTML = '🔄 Génération et envoi du PDF en cours...';
+      document.body.appendChild(loadingMsg);
+
+      try {
+        // Capturer la page rapport telle qu'elle s'affiche
+        const reportContainer = document.querySelector('.container');
+        
+        // Utiliser html2canvas pour capturer la page avec une qualité très réduite
+        const canvas = await html2canvas(reportContainer, {
+          scale: 0.8, // Qualité très réduite pour diminuer la taille
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: reportContainer.scrollWidth,
+          height: reportContainer.scrollHeight,
+          logging: false, // Désactiver les logs pour éviter les erreurs
+          imageTimeout: 0, // Pas de timeout pour les images
+          removeContainer: true // Nettoyer après capture
+        });
+
+        // Convertir le canvas en image avec compression forte
+        const imgData = canvas.toDataURL('image/jpeg', 0.5); // Compression JPEG à 50%
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const imgWidth = 210; // Largeur A4
+        const pageHeight = 295; // Hauteur A4
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        // Redimensionner l'image pour qu'elle tienne sur une seule page
+        let finalImgHeight = imgHeight;
+        if (imgHeight > pageHeight) {
+          finalImgHeight = pageHeight;
+        }
+        
+        // Ajouter seulement la première page
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, finalImgHeight);
+        
+        // Ajouter le disclaimer en pied de page sur la première page
+        const disclaimerText = [
+          'Entreprise individuelle – SIRET 794 660 365 00014 – Code APE 4778C – TVA non applicable selon l\'article 293-B du Code Général des Impôts',
+          'Immatriculé au répertoire des métiers sous le numéro 794 660 365 RM 54 auprès de la Chambre des Métiers de Laxou',
+          'Immatriculé au Registre du Commerce et des Sociétés sous le numéro 794 660 365 R.C.S. Nancy',
+          'Voir conditions générales de vente'
+        ];
+        
+        pdf.setPage(1);
+        pdf.setFontSize(6);
+        pdf.setTextColor(100, 100, 100);
+        
+        let yPosition = 285; // Position en bas de page
+        disclaimerText.forEach((line, index) => {
+          pdf.text(line, 105, yPosition + (index * 3), { align: 'center' });
+        });
+        
+        // Générer le PDF en base64
+        const pdfBase64 = pdf.output('datauristring').split(',')[1];
+        
+        // Vérifier la taille du PDF (Resend accepte jusqu'à 25MB)
+        const pdfSize = Math.ceil((pdfBase64.length * 3) / 4);
+        console.log('📊 Taille du PDF:', pdfSize, 'bytes');
+        
+        // Resend accepte jusqu'à 25MB, mais gardons une limite raisonnable de 10MB
+        if (pdfSize > 10485760) { // 10MB
+          // Supprimer le message de chargement
+          document.body.removeChild(loadingMsg);
+          
+          const useAlternative = confirm(
+            `Le PDF est trop volumineux (${Math.round(pdfSize/1024)}KB). ` +
+            'Voulez-vous essayer une compression plus forte ou utiliser l\'envoi par client email ?\n\n' +
+            'Cliquez OK pour essayer une compression plus forte, ou Annuler pour utiliser le client email.'
+          );
+          
+          if (useAlternative) {
+            // Essayer une compression plus forte
+            try {
+              console.log('🔄 Tentative de compression plus forte...');
+              
+              // Nouvelle capture avec compression maximale
+              const canvas2 = await html2canvas(reportContainer, {
+                scale: 0.6, // Compression maximale
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                width: reportContainer.scrollWidth,
+                height: reportContainer.scrollHeight,
+                logging: false,
+                imageTimeout: 0,
+                removeContainer: true
+              });
+              
+              const imgData2 = canvas2.toDataURL('image/jpeg', 0.3); // Compression JPEG à 30%
+              const pdf2 = new jsPDF('p', 'mm', 'a4');
+              
+              const imgWidth2 = 210;
+              const pageHeight2 = 295;
+              const imgHeight2 = (canvas2.height * imgWidth2) / canvas2.width;
+              let finalImgHeight2 = imgHeight2;
+              if (imgHeight2 > pageHeight2) {
+                finalImgHeight2 = pageHeight2;
+              }
+              
+              pdf2.addImage(imgData2, 'JPEG', 0, 0, imgWidth2, finalImgHeight2);
+              
+              // Ajouter le disclaimer
+              const disclaimerText2 = [
+                'Entreprise individuelle – SIRET 794 660 365 00014 – Code APE 4778C – TVA non applicable selon l\'article 293-B du Code Général des Impôts',
+                'Immatriculé au répertoire des métiers sous le numéro 794 660 365 RM 54 auprès de la Chambre des Métiers de Laxou',
+                'Immatriculé au Registre du Commerce et des Sociétés sous le numéro 794 660 365 R.C.S. Nancy',
+                'Voir conditions générales de vente'
+              ];
+              
+              pdf2.setPage(1);
+              pdf2.setFontSize(6);
+              pdf2.setTextColor(100, 100, 100);
+              
+              let yPosition2 = 285;
+              disclaimerText2.forEach((line, index) => {
+                pdf2.text(line, 105, yPosition2 + (index * 3), { align: 'center' });
+              });
+              
+              const pdfBase64_2 = pdf2.output('datauristring').split(',')[1];
+              const pdfSize2 = Math.ceil((pdfBase64_2.length * 3) / 4);
+              console.log('📊 Taille du PDF compressé:', pdfSize2, 'bytes');
+              
+              if (pdfSize2 <= 10485760) { // 10MB
+                // Envoi avec compression forte
+                const templateParams2 = {
+                  to_email: recipientEmail,
+                  verification_number: document.getElementById('verificationNumberDisplay').textContent,
+                  client_name: currentClient?.nom_client || 'N/A',
+                  site_name: currentSite?.nom_site || 'N/A',
+                  pdf_attachment: pdfBase64_2,
+                  message: `Bon de vérification ${document.getElementById('verificationNumberDisplay').textContent} pour le site ${currentSite?.nom_site || 'N/A'} du client ${currentClient?.nom_client || 'N/A'}`
+                };
+                
+                const response2 = await sendEmail(templateParams2);
+                console.log('✅ Email envoyé avec succès (compression forte):', response2);
+                alert('✅ Bon de vérification envoyé avec succès (compression forte) !');
+                return;
+              }
+            } catch (error) {
+              console.error('❌ Erreur lors de la compression forte:', error);
+            }
+            
+            // Si la compression forte échoue, utiliser l'ancienne méthode avec mailto (très rare maintenant)
+            const pdfBlob = pdf.output('blob');
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            
+            // Créer le lien de téléchargement
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = 'Bon_Verification_' + document.getElementById('verificationNumberDisplay').textContent + '.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Libérer l'URL
+            URL.revokeObjectURL(pdfUrl);
+            
+            // Créer le contenu de l'email
+            const subject = 'Bon de vérification - ' + document.getElementById('verificationNumberDisplay').textContent;
+            const body = `Bonjour,
+
+Veuillez trouver ci-joint le bon de vérification pour le site ${currentSite?.nom_site || 'N/A'} du client ${currentClient?.nom_client || 'N/A'}.
+
+Numéro de bon : ${document.getElementById('verificationNumberDisplay').textContent}
+
+Cordialement,
+J.P. SÉCURITÉ INCENDIE`;
+            
+            // Email en copie (votre email)
+            const ccEmail = 'contact@jpsincendie.com';
+            
+            // Ouvrir le client email avec les informations pré-remplies
+            const mailtoLink = `mailto:${recipientEmail}?cc=${ccEmail}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
+          }
+          return;
+        }
+        
+        // Paramètres pour l'envoi d'email
+        const templateParams = {
+          to_email: recipientEmail,
+          verification_number: document.getElementById('verificationNumberDisplay').textContent,
+          client_name: currentClient?.nom_client || 'N/A',
+          site_name: currentSite?.nom_site || 'N/A',
+          pdf_attachment: pdfBase64,
+          message: `Bon de vérification ${document.getElementById('verificationNumberDisplay').textContent} pour le site ${currentSite?.nom_site || 'N/A'} du client ${currentClient?.nom_client || 'N/A'}`
+        };
+
+        console.log('📧 Envoi email avec PDF de taille:', Math.round(pdfSize / 1024), 'KB');
+        
+        // Envoi via client email par défaut (temporaire en attendant la config du domaine)
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Créer le lien de téléchargement
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = 'Bon_Verification_' + document.getElementById('verificationNumberDisplay').textContent + '.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Libérer l'URL
+        URL.revokeObjectURL(pdfUrl);
+        
+        // Créer le contenu de l'email
+        const subject = 'Bon de vérification - ' + document.getElementById('verificationNumberDisplay').textContent;
+        const body = `Bonjour,
+
+Veuillez trouver ci-joint le bon de vérification pour le site ${currentSite?.nom_site || 'N/A'} du client ${currentClient?.nom_client || 'N/A'}.
+
+Numéro de bon : ${document.getElementById('verificationNumberDisplay').textContent}
+
+Cordialement,
+J.P. SÉCURITÉ INCENDIE`;
+        
+        // Email en copie (votre email)
+        const ccEmail = 'contact@jpsincendie.com';
+        
+        // Ouvrir le client email avec les informations pré-remplies
+        const mailtoLink = `mailto:${recipientEmail}?cc=${ccEmail}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = mailtoLink;
+        
+        // Supprimer le message de chargement
+        document.body.removeChild(loadingMsg);
+        
+        console.log('✅ Client email ouvert avec succès');
+        alert('✅ Client email ouvert ! Le PDF a été téléchargé et l\'email est prêt à être envoyé.');
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de l\'envoi:', error);
+        document.body.removeChild(loadingMsg);
+        alert('❌ Erreur lors de l\'envoi. Veuillez réessayer.');
+      }
+    }
+
+    // Charger le rapport au démarrage
+    loadRapport();
+  </script>
+</body>
+</html> 

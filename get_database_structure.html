@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Structure Base de Données BMGros</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #e1e5e9;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .section-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #efe;
+            color: #363;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .sql-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Structure Base de Données BMGros</h1>
+            <p>Récupération et analyse de la structure complète</p>
+        </div>
+        
+        <div class="content">
+            <div class="config-section">
+                <h3>⚙️ Configuration Supabase</h3>
+                <div class="form-group">
+                    <label for="supabaseUrl">URL Supabase :</label>
+                    <input type="text" id="supabaseUrl" placeholder="https://votre-projet.supabase.co">
+                </div>
+                <div class="form-group">
+                    <label for="supabaseKey">Clé API Supabase :</label>
+                    <input type="password" id="supabaseKey" placeholder="Votre clé API">
+                </div>
+                <button class="btn" onclick="getDatabaseStructure()">🔍 Récupérer la Structure</button>
+                <button class="btn" onclick="showSQLScript()">📝 Afficher Script SQL</button>
+            </div>
+
+            <div id="results" class="results" style="display: none;">
+                <div id="loading" class="loading">
+                    <h3>🔄 Récupération en cours...</h3>
+                    <p>Veuillez patienter pendant que nous analysons votre base de données.</p>
+                </div>
+                
+                <div id="error" class="error" style="display: none;"></div>
+                <div id="success" class="success" style="display: none;"></div>
+                
+                <div id="tables-section" class="section" style="display: none;">
+                    <div class="section-header">📋 Tables et Colonnes</div>
+                    <div class="table-container">
+                        <table id="tables-table">
+                            <thead>
+                                <tr>
+                                    <th>Table</th>
+                                    <th>Colonne</th>
+                                    <th>Type</th>
+                                    <th>Nullable</th>
+                                    <th>Clé</th>
+                                    <th>Référence</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="relations-section" class="section" style="display: none;">
+                    <div class="section-header">🔗 Relations entre Tables</div>
+                    <div class="table-container">
+                        <table id="relations-table">
+                            <thead>
+                                <tr>
+                                    <th>Table Source</th>
+                                    <th>Colonne Source</th>
+                                    <th>Relation</th>
+                                    <th>Table Cible</th>
+                                    <th>Colonne Cible</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="stats-section" class="section" style="display: none;">
+                    <div class="section-header">📈 Statistiques des Tables</div>
+                    <div class="table-container">
+                        <table id="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Table</th>
+                                    <th>Lignes Actives</th>
+                                    <th>Lignes Supprimées</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSQLScript() {
+            const sqlScript = `-- Script SQL pour récupérer la structure complète
+-- Copiez-collez ce script dans l'éditeur SQL de Supabase
+
+-- 1. Structure détaillée de toutes les tables
+SELECT 
+    t.table_name as "Table",
+    c.column_name as "Colonne",
+    c.data_type as "Type",
+    CASE 
+        WHEN c.character_maximum_length IS NOT NULL 
+        THEN c.data_type || '(' || c.character_maximum_length || ')'
+        WHEN c.numeric_precision IS NOT NULL 
+        THEN c.data_type || '(' || c.numeric_precision || ',' || c.numeric_scale || ')'
+        ELSE c.data_type
+    END as "Type Complet",
+    c.is_nullable as "Nullable",
+    c.column_default as "Valeur Défaut",
+    CASE 
+        WHEN pk.column_name IS NOT NULL THEN 'PRIMARY KEY'
+        WHEN fk.column_name IS NOT NULL THEN 'FOREIGN KEY'
+        ELSE 'NORMAL'
+    END as "Type de Clé",
+    fk.foreign_table_name as "Table Référencée",
+    fk.foreign_column_name as "Colonne Référencée"
+FROM information_schema.tables t
+JOIN information_schema.columns c ON t.table_name = c.table_name
+LEFT JOIN (
+    SELECT 
+        kcu.table_name,
+        kcu.column_name,
+        ccu.table_name as foreign_table_name,
+        ccu.column_name as foreign_column_name
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+    JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+        AND tc.table_schema = 'public'
+) fk ON t.table_name = fk.table_name AND c.column_name = fk.column_name
+LEFT JOIN (
+    SELECT 
+        kcu.table_name,
+        kcu.column_name
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+    WHERE tc.constraint_type = 'PRIMARY KEY'
+        AND tc.table_schema = 'public'
+) pk ON t.table_name = pk.table_name AND c.column_name = pk.column_name
+WHERE t.table_schema = 'public' 
+    AND t.table_type = 'BASE TABLE'
+ORDER BY t.table_name, c.ordinal_position;
+
+-- 2. Liens entre tables
+SELECT 
+    tc.table_name as "Table Source",
+    kcu.column_name as "Colonne Source",
+    '->' as "Relation",
+    ccu.table_name as "Table Cible",
+    ccu.column_name as "Colonne Cible"
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu 
+    ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage ccu 
+    ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema = 'public'
+ORDER BY tc.table_name, ccu.table_name;
+
+-- 3. Statistiques des tables
+SELECT 
+    relname as "Table",
+    n_live_tup as "Lignes Actives",
+    n_dead_tup as "Lignes Supprimées"
+FROM pg_stat_user_tables 
+WHERE schemaname = 'public'
+ORDER BY n_live_tup DESC;`;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                padding: 30px;
+                border-radius: 15px;
+                max-width: 90%;
+                max-height: 90%;
+                overflow: auto;
+            `;
+            
+            modalContent.innerHTML = `
+                <h3>📝 Script SQL</h3>
+                <p>Copiez ce script dans l'éditeur SQL de Supabase :</p>
+                <div class="sql-display">${sqlScript}</div>
+                <button class="btn" onclick="this.parentElement.parentElement.remove()">Fermer</button>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+
+        async function getDatabaseStructure() {
+            const supabaseUrl = document.getElementById('supabaseUrl').value;
+            const supabaseKey = document.getElementById('supabaseKey').value;
+            
+            if (!supabaseUrl || !supabaseKey) {
+                showError('Veuillez remplir l\'URL et la clé API Supabase');
+                return;
+            }
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+
+            try {
+                // Initialiser Supabase
+                const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+                const supabase = createClient(supabaseUrl, supabaseKey);
+                
+                // Récupérer la structure des tables
+                const { data: tablesData, error: tablesError } = await supabase
+                    .rpc('get_database_structure');
+                
+                if (tablesError) {
+                    throw new Error('Erreur lors de la récupération de la structure : ' + tablesError.message);
+                }
+                
+                // Récupérer les relations
+                const { data: relationsData, error: relationsError } = await supabase
+                    .rpc('get_database_relations');
+                
+                if (relationsError) {
+                    console.warn('Erreur lors de la récupération des relations :', relationsError);
+                }
+                
+                // Récupérer les statistiques
+                const { data: statsData, error: statsError } = await supabase
+                    .rpc('get_database_stats');
+                
+                if (statsError) {
+                    console.warn('Erreur lors de la récupération des statistiques :', statsError);
+                }
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('success').style.display = 'block';
+                document.getElementById('success').innerHTML = '✅ Structure récupérée avec succès !';
+                
+                // Afficher les sections
+                document.getElementById('tables-section').style.display = 'block';
+                document.getElementById('relations-section').style.display = 'block';
+                document.getElementById('stats-section').style.display = 'block';
+                
+                // Remplir les tableaux avec les vraies données
+                populateTables(tablesData, relationsData, statsData);
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                showError('Erreur lors de la récupération : ' + error.message);
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = message;
+        }
+
+        function populateTables(tablesData, relationsData, statsData) {
+            // Remplir le tableau des tables et colonnes
+            if (tablesData && tablesData.length > 0) {
+                const tbody = document.querySelector('#tables-table tbody');
+                tbody.innerHTML = '';
+                tablesData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.table || row.Table || ''}</td>
+                        <td>${row.column || row.Colonne || ''}</td>
+                        <td>${row.type || row.Type || ''}</td>
+                        <td>${row.nullable || row.Nullable || ''}</td>
+                        <td>${row.key || row['Type de Clé'] || ''}</td>
+                        <td>${row.reference || row['Table Référencée'] || ''}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Remplir le tableau des relations
+            if (relationsData && relationsData.length > 0) {
+                const relationsTbody = document.querySelector('#relations-table tbody');
+                relationsTbody.innerHTML = '';
+                relationsData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.source_table || row['Table Source'] || ''}</td>
+                        <td>${row.source_column || row['Colonne Source'] || ''}</td>
+                        <td>${row.relation || '->'}</td>
+                        <td>${row.target_table || row['Table Cible'] || ''}</td>
+                        <td>${row.target_column || row['Colonne Cible'] || ''}</td>
+                    `;
+                    relationsTbody.appendChild(tr);
+                });
+            }
+
+            // Remplir le tableau des statistiques
+            if (statsData && statsData.length > 0) {
+                const statsTbody = document.querySelector('#stats-table tbody');
+                statsTbody.innerHTML = '';
+                statsData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    const activeCount = row.active_count || row['Lignes Actives'] || 0;
+                    const deletedCount = row.deleted_count || row['Lignes Supprimées'] || 0;
+                    const status = getStatusFromCount(activeCount);
+                    
+                    tr.innerHTML = `
+                        <td>${row.table || row.Table || ''}</td>
+                        <td>${activeCount}</td>
+                        <td>${deletedCount}</td>
+                        <td>${status}</td>
+                    `;
+                    statsTbody.appendChild(tr);
+                });
+            }
+        }
+
+        function getStatusFromCount(count) {
+            if (count > 100) return 'Très actif';
+            if (count > 20) return 'Actif';
+            if (count > 5) return 'Modéré';
+            return 'Faible';
+        }
+    </script>
+</body>
+</html> 

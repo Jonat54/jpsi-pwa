@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paramètres - JPSI</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      color: #23272b;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #fff 80%, #f3f4f6 100%);
+      border: 2.5px solid #d1d5db;
+      border-radius: 22px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.18), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #9B2423;
+    }
+
+    .header p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .settings-section {
+      background: linear-gradient(135deg, #fff 80%, #f3f4f6 100%);
+      border: 2.5px solid #d1d5db;
+      border-radius: 22px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.18), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .settings-section h2 {
+      margin: 0 0 1.5rem 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+
+    .setting-info {
+      flex: 1;
+    }
+
+    .setting-label {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.25rem;
+    }
+
+    .setting-description {
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+
+    .setting-control {
+      margin-left: 1rem;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 28px;
+      background: #d1d5db;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch.active {
+      background: #9B2423;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 24px;
+      height: 24px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch.active::after {
+      transform: translateX(22px);
+    }
+
+    /* Boutons */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: #9B2423;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #7c1d1c;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 2px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    /* Status indicators */
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .status-online {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .status-offline {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .status-syncing {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+
+    /* Back button */
+    .back-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.9);
+      border: 2px solid #d1d5db;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .back-button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+
+    .back-button::before {
+      content: '←';
+      font-size: 1.5rem;
+      color: #374151;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+      
+      .header, .settings-section {
+        padding: 1.5rem;
+        border-radius: 16px;
+      }
+      
+      .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      
+      .setting-control {
+        margin-left: 0;
+        align-self: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="back-button" onclick="App.goBack()" title="Retour"></button>
+
+  <div class="container">
+    <div class="header">
+      <h1>⚙️ Paramètres</h1>
+      <p>Configuration de l'application JPSI</p>
+    </div>
+
+    <!-- État de la connexion -->
+    <div class="settings-section">
+      <h2>🔗 Connexion</h2>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Statut de la connexion</div>
+          <div class="setting-description">État de la connexion à Supabase</div>
+        </div>
+        <div class="setting-control">
+          <span id="connectionStatus" class="status-indicator status-offline">Hors ligne</span>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Dernière synchronisation</div>
+          <div class="setting-description">Date de la dernière synchronisation des données</div>
+        </div>
+        <div class="setting-control">
+          <span id="lastSync" class="status-indicator status-offline">Jamais</span>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Synchronisation manuelle</div>
+          <div class="setting-description">Forcer la synchronisation des données</div>
+        </div>
+        <div class="setting-control">
+          <button id="syncButton" class="btn btn-primary" onclick="forceSync()">
+            Synchroniser
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Préférences -->
+    <div class="settings-section">
+      <h2>🎨 Préférences</h2>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Mode sombre</div>
+          <div class="setting-description">Activer le thème sombre</div>
+        </div>
+        <div class="setting-control">
+          <div id="darkModeToggle" class="toggle-switch" onclick="toggleDarkMode()"></div>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Notifications</div>
+          <div class="setting-description">Recevoir des notifications push</div>
+        </div>
+        <div class="setting-control">
+          <div id="notificationsToggle" class="toggle-switch" onclick="toggleNotifications()"></div>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Vibration</div>
+          <div class="setting-description">Activer la vibration pour les notifications</div>
+        </div>
+        <div class="setting-control">
+          <div id="vibrationToggle" class="toggle-switch" onclick="toggleVibration()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Données -->
+    <div class="settings-section">
+      <h2>💾 Données</h2>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Cache local</div>
+          <div class="setting-description">Espace utilisé par l'application</div>
+        </div>
+        <div class="setting-control">
+          <span id="cacheSize" class="status-indicator status-online">Calculer...</span>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Vider le cache</div>
+          <div class="setting-description">Supprimer toutes les données locales</div>
+        </div>
+        <div class="setting-control">
+          <button class="btn btn-secondary" onclick="clearCache()">
+            Vider
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Exporter les données</div>
+          <div class="setting-description">Télécharger une sauvegarde</div>
+        </div>
+        <div class="setting-control">
+          <button class="btn btn-secondary" onclick="exportData()">
+            Exporter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Application -->
+    <div class="settings-section">
+      <h2>📱 Application</h2>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Version</div>
+          <div class="setting-description">Version actuelle de l'application</div>
+        </div>
+        <div class="setting-control">
+          <span class="status-indicator status-online">v1.0.1</span>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Test PWA</div>
+          <div class="setting-description">Tester les fonctionnalités PWA</div>
+        </div>
+        <div class="setting-control">
+          <button class="btn btn-primary" onclick="testPWA()">
+            🧪 Tester PWA
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Ajouter à l'écran d'accueil</div>
+          <div class="setting-description">Installer l'application</div>
+        </div>
+        <div class="setting-control">
+          <button id="installButton" class="btn btn-primary" onclick="installApp()" style="display: none;">
+            Installer
+          </button>
+          <span id="installedStatus" class="status-indicator status-online" style="display: none;">
+            Installé
+          </span>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">À propos</div>
+          <div class="setting-description">Informations sur l'application</div>
+        </div>
+        <div class="setting-control">
+          <button class="btn btn-secondary" onclick="showAbout()">
+            Voir
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Tests et Diagnostic -->
+    <div class="settings-section">
+      <h2>🧪 Tests et Diagnostic</h2>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Diagnostic Général</div>
+          <div class="setting-description">Vérifier la compatibilité navigateur, Service Worker, Cache API et IndexedDB</div>
+        </div>
+        <div class="setting-control">
+          <button onclick="window.location.href='diagnostic.html'" style="
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 12px;
+          ">
+            🔍 Tester
+          </button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Test Mode Offline</div>
+          <div class="setting-description">Tester le Service Worker, le cache et la navigation hors ligne</div>
+        </div>
+        <div class="setting-control">
+          <button onclick="window.location.href='testOffline.html'" style="
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 12px;
+          ">
+            🌐 Tester
+          </button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Test IndexedDB</div>
+          <div class="setting-description">Tester le stockage local et la synchronisation des données</div>
+        </div>
+        <div class="setting-control">
+          <button onclick="window.location.href='testIndexedDB.html'" style="
+            background: #ffc107; 
+            color: #212529; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 12px;
+          ">
+            🗄️ Tester
+          </button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Test PWA</div>
+          <div class="setting-description">Tester les fonctionnalités PWA et l'installation</div>
+        </div>
+        <div class="setting-control">
+          <button onclick="testPWA()" style="
+            background: #6f42c1; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 12px;
+          ">
+            📱 Tester
+          </button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-label">Diagnostic iOS</div>
+          <div class="setting-description">Diagnostic spécifique pour iPhone/iPad et installation PWA</div>
+        </div>
+        <div class="setting-control">
+          <button onclick="window.location.href='diagnosticIOS.html'" style="
+            background: #fd7e14; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 12px;
+          ">
+            🍎 Tester
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Variables globales
+    let deferredPrompt;
+    let settings = {};
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🔧 Initialisation page paramètres...');
+      
+      // Charger les paramètres
+      await loadSettings();
+      
+      // Mettre à jour l'interface
+      updateInterface();
+      
+      // Écouter l'événement d'installation
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('installButton').style.display = 'block';
+      });
+      
+      // Vérifier si l'app est installée
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        document.getElementById('installedStatus').style.display = 'inline-flex';
+      }
+      
+      console.log('✅ Page paramètres initialisée');
+    });
+
+    // Charger les paramètres
+    async function loadSettings() {
+      try {
+        const stored = localStorage.getItem('jpsi_settings');
+        settings = stored ? JSON.parse(stored) : getDefaultSettings();
+        
+        // Mettre à jour les toggles
+        updateToggles();
+        
+        // Calculer la taille du cache
+        calculateCacheSize();
+        
+        // Mettre à jour le statut de connexion
+        updateConnectionStatus();
+        
+      } catch (error) {
+        console.error('Erreur chargement paramètres:', error);
+        settings = getDefaultSettings();
+      }
+    }
+
+    // Paramètres par défaut
+    function getDefaultSettings() {
+      return {
+        darkMode: false,
+        notifications: false,
+        vibration: false,
+        autoSync: true
+      };
+    }
+
+    // Sauvegarder les paramètres
+    async function saveSettings() {
+      try {
+        localStorage.setItem('jpsi_settings', JSON.stringify(settings));
+        JPSI.showMessage('Paramètres sauvegardés', 'success');
+      } catch (error) {
+        console.error('Erreur sauvegarde paramètres:', error);
+        JPSI.handleError(error, 'sauvegarde paramètres');
+      }
+    }
+
+    // Mettre à jour l'interface
+    function updateInterface() {
+      // Mettre à jour le statut de connexion
+      updateConnectionStatus();
+      
+      // Mettre à jour la dernière synchronisation
+      updateLastSync();
+    }
+
+    // Mettre à jour le statut de connexion
+    function updateConnectionStatus() {
+      const statusElement = document.getElementById('connectionStatus');
+      if (AppState.isOnline) {
+        statusElement.textContent = 'En ligne';
+        statusElement.className = 'status-indicator status-online';
+      } else {
+        statusElement.textContent = 'Hors ligne';
+        statusElement.className = 'status-indicator status-offline';
+      }
+    }
+
+    // Mettre à jour la dernière synchronisation
+    function updateLastSync() {
+      const lastSyncElement = document.getElementById('lastSync');
+      if (AppState.lastSync) {
+        const date = new Date(AppState.lastSync);
+        lastSyncElement.textContent = JPSI.formatDate(date, 'dd/MM/yyyy HH:mm');
+        lastSyncElement.className = 'status-indicator status-online';
+      } else {
+        lastSyncElement.textContent = 'Jamais';
+        lastSyncElement.className = 'status-indicator status-offline';
+      }
+    }
+
+    // Mettre à jour les toggles
+    function updateToggles() {
+      document.getElementById('darkModeToggle').classList.toggle('active', settings.darkMode);
+      document.getElementById('notificationsToggle').classList.toggle('active', settings.notifications);
+      document.getElementById('vibrationToggle').classList.toggle('active', settings.vibration);
+    }
+
+    // Toggle mode sombre
+    function toggleDarkMode() {
+      settings.darkMode = !settings.darkMode;
+      updateToggles();
+      saveSettings();
+      
+      // Appliquer le thème
+      if (settings.darkMode) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    }
+
+    // Toggle notifications
+    async function toggleNotifications() {
+      if (!settings.notifications) {
+        const permission = await App.requestPermissions();
+        if (permission !== 'granted') {
+          JPSI.showMessage('Permission refusée pour les notifications', 'error');
+          return;
+        }
+      }
+      
+      settings.notifications = !settings.notifications;
+      updateToggles();
+      saveSettings();
+    }
+
+    // Toggle vibration
+    function toggleVibration() {
+      settings.vibration = !settings.vibration;
+      updateToggles();
+      saveSettings();
+    }
+
+    // Synchronisation forcée
+    async function forceSync() {
+      const button = document.getElementById('syncButton');
+      button.textContent = 'Synchronisation...';
+      button.disabled = true;
+      
+      try {
+        await App.syncData();
+        updateLastSync();
+      } catch (error) {
+        JPSI.handleError(error, 'synchronisation');
+      } finally {
+        button.textContent = 'Synchroniser';
+        button.disabled = false;
+      }
+    }
+
+    // Calculer la taille du cache
+    async function calculateCacheSize() {
+      try {
+        if ('storage' in navigator && 'estimate' in navigator.storage) {
+          const estimate = await navigator.storage.estimate();
+          const used = estimate.usage || 0;
+          const total = estimate.quota || 0;
+          const percentage = total > 0 ? Math.round((used / total) * 100) : 0;
+          
+          const sizeElement = document.getElementById('cacheSize');
+          sizeElement.textContent = `${Math.round(used / 1024 / 1024)} MB (${percentage}%)`;
+        } else {
+          document.getElementById('cacheSize').textContent = 'Non disponible';
+        }
+      } catch (error) {
+        console.error('Erreur calcul cache:', error);
+        document.getElementById('cacheSize').textContent = 'Erreur';
+      }
+    }
+
+    // Vider le cache
+    async function clearCache() {
+      if (!confirm('Êtes-vous sûr de vouloir vider le cache ? Toutes les données locales seront supprimées.')) {
+        return;
+      }
+      
+      try {
+        // Vider localStorage
+        localStorage.clear();
+        
+        // Vider sessionStorage
+        sessionStorage.clear();
+        
+        // Vider IndexedDB si disponible
+        if ('indexedDB' in window) {
+          const databases = await window.indexedDB.databases();
+          databases.forEach(db => {
+            window.indexedDB.deleteDatabase(db.name);
+          });
+        }
+        
+        // Vider le cache du service worker
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+        }
+        
+        JPSI.showMessage('Cache vidé avec succès', 'success');
+        calculateCacheSize();
+        
+        // Recharger les paramètres par défaut
+        settings = getDefaultSettings();
+        updateToggles();
+        
+      } catch (error) {
+        console.error('Erreur vidage cache:', error);
+        JPSI.handleError(error, 'vidage cache');
+      }
+    }
+
+    // Exporter les données
+    async function exportData() {
+      try {
+        const data = {
+          settings: settings,
+          timestamp: new Date().toISOString(),
+          version: '1.0.1'
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jpsi-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        JPSI.showMessage('Données exportées', 'success');
+      } catch (error) {
+        console.error('Erreur export données:', error);
+        JPSI.handleError(error, 'export données');
+      }
+    }
+
+    // Installer l'application
+    async function installApp() {
+      if (!deferredPrompt) {
+        JPSI.showMessage('Installation non disponible', 'error');
+        return;
+      }
+      
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+          JPSI.showMessage('Application installée !', 'success');
+          document.getElementById('installButton').style.display = 'none';
+          document.getElementById('installedStatus').style.display = 'inline-flex';
+        }
+        
+        deferredPrompt = null;
+      } catch (error) {
+        console.error('Erreur installation:', error);
+        JPSI.handleError(error, 'installation');
+      }
+    }
+
+    // Afficher les informations
+    function showAbout() {
+      const aboutText = `
+JPSI - Gestion Sécurité Incendie
+Version: 1.0.1
+
+Une application PWA moderne pour la gestion de la sécurité incendie.
+
+Fonctionnalités :
+• Gestion des clients et sites
+• Suivi des équipements (extincteurs, éclairages, alarmes)
+• Vérifications et audits
+• Mode hors ligne
+• Synchronisation automatique
+
+Développé avec ❤️ pour la sécurité incendie
+      `;
+      
+      alert(aboutText);
+    }
+
+    // Tester les fonctionnalités PWA
+    function testPWA() {
+      window.location.href = 'test-pwa.html';
+    }
+
+    // Mettre à jour le statut toutes les 5 secondes
+    setInterval(() => {
+      updateConnectionStatus();
+    }, 5000);
+  </script>
+</body>
+</html> 

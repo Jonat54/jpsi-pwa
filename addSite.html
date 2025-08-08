@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Ajouter un Site</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .client-info {
+      font-size: 1.1rem;
+      color: #6b7280;
+      font-weight: 500;
+      margin-left: auto;
+    }
+    
+    .form-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .form-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    
+    .form-section h3 {
+      color: #9B2423;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .form-textarea {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    
+    .form-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .erp-container {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .erp-group {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .erp-group .form-label {
+      font-size: 0.9rem;
+      color: #6b7280;
+      margin-bottom: 0.3rem;
+    }
+    
+    .erp-group .form-input {
+      font-size: 0.9rem;
+      padding: 0.7rem;
+    }
+    
+    .responsable-container {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-end;
+    }
+    
+    .responsable-input {
+      flex: 1;
+    }
+    
+    .recall-button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      height: fit-content;
+    }
+    
+    .recall-button:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+    
+    .contact-row {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .contact-row .form-group {
+      flex: 1;
+    }
+    
+    .actions-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .action-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .action-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-1px);
+    }
+    
+    .action-button.secondary {
+      background: #6b7280;
+    }
+    
+    .action-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    .save-button {
+      background: #10b981;
+      font-size: 1.1rem;
+      padding: 1.2rem 3rem;
+    }
+    
+    .save-button:hover {
+      background: #059669;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 3rem;
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+    
+    .site-row {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+    }
+    .site-row .form-group {
+      margin-bottom: 0;
+    }
+    .site-row .form-input#num_site {
+      width: auto;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .cp-ville-row {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+    }
+    .cp-ville-row .form-group {
+      margin-bottom: 0;
+      flex: 1;
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .form-card, .actions-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .actions-card {
+        flex-direction: column;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .client-info {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+      
+      .erp-container {
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+      
+      .erp-group {
+        min-width: 100%;
+      }
+      
+      .responsable-container {
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+      
+      .contact-row {
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <h1 class="header-title">Ajouter un Site</h1>
+      <div class="client-info" id="clientInfo">Chargement...</div>
+    </div>
+    
+    <!-- Form Card -->
+    <div class="form-card">
+      <div id="formContent">
+        <div class="loading">Chargement du formulaire...</div>
+      </div>
+    </div>
+    
+    <!-- Actions Card -->
+    <div class="actions-card">
+      <button class="action-button save-button" onclick="saveSite()">
+        💾 Enregistrer
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentClient = null;
+    
+    // Fonction pour récupérer le code client depuis l'URL
+    function getClientCodeFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('client');
+      
+      if (!code) {
+        console.error('❌ Aucun code client fourni dans l\'URL');
+        return null;
+      }
+      
+      console.log(`🔍 Code client récupéré: ${code}`);
+      return decodeURIComponent(code);
+    }
+    
+    // Fonction pour charger les informations du client
+    async function loadClientInfo(codeClient) {
+      try {
+        console.log(`📥 Chargement des informations pour le client: ${codeClient}`);
+        
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('code_client', codeClient)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du client:', error);
+          showError('Erreur lors du chargement du client');
+          return;
+        }
+        
+        if (!client) {
+          console.error('❌ Client non trouvé');
+          showError('Client non trouvé');
+          return;
+        }
+        
+        console.log('✅ Informations du client chargées:', client);
+        currentClient = client;
+        
+        // Mettre à jour l'interface
+        updateFormDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage du formulaire
+    async function updateFormDisplay() {
+      if (!currentClient) return;
+      
+      // Mettre à jour les informations du client dans le header
+      document.getElementById('clientInfo').textContent = `${currentClient.nom_client} (${currentClient.code_client})`;
+      
+      // Créer le formulaire
+      const formContainer = document.getElementById('formContent');
+      
+      formContainer.innerHTML = `
+        <div class="form-section">
+          <h3>Informations du Site</h3>
+          <div class="site-row">
+            <div class="form-group">
+              <label class="form-label">Numéro de site</label>
+              <input type="text" class="form-input" id="num_site" placeholder="N°">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">Nom du Site *</label>
+              <input type="text" class="form-input" id="nom_site" placeholder="Ex: Site principal, Entrepôt, Bureau..." required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Adresse du Site *</label>
+            <input type="text" class="form-input" id="adresse_site" placeholder="Adresse complète du site" required>
+          </div>
+          <div class="cp-ville-row">
+            <div class="form-group">
+              <label class="form-label">Code Postal</label>
+              <input type="text" class="form-input" id="code_postal" placeholder="Code postal" maxlength="5">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ville *</label>
+              <select class="form-input" id="ville_site" required>
+                <option value="">Sélectionner une ville...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-section">
+          <h3>Contact du Site</h3>
+          <div class="form-group">
+            <div class="responsable-container">
+              <div class="responsable-input">
+                <label class="form-label">Responsable du Site</label>
+                <input type="text" class="form-input" id="responsable_site" placeholder="Nom du responsable">
+              </div>
+              <button type="button" class="recall-button" onclick="recallClientResponsable()" title="Utiliser le responsable unique du client">
+                🔗 Unique
+              </button>
+            </div>
+          </div>
+          <div class="contact-row">
+            <div class="form-group">
+              <label class="form-label">Téléphone</label>
+              <input type="tel" class="form-input" id="telephone_site" placeholder="Téléphone du site">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="email_site" placeholder="Email du site">
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-section">
+          <h3>Informations Complémentaires</h3>
+          <div class="erp-container">
+            <div class="erp-group">
+              <label class="form-label">Famille ERP</label>
+              <select class="form-input" id="famille_site" onchange="toggleERPFields()">
+                <option value="">Sélectionner une famille</option>
+                <option value="ERT">ERT</option>
+                <option value="ERP">ERP</option>
+                <option value="Habitation">Habitation</option>
+                <option value="Privé">Privé</option>
+              </select>
+            </div>
+            
+            <div class="erp-group" id="type_erp_group" style="display: none;">
+              <label class="form-label">Type ERP</label>
+              <select class="form-input" id="typeerp_site" onchange="toggleCategorieERP()">
+                <option value="">Sélectionner un type</option>
+                <option value="J">J - Structures d'accueil pour personnes âgées et personnes handicapées</option>
+                <option value="L">L - Salles d'auditions, de conférences, de réunions, de spectacles ou polyvalentes</option>
+                <option value="M">M - Magasins de vente, centres commerciaux</option>
+                <option value="N">N - Restaurants et débits de boissons</option>
+                <option value="O">O - Hôtels et pensions de famille</option>
+                <option value="P">P - Salles de danses et salles de jeux</option>
+                <option value="R">R - Établissements d'éveil, d'enseignement, de formation, centres de vacances, centres de loisirs sans hébergement</option>
+                <option value="S">S - Bibliothèques, centres de documentation</option>
+                <option value="T">T - Salles d'expositions</option>
+                <option value="U">U - Établissements sanitaires</option>
+                <option value="V">V - Établissement de culte</option>
+                <option value="W">W - Administrations, banques, bureaux</option>
+                <option value="X">X - Établissements sportifs couverts</option>
+                <option value="Y">Y - Musées</option>
+                <option value="EF">EF - Établissements flottants</option>
+                <option value="GA">GA - Gares</option>
+                <option value="PA">PA - Établissements de plein air</option>
+                <option value="PS">PS - Parcs de stationnement couverts</option>
+                <option value="SG">SG - Structure gonflable</option>
+                <option value="CTS">CTS - Chapiteaux, tentes et structures</option>
+                <option value="OA">OA - Hôtels-restaurants d'altitude</option>
+                <option value="REF">REF - Refuges de montagne</option>
+              </select>
+            </div>
+            
+            <div class="erp-group" id="categorie_erp_group" style="display: none;">
+              <label class="form-label">Catégorie ERP</label>
+              <select class="form-input" id="caterp_site">
+                <option value="5" selected>5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-textarea" id="description_site" placeholder="Description du site, activités, remarques..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dernière date de passage de la commission de sécurité</label>
+            <input type="date" class="form-input" id="lastcomm_site">
+          </div>
+        </div>
+      `;
+      // Recherche du dernier numéro de site pour ce client
+      await suggestNextNumSite();
+    }
+    
+    // Fonction pour sauvegarder le nouveau site
+    async function saveSite() {
+      if (!currentClient) {
+        alert('⚠️ Impossible de sauvegarder : client non chargé');
+        return;
+      }
+      
+      // Validation des champs obligatoires
+      const nomSite = document.getElementById('nom_site').value.trim();
+      const adresseSite = document.getElementById('adresse_site').value.trim();
+      const villeSite = document.getElementById('ville_site').value.trim();
+      
+      if (!nomSite || !adresseSite || !villeSite) {
+        alert('⚠️ Veuillez remplir tous les champs obligatoires (marqués d\'un *)');
+        return;
+      }
+      
+      try {
+        console.log('💾 Sauvegarde du nouveau site...');
+        
+        // Récupérer les valeurs du formulaire
+        const siteData = {
+          id_client: currentClient.id_client,
+          nom_site: nomSite,
+          num_site: document.getElementById('num_site').value,
+          adr_site: adresseSite,
+          ville_site: villeSite,
+          cp_site: document.getElementById('code_postal').value.trim(),
+          telresp_site: document.getElementById('telephone_site').value.trim(),
+          mailresp_site: document.getElementById('email_site').value.trim(),
+          resp_site: document.getElementById('responsable_site').value.trim(),
+          famille_site: document.getElementById('famille_site').value,
+          typeerp_site: document.getElementById('typeerp_site').value,
+          caterp_site: document.getElementById('caterp_site').value ? parseInt(document.getElementById('caterp_site').value) : null,
+          lastcomm_site: document.getElementById('lastcomm_site').value || null
+        };
+        
+        // Insérer dans Supabase (table 'sites')
+        const { error } = await supabase
+          .from('sites')
+          .insert([siteData]);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          alert('❌ Erreur lors de la sauvegarde du site');
+          return;
+        }
+        
+        console.log('✅ Site ajouté avec succès');
+        alert('✅ Site ajouté avec succès');
+        
+        // Rediriger vers la page de détail du client
+        window.location.href = `client.html?code=${encodeURIComponent(currentClient.code_client)}`;
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('❌ Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour gérer l'affichage des champs ERP
+    function toggleERPFields() {
+      const familleERP = document.getElementById('famille_site').value;
+      const typeERPGroup = document.getElementById('type_erp_group');
+      const categorieERPGroup = document.getElementById('categorie_erp_group');
+      
+      if (familleERP === 'ERP') {
+        typeERPGroup.style.display = 'block';
+        // Réinitialiser la sélection du type ERP
+        document.getElementById('typeerp_site').value = '';
+        categorieERPGroup.style.display = 'none';
+      } else {
+        typeERPGroup.style.display = 'none';
+        categorieERPGroup.style.display = 'none';
+      }
+    }
+    
+    // Fonction pour gérer l'affichage de la catégorie ERP
+    function toggleCategorieERP() {
+      const typeERP = document.getElementById('typeerp_site').value;
+      const categorieERPGroup = document.getElementById('categorie_erp_group');
+      
+      if (typeERP && typeERP !== '') {
+        categorieERPGroup.style.display = 'block';
+      } else {
+        categorieERPGroup.style.display = 'none';
+      }
+    }
+    
+    // Fonction pour rappeler les données du responsable client
+    function recallClientResponsable() {
+      if (!currentClient) {
+        alert('⚠️ Impossible de rappeler les données : client non chargé');
+        return;
+      }
+      
+      console.log('📞 Rappel des données du responsable client:', currentClient);
+      
+      // Remplir les champs avec les données du client
+      document.getElementById('responsable_site').value = currentClient.resp_client || '';
+      document.getElementById('telephone_site').value = currentClient.telresp_client || '';
+      document.getElementById('email_site').value = currentClient.mailresp_client || '';
+      
+      console.log('✅ Données du responsable client rappelées');
+    }
+    
+    // Fonction pour suggérer le prochain numéro de site
+    async function suggestNextNumSite() {
+      if (!currentClient) return;
+      const { data, error } = await supabase
+        .from('sites')
+        .select('num_site')
+        .eq('id_client', currentClient.id_client)
+        .order('num_site', { ascending: true });
+      if (!error && data && data.length > 0) {
+        // On prend le dernier numéro de la liste (ordre croissant)
+        const lastNumRaw = data[data.length - 1].num_site;
+        if (typeof lastNumRaw === 'string' && lastNumRaw.length > 0) {
+          // Cas 1 : Numéro purement numérique (avec ou sans padding)
+          if (/^\d+$/.test(lastNumRaw)) {
+            const padding = lastNumRaw.length;
+            const nextNum = (parseInt(lastNumRaw, 10) + 1).toString().padStart(padding, '0');
+            document.getElementById('num_site').value = nextNum;
+            return;
+          }
+          // Cas 2 : Format alphanumérique avec séparateur (ex : A-01, B-12)
+          const match = lastNumRaw.match(/^(.*?)(\d+)$/);
+          if (match) {
+            const prefix = match[1];
+            const numPart = match[2];
+            const nextNum = (parseInt(numPart, 10) + 1).toString().padStart(numPart.length, '0');
+            document.getElementById('num_site').value = prefix + nextNum;
+            return;
+          }
+          // Cas 3 : Format inconnu, proposer vide
+          document.getElementById('num_site').value = '';
+        } else {
+          document.getElementById('num_site').value = '1';
+        }
+      } else {
+        document.getElementById('num_site').value = '1';
+      }
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      if (currentClient) {
+        window.location.href = `client.html?code=${encodeURIComponent(currentClient.code_client)}`;
+      } else {
+        window.location.href = 'ListClients.html';
+      }
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('formContent').innerHTML = `
+        <div class="error">${message}</div>
+      `;
+    }
+    
+    // Fonction pour afficher un message de statut
+    function showStatus(message, type = 'info') {
+      // Créer un élément de statut temporaire
+      const statusDiv = document.createElement('div');
+      statusDiv.className = `status-message status-${type}`;
+      statusDiv.textContent = message;
+      statusDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        z-index: 1000;
+        max-width: 300px;
+        word-wrap: break-word;
+      `;
+      
+      // Appliquer les couleurs selon le type
+      switch (type) {
+        case 'success':
+          statusDiv.style.background = '#d1fae5';
+          statusDiv.style.color = '#065f46';
+          statusDiv.style.border = '2px solid #a7f3d0';
+          break;
+        case 'error':
+          statusDiv.style.background = '#fee2e2';
+          statusDiv.style.color = '#dc2626';
+          statusDiv.style.border = '2px solid #fecaca';
+          break;
+        case 'warning':
+          statusDiv.style.background = '#fef3c7';
+          statusDiv.style.color = '#d97706';
+          statusDiv.style.border = '2px solid #fed7aa';
+          break;
+        default:
+          statusDiv.style.background = '#dbeafe';
+          statusDiv.style.color = '#1e40af';
+          statusDiv.style.border = '2px solid #bfdbfe';
+      }
+      
+      // Ajouter au DOM
+      document.body.appendChild(statusDiv);
+      
+      // Masquer après 3 secondes
+      setTimeout(() => {
+        if (statusDiv.parentNode) {
+          statusDiv.parentNode.removeChild(statusDiv);
+        }
+      }, 3000);
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Ajouter un Site...');
+      
+      // Récupérer le code client depuis l'URL
+      const codeClient = getClientCodeFromURL();
+      
+      if (!codeClient) {
+        showError('Code client manquant dans l\'URL');
+        return;
+      }
+      
+      // Charger les informations du client
+      await loadClientInfo(codeClient);
+      // Ajout de l'autocomplétion ville par code postal
+      const cpInput = document.getElementById('code_postal');
+      const villeInput = document.getElementById('ville_site');
+      
+      if (cpInput && villeInput) {
+        cpInput.addEventListener('input', async () => {
+          const cp = cpInput.value.trim();
+          
+          // Réinitialiser la liste déroulante
+          villeInput.innerHTML = '<option value="">Sélectionner une ville...</option>';
+          
+          if (cp.length === 5 && /^[0-9]{5}$/.test(cp)) {
+            try {
+              console.log(`🔍 Recherche des villes pour le code postal: ${cp}`);
+              const response = await fetch(`https://geo.api.gouv.fr/communes?codePostal=${cp}&fields=nom&format=json`);
+              
+              if (response.ok) {
+                const villes = await response.json();
+                console.log(`✅ ${villes.length} ville(s) trouvée(s) pour le code postal ${cp}:`, villes);
+                
+                if (villes.length === 0) {
+                  // Aucune ville trouvée
+                  console.log(`❌ Aucune ville trouvée pour le code postal ${cp}`);
+                  showStatus(`Aucune ville trouvée pour le code postal ${cp}`, 'warning');
+                } else {
+                  // Ajouter toutes les villes à la liste déroulante
+                  villes.forEach(ville => {
+                    const option = document.createElement('option');
+                    option.value = ville.nom;
+                    option.textContent = ville.nom;
+                    villeInput.appendChild(option);
+                  });
+                  
+                  // Sélectionner automatiquement si une seule ville
+                  if (villes.length === 1) {
+                    villeInput.value = villes[0].nom;
+                    console.log(`✅ Ville automatiquement sélectionnée: ${villes[0].nom}`);
+                    showStatus(`Ville trouvée: ${villes[0].nom}`, 'success');
+                  } else {
+                    console.log(`✅ ${villes.length} villes disponibles pour sélection`);
+                    showStatus(`${villes.length} villes trouvées pour ${cp}. Veuillez sélectionner.`, 'info');
+                  }
+                }
+              } else {
+                console.warn('❌ Erreur lors de la récupération des villes');
+                showStatus('Erreur lors de la recherche des villes', 'error');
+              }
+            } catch (error) {
+              console.error('❌ Erreur lors de la recherche des villes:', error);
+              showStatus('Erreur de connexion lors de la recherche des villes', 'error');
+            }
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html> 

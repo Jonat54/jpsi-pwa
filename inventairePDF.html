@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventaire PDF - JPSI</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+            font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .header-card {
+            background: #f6f7f9;
+            border: 3.5px solid #9B2423;
+            border-radius: 38px;
+            box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .back-button {
+            background: #9B2423;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            background: #7a1d1c;
+        }
+
+        .header-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #23272b;
+            margin: 0;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        .site-selector-card {
+            background: #f6f7f9;
+            border: 3.5px solid #9B2423;
+            border-radius: 38px;
+            box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+            padding: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #23272b;
+            margin-bottom: 1.5rem;
+        }
+
+        .select-group {
+            display: flex;
+            gap: 1.5rem;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .select-wrapper {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            background: white;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #9B2423;
+        }
+
+        .form-select:disabled {
+            background: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .generate-btn {
+            background: #9B2423;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .generate-btn:hover {
+            background: #7a1d1c;
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #9ca3af;
+        }
+
+        .preview-card {
+            background: #f6f7f9;
+            border: 3.5px solid #9B2423;
+            border-radius: 38px;
+            box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+            padding: 2rem;
+        }
+
+        .site-info-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .site-info-title {
+            color: #9B2423;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .info-value {
+            color: #23272b;
+            font-size: 1rem;
+        }
+
+        .equipment-summary-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .equipment-summary-title {
+            color: #9B2423;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .equipment-item {
+            background: #f7fafc;
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .equipment-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .equipment-count {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #9B2423;
+            margin-bottom: 0.25rem;
+        }
+
+        .equipment-label {
+            font-size: 0.9rem;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .partial-inventory-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .partial-inventory-title {
+            color: #9B2423;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .partial-description {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .partial-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .partial-btn {
+            background: #8B5CF6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .partial-btn:hover {
+            background: #7c3aed;
+        }
+
+        .partial-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #9ca3af;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #9B2423;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            border: 1px solid #feb2b2;
+            display: none;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            border: 1px solid #9ae6b4;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .select-group {
+                flex-direction: column;
+            }
+            
+            .select-wrapper {
+                min-width: 100%;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .equipment-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .partial-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-card">
+            <a href="accueil.html" class="back-button">
+                ←
+            </a>
+            <div>
+                <h1 class="header-title">📋 Inventaire PDF</h1>
+                <p class="header-subtitle">Générer un inventaire complet des équipements pour un site</p>
+            </div>
+        </div>
+
+        <div class="site-selector-card">
+            <h2 class="card-title">🎯 Sélection du site</h2>
+            <div class="select-group">
+                <div class="select-wrapper">
+                    <label for="clientSelect" class="form-label">Client</label>
+                    <select id="clientSelect" class="form-select" onchange="loadSites()">
+                        <option value="">Sélectionnez un client...</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <label for="siteSelect" class="form-label">Site</label>
+                    <select id="siteSelect" class="form-select" onchange="loadSiteDetails()" disabled>
+                        <option value="">Sélectionnez d'abord un client...</option>
+                    </select>
+                </div>
+                <button id="generateBtn" class="generate-btn" onclick="generateInventoryPDF()" disabled>
+                    🖨️ Générer l'inventaire PDF
+                </button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Chargement des données...</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="preview-card" id="previewSection" style="display: none;">
+            <h2 class="card-title">📊 Aperçu de l'inventaire</h2>
+            
+            <div class="site-info-card" id="siteInfo">
+                <h3 class="site-info-title">🏢 Informations du site</h3>
+                <div class="info-grid" id="siteInfoGrid">
+                    <!-- Rempli dynamiquement -->
+                </div>
+            </div>
+
+            <div class="equipment-summary-card" id="equipmentSummary">
+                <h3 class="equipment-summary-title">🔧 Équipements enregistrés</h3>
+                <div class="equipment-grid" id="equipmentGrid">
+                    <!-- Rempli dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Options d'inventaires partiels -->
+            <div class="partial-inventory-card" id="partialInventory" style="display: none;">
+                <h3 class="partial-inventory-title">📋 Inventaires partiels</h3>
+                <p class="partial-description">Générer un inventaire pour un type d'équipement spécifique :</p>
+                
+                <div class="partial-buttons">
+                    <button class="partial-btn" id="extincteursBtn" onclick="generatePartialPDF('extincteurs')" disabled>
+                        🧯 Inventaire Extincteurs
+                    </button>
+                    <button class="partial-btn" id="eclairagesBtn" onclick="generatePartialPDF('eclairages')" disabled>
+                        💡 Inventaire Éclairages
+                    </button>
+                    <button class="partial-btn" id="alarmesBtn" onclick="generatePartialPDF('alarmes')" disabled>
+                        🚨 Inventaire Alarmes
+                    </button>
+                    <button class="partial-btn" id="desenfumagesBtn" onclick="generatePartialPDF('desenfumages')" disabled>
+                        💨 Inventaire Désenfumages
+                    </button>
+                    <button class="partial-btn" id="peripheriquesBtn" onclick="generatePartialPDF('peripheriques')" disabled>
+                        🔌 Inventaire Périphériques
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Configuration Supabase
+        const supabase = window.supabaseClient || window.supabase.createClient(
+            'https://anyzqzhjvankvbbajahj.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU'
+        );
+
+        // Variables globales
+        let clients = [];
+        let sites = [];
+        let currentSite = null;
+        let currentClient = null;
+        let equipmentData = {
+            extincteurs: [],
+            eclairages: [],
+            alarmes: [],
+            desenfumages: [],
+            peripheriques: [],
+            agentMap: {}
+        };
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            loadClients();
+        });
+
+        // Charger les clients
+        async function loadClients() {
+            try {
+                showLoading(true);
+                
+                const { data: clientsData, error } = await supabase
+                    .from('clients')
+                    .select('id_client, nom_client')
+                    .order('nom_client');
+
+                if (error) throw error;
+
+                clients = clientsData || [];
+                const clientSelect = document.getElementById('clientSelect');
+                
+                clientSelect.innerHTML = '<option value="">Sélectionnez un client...</option>';
+                clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.id_client;
+                    option.textContent = client.nom_client;
+                    clientSelect.appendChild(option);
+                });
+
+                showLoading(false);
+            } catch (error) {
+                console.error('Erreur lors du chargement des clients:', error);
+                showError('Erreur lors du chargement des clients');
+                showLoading(false);
+            }
+        }
+
+        // Charger les sites d'un client
+        async function loadSites() {
+            const clientId = document.getElementById('clientSelect').value;
+            const siteSelect = document.getElementById('siteSelect');
+            const generateBtn = document.getElementById('generateBtn');
+
+            if (!clientId) {
+                siteSelect.innerHTML = '<option value="">Sélectionnez d\'abord un client...</option>';
+                siteSelect.disabled = true;
+                generateBtn.disabled = true;
+                hidePreview();
+                return;
+            }
+
+            try {
+                showLoading(true);
+                
+                const { data: sitesData, error } = await supabase
+                    .from('sites')
+                    .select('id_site, num_site, nom_site, adr_site, cp_site, ville_site')
+                    .eq('id_client', clientId)
+                    .order('nom_site');
+
+                if (error) throw error;
+
+                sites = sitesData || [];
+                siteSelect.innerHTML = '<option value="">Sélectionnez un site...</option>';
+                
+                sites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site.id_site;
+                    option.textContent = `${site.num_site} - ${site.nom_site}`;
+                    siteSelect.appendChild(option);
+                });
+
+                siteSelect.disabled = false;
+                generateBtn.disabled = true;
+                hidePreview();
+                showLoading(false);
+            } catch (error) {
+                console.error('Erreur lors du chargement des sites:', error);
+                showError('Erreur lors du chargement des sites');
+                showLoading(false);
+            }
+        }
+
+        // Charger les détails du site
+        async function loadSiteDetails() {
+            const siteId = document.getElementById('siteSelect').value;
+            const generateBtn = document.getElementById('generateBtn');
+
+            if (!siteId) {
+                generateBtn.disabled = true;
+                hidePreview();
+                return;
+            }
+
+            try {
+                showLoading(true);
+                
+                // Récupérer les informations du site et client
+                const { data: site, error: siteError } = await supabase
+                    .from('sites')
+                    .select('*, clients(*)')
+                    .eq('id_site', siteId)
+                    .single();
+
+                if (siteError) throw siteError;
+
+                currentSite = site;
+                currentClient = site.clients;
+
+                // Charger tous les équipements
+                const [eclairages, extincteurs, agents, alarmes, desenfumages, peripheriques] = await Promise.all([
+                    supabase.from('eclairages').select('*').eq('id_site', siteId),
+                    supabase.from('extincteurs').select('*').eq('id_site', siteId),
+                    supabase.from('AgentExtincteur').select('*'),
+                    supabase.from('alarmes').select('*').eq('id_site', siteId),
+                    supabase.from('desenfumages').select('*').eq('id_site', siteId),
+                    supabase.from('peripheriques').select('*').eq('id_site', siteId)
+                ]);
+
+                // Créer le mapping des agents
+                const agentMap = {};
+                if (agents.data) {
+                    agents.data.forEach(a => { agentMap[a.id_agt] = a.long_agt; });
+                }
+
+                // Stocker les données
+                equipmentData = {
+                    eclairages: eclairages.data || [],
+                    extincteurs: extincteurs.data || [],
+                    alarmes: alarmes.data || [],
+                    desenfumages: desenfumages.data || [],
+                    peripheriques: peripheriques.data || [],
+                    agentMap: agentMap
+                };
+
+                // Afficher l'aperçu
+                displayPreview();
+                generateBtn.disabled = false;
+                showLoading(false);
+            } catch (error) {
+                console.error('Erreur lors du chargement des détails:', error);
+                showError('Erreur lors du chargement des détails du site');
+                showLoading(false);
+            }
+        }
+
+        // Afficher l'aperçu
+        function displayPreview() {
+            const previewSection = document.getElementById('previewSection');
+            const siteInfoGrid = document.getElementById('siteInfoGrid');
+            const equipmentGrid = document.getElementById('equipmentGrid');
+            const partialInventory = document.getElementById('partialInventory');
+
+            // Informations du site
+            siteInfoGrid.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Client</span>
+                    <span class="info-value">${currentClient.nom_client}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Site</span>
+                    <span class="info-value">${currentSite.num_site} - ${currentSite.nom_site}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Adresse</span>
+                    <span class="info-value">${currentSite.adr_site}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Ville</span>
+                    <span class="info-value">${currentSite.cp_site} ${currentSite.ville_site}</span>
+                </div>
+            `;
+
+            // Résumé des équipements
+            const totalExtincteurs = equipmentData.extincteurs.length;
+            const totalEclairages = equipmentData.eclairages.length;
+            const totalAlarmes = equipmentData.alarmes.length;
+            const totalDesenfumages = equipmentData.desenfumages.length;
+            const totalPeripheriques = equipmentData.peripheriques.length;
+
+            equipmentGrid.innerHTML = `
+                <div class="equipment-item">
+                    <div class="equipment-icon">🧯</div>
+                    <div class="equipment-count">${totalExtincteurs}</div>
+                    <div class="equipment-label">Extincteurs</div>
+                </div>
+                <div class="equipment-item">
+                    <div class="equipment-icon">💡</div>
+                    <div class="equipment-count">${totalEclairages}</div>
+                    <div class="equipment-label">Éclairages</div>
+                </div>
+                <div class="equipment-item">
+                    <div class="equipment-icon">🚨</div>
+                    <div class="equipment-count">${totalAlarmes}</div>
+                    <div class="equipment-label">Alarmes</div>
+                </div>
+                <div class="equipment-item">
+                    <div class="equipment-icon">💨</div>
+                    <div class="equipment-count">${totalDesenfumages}</div>
+                    <div class="equipment-label">Désenfumages</div>
+                </div>
+                <div class="equipment-item">
+                    <div class="equipment-icon">🔌</div>
+                    <div class="equipment-count">${totalPeripheriques}</div>
+                    <div class="equipment-label">Périphériques</div>
+                </div>
+            `;
+
+            // Activer les boutons d'inventaires partiels selon les équipements disponibles
+            const extincteursBtn = document.getElementById('extincteursBtn');
+            const eclairagesBtn = document.getElementById('eclairagesBtn');
+            const alarmesBtn = document.getElementById('alarmesBtn');
+            const desenfumagesBtn = document.getElementById('desenfumagesBtn');
+            const peripheriquesBtn = document.getElementById('peripheriquesBtn');
+
+            extincteursBtn.disabled = totalExtincteurs === 0;
+            eclairagesBtn.disabled = totalEclairages === 0;
+            alarmesBtn.disabled = totalAlarmes === 0;
+            desenfumagesBtn.disabled = totalDesenfumages === 0;
+            peripheriquesBtn.disabled = totalPeripheriques === 0;
+
+            previewSection.style.display = 'block';
+            partialInventory.style.display = 'block';
+        }
+
+        // Générer le PDF d'inventaire
+        async function generateInventoryPDF() {
+            if (!currentSite || !currentClient) {
+                showError('Aucun site sélectionné');
+                return;
+            }
+
+            try {
+                showLoading(true);
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Couleurs JPSI
+                const jpsiRed = [155, 36, 35];
+                const jpsiDark = [29, 29, 31];
+
+                // En-tête avec logo en haut à gauche et marges de 10mm
+                let y = 10; // Marge de 10mm
+                
+                // Dessiner la grille de 5mm x 5mm
+                drawGrid(doc);
+                
+                // Ajouter l'image de pages en arrière-plan
+                // await addPagesBackground(doc);
+                
+                // Logo en haut à gauche (si disponible)
+                try {
+                    const logoImg = new Image();
+                    logoImg.src = 'img/logo.png';
+                    await new Promise((resolve, reject) => {
+                        logoImg.onload = resolve;
+                        logoImg.onerror = reject;
+                    });
+                    
+                    // Logo en haut à gauche
+                    doc.addImage(logoImg, 'PNG', 10, y, 60, 30);
+                } catch (error) {
+                    console.log('Logo non trouvé, utilisation du texte');
+                    doc.setFillColor(...jpsiRed);
+                    doc.rect(10, y, 60, 30, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('JPSI', 40, y + 20, { align: 'center' });
+                }
+
+                // Icône officielle en haut à droite (si disponible)
+                try {
+                    const icobmImg = new Image();
+                    icobmImg.src = 'img/logo.png';
+                    await new Promise((resolve, reject) => {
+                        icobmImg.onload = resolve;
+                        icobmImg.onerror = reject;
+                    });
+                    
+                    // Icône officielle en haut à droite
+                    doc.addImage(icobmImg, 'PNG', 350, y, 30, 30);
+                } catch (error) {
+                    console.log('Icône officielle logo.png non trouvée');
+                }
+
+                // Vignette JPSI à droite du logo (alignée sur la grille 5mm)
+                const jpsiVignetteX = 72; // 15 * 5mm - 3mm (décalé vers la gauche)
+                const jpsiVignetteY = y + 2.5; // Descendu de 2.5mm
+                const jpsiVignetteWidth = 60; // Réduit à 60mm
+                const jpsiVignetteHeight = 25; // Réduit à 25mm
+
+                // Bordure fine noire de la vignette JPSI (transparente)
+                // (bordure supprimée selon demande)
+                // doc.setDrawColor(0, 0, 0);
+                // doc.setLineWidth(0.5);
+                // doc.rect(jpsiVignetteX, jpsiVignetteY, jpsiVignetteWidth, jpsiVignetteHeight);
+                
+                // Contenu de la vignette JPSI (centré et interlignes réduites à 4mm)
+                doc.setFontSize(16); // Augmenté de +1 (test)
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(...jpsiDark);
+                doc.text('J.P. Sécurité Incendie', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 6, { align: 'center' });
+                
+                doc.setFontSize(10); // Augmenté de +1 (test)
+                doc.setFont('helvetica', 'normal');
+                doc.text('17 rue du Lieutenant Clerc', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 10, { align: 'center' });
+                doc.text('54112 - ALLAMPS', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 14, { align: 'center' });
+                doc.text('06 77 84 50 82', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 18, { align: 'center' });
+                doc.text('contact@jpsincendie.com', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 22, { align: 'center' });
+
+                // Vignettes CLIENT et SITE côte à côte (alignées sur la grille 5mm)
+                const vignetteWidth = 65; // 65mm
+                const vignetteHeight = 30; // 30mm
+                const siteVignetteX = 297 - 10 - vignetteWidth; // 222mm
+                const clientVignetteX = siteVignetteX - vignetteWidth; // 157mm
+                const clientVignetteY = y;
+                const siteVignetteY = y;
+
+                // Vignette CLIENT (à gauche)
+                doc.setFillColor(245, 245, 245);
+                doc.rect(clientVignetteX, clientVignetteY, vignetteWidth, vignetteHeight, 'F');
+                // Bordure très fine noire (même que les tableaux)
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+                doc.rect(clientVignetteX, clientVignetteY, vignetteWidth, vignetteHeight);
+                // Titre CLIENT en Calibri 16 gras
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text('CLIENT', clientVignetteX + vignetteWidth/2, clientVignetteY + 6, { align: 'center' });
+                // Séparateur CLIENT descendu de 1mm
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+                doc.line(clientVignetteX + 5, clientVignetteY + 8, clientVignetteX + vignetteWidth - 5, clientVignetteY + 8);
+                // Contenu de la vignette client, interligne 4mm (remonté de 3mm)
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(...jpsiDark);
+                let yContent = clientVignetteY + 12;
+                doc.text(`${currentClient.code_client || ''}`, clientVignetteX + 5, yContent);
+                yContent += 4;
+                doc.text(`${currentClient.nom_client || 'N/A'}`, clientVignetteX + 5, yContent);
+                yContent += 4;
+                doc.text(currentClient.adr_client || 'N/A', clientVignetteX + 5, yContent);
+                yContent += 4;
+                doc.text(`${currentClient.cp_client || ''} ${currentClient.ville_client || ''}`, clientVignetteX + 5, yContent);
+
+                // Vignette SITE (à droite)
+                doc.setFillColor(245, 245, 245);
+                doc.rect(siteVignetteX, siteVignetteY, vignetteWidth, vignetteHeight, 'F');
+                // Bordure très fine noire (même que les tableaux)
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+                doc.rect(siteVignetteX, siteVignetteY, vignetteWidth, vignetteHeight);
+                // Titre SITE en Calibri 16 gras
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text('SITE', siteVignetteX + vignetteWidth/2, siteVignetteY + 6, { align: 'center' });
+                // Séparateur SITE descendu de 1mm
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+                doc.line(siteVignetteX + 5, siteVignetteY + 8, siteVignetteX + vignetteWidth - 5, siteVignetteY + 8);
+                // Contenu de la vignette site, interligne 4mm (remonté de 3mm)
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(...jpsiDark);
+                let yContentSite = siteVignetteY + 12;
+                doc.text(`${currentSite.num_site || ''}`, siteVignetteX + 5, yContentSite);
+                yContentSite += 4;
+                doc.text(`${currentSite.nom_site || 'N/A'}`, siteVignetteX + 5, yContentSite);
+                yContentSite += 4;
+                doc.text(currentSite.adr_site || 'N/A', siteVignetteX + 5, yContentSite);
+                yContentSite += 4;
+                doc.text(`${currentSite.cp_site} ${currentSite.ville_site}`, siteVignetteX + 5, yContentSite);
+
+                // Position pour le contenu suivant
+                y = 50; // 10mm en dessous du logo
+                let tableY = 50; // Titre imposé à Y=50
+
+                // Détail par type d'équipement (inventaire complet)
+                const totalExtincteurs = equipmentData.extincteurs.length;
+                const totalEclairages = equipmentData.eclairages.length;
+                const totalAlarmes = equipmentData.alarmes.length;
+                const totalDesenfumages = equipmentData.desenfumages.length;
+                const totalPeripheriques = equipmentData.peripheriques.length;
+
+                if (totalExtincteurs > 0) {
+                    tableY = addEquipmentSection(doc, 'EXTINCTEURS', equipmentData.extincteurs, tableY, 'extincteurs');
+                }
+
+                if (totalEclairages > 0) {
+                    tableY = addEquipmentSection(doc, 'ÉCLAIRAGES DE SÉCURITÉ', equipmentData.eclairages, tableY, 'eclairages');
+                }
+
+                if (totalAlarmes > 0) {
+                    tableY = addEquipmentSection(doc, 'ALARMES', equipmentData.alarmes, tableY, 'alarmes');
+                }
+
+                if (totalDesenfumages > 0) {
+                    tableY = addEquipmentSection(doc, 'DÉSENFUMAGES', equipmentData.desenfumages, tableY, 'desenfumages');
+                }
+
+                if (totalPeripheriques > 0) {
+                    tableY = addEquipmentSection(doc, 'PÉRIPHÉRIQUES', equipmentData.peripheriques, tableY, 'peripheriques');
+                }
+
+                // Pied de page (format paysage avec marges de 10mm)
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                // Date de génération supprimée selon demande utilisateur
+                const today = new Date();
+                // doc.text(`Généré le ${today.toLocaleDateString('fr-FR')} à ${today.toLocaleTimeString('fr-FR')}`, 10, 190);
+
+                // Sauvegarder le PDF
+                const fileName = `Inventaire - ${currentClient.code_client} ${currentClient.nom_client} - ${currentSite.nom_site} - ${today.getFullYear()}.PDF`;
+                doc.save(fileName);
+
+                showSuccess('Inventaire PDF généré avec succès !');
+                showLoading(false);
+            } catch (error) {
+                console.error('Erreur lors de la génération du PDF:', error);
+                showError('Erreur lors de la génération du PDF');
+                showLoading(false);
+            }
+        }
+
+        // Fonction pour dessiner la grille de 5mm x 5mm (supprimée pour le calibrage final)
+        function drawGrid(doc) {
+            // Fonction vide - grille supprimée pour le calibrage final
+        }
+
+        // Ajouter une section d'équipements
+        function addEquipmentSection(doc, title, equipments, startY, type) {
+            let y = startY;
+            
+            // Couleurs JPSI (définies localement pour éviter les erreurs)
+            const jpsiRed = [155, 36, 35];
+            const jpsiDark = [29, 29, 31];
+            
+                            // Vérifier si on a besoin d'une nouvelle page (format paysage)
+                if (y > 200) {
+                    doc.addPage('landscape');
+                    y = 50; // Position de départ pour le titre (Y=50 imposé)
+                }
+
+            // Titre de la section avec le type d'équipement
+            const equipmentTypeNames = {
+                'extincteurs': 'EXTINCTEURS',
+                'eclairages': 'ÉCLAIRAGES DE SÉCURITÉ',
+                'alarmes': 'ALARMES',
+                'desenfumages': 'DÉSENFUMAGES',
+                'peripheriques': 'PÉRIPHÉRIQUES'
+            };
+            
+            const titreType = equipmentTypeNames[type] || title;
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 0, 0); // Noir uniquement
+            doc.text(`Inventaire des ${titreType.toLowerCase()}`, 15, y); // Utiliser la position calculée
+            y += 1.5; // 1,5mm en dessous du titre
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...jpsiDark);
+
+            // Créer un tableau avec les équipements
+            const tableData = [];
+            
+            equipments.forEach((equip, index) => {
+                let row = [];
+                
+                switch(type) {
+                    case 'extincteurs':
+                                       // Transformation des agents extincteurs selon les codes numériques
+               let agentName = '-';
+               const agentCode = equip.agent_ext;
+               if (agentCode == 5) {
+                   agentName = 'CO2';
+               } else if (agentCode == 4) {
+                   agentName = 'Poudre BC';
+               } else if (agentCode == 3) {
+                   agentName = 'Poudre ABC';
+               } else if (agentCode == 2) {
+                   agentName = 'Eau + additif';
+               } else if (agentCode == 1) {
+                   agentName = 'Eau';
+               }
+                        
+                                       // Année MES (utiliser le champ mes_ext)
+               let anneeMES = '-';
+               if (equip.mes_ext) {
+                   try {
+                       const mesDate = new Date(equip.mes_ext);
+                       if (!isNaN(mesDate.getTime())) {
+                           anneeMES = mesDate.getFullYear().toString();
+                       }
+                   } catch (e) {
+                       console.warn('Date MES invalide:', equip.mes_ext);
+                   }
+               }
+
+               // Année RCM (utiliser le champ rcm_ext)
+               let anneeRCM = '-';
+               if (equip.rcm_ext) {
+                   try {
+                       const rcmDate = new Date(equip.rcm_ext);
+                       if (!isNaN(rcmDate.getTime())) {
+                           anneeRCM = rcmDate.getFullYear().toString();
+                       }
+                   } catch (e) {
+                       console.warn('Date RCM invalide:', equip.rcm_ext);
+                   }
+               }
+
+               // Année MAA (utiliser le champ maa_ext)
+               let anneeMAA = '-';
+               if (equip.maa_ext) {
+                   try {
+                       const maaDate = new Date(equip.maa_ext);
+                       if (!isNaN(maaDate.getTime())) {
+                           anneeMAA = maaDate.getFullYear().toString();
+                       }
+                   } catch (e) {
+                       console.warn('Date MAA invalide:', equip.maa_ext);
+                   }
+               }
+
+               // Année EIE (utiliser le champ eie_ext)
+               let anneeEIE = '-';
+               if (equip.eie_ext) {
+                   try {
+                       const eieDate = new Date(equip.eie_ext);
+                       if (!isNaN(eieDate.getTime())) {
+                           anneeEIE = eieDate.getFullYear().toString();
+                       }
+                   } catch (e) {
+                       console.warn('Date EIE invalide:', equip.eie_ext);
+                   }
+               }
+                        row = [
+                            equip.num_ext || `EXT${index + 1}`,
+                            equip.niv_ext || '-',
+                            equip.loc_ext || '-',
+                            agentName,
+                            equip.capa_ext || '-',
+                            equip.marque_ext || '-',
+                            equip.modele_ext || '-',
+                            anneeMES,
+                            anneeRCM,
+                            anneeMAA,
+                            anneeEIE,
+                            equip.obs_ext || '-'
+                        ];
+                        break;
+                    case 'eclairages':
+                        // Veilleuse et secours (puissance en veille et secours)
+                        const veilleuse = equip.ampveille_es || '-';
+                        const secours = equip.ampsecours_es || '-';
+                        // SATI : Oui ou Non
+                        const sati = equip.sati_ecl ? 'Oui' : 'Non';
+                        // Batterie : OK ou HS
+                        const batterie = equip.etat_batterie_ecl ? 'OK' : 'HS';
+                        row = [
+                            equip.num_ecl || `ECL${index + 1}`,
+                            equip.niv_ecl || '-',
+                            equip.loc_ecl || '-',
+                            equip.family_ecl || '-',
+                            equip.marque_ecl || '-',
+                            equip.modele_ecl || '-',
+                            veilleuse,
+                            secours,
+                            sati,
+                            batterie,
+                            equip.obs_ecl || '-'
+                        ];
+                        break;
+                    case 'alarmes':
+                        row = [
+                            equip.id_alarme || `ALM${index + 1}`,
+                            equip.type_alarme || '-',
+                            equip.marque_alarme || '-',
+                            equip.modele_alarme || '-',
+                            equip.notes_alarme || '-'
+                        ];
+                        break;
+                    case 'desenfumages':
+                        row = [
+                            equip.id_desenfumage || `DES${index + 1}`,
+                            equip.equipement_desenfumage || '-',
+                            equip.explication_installation || '-'
+                        ];
+                        break;
+                    case 'peripheriques':
+                        row = [
+                            equip.id_periph || `PER${index + 1}`,
+                            equip.type_periph || '-',
+                            equip.marque_periph || '-',
+                            equip.modele_periph || '-',
+                            equip.loc_periph || '-'
+                        ];
+                        break;
+                }
+                
+                tableData.push(row);
+            });
+
+            // Définir les en-têtes selon le type
+            let headers = [];
+            switch(type) {
+                case 'extincteurs':
+                    headers = ['Num.', 'Niv.', 'Emplacement', 'Agent', 'Cap.', 'Marque', 'Modèle', 'MES', 'RCM', 'MAA', 'EIE', 'Observation'];
+                    break;
+                case 'eclairages':
+                    headers = ['Num.', 'Niv.', 'Emplacement', 'Famille', 'Marque', 'Modèle', 'Veilleuse', 'Secours', 'SATI', 'Batterie', 'Observation'];
+                    break;
+                case 'alarmes':
+                    headers = ['ID', 'Type', 'Marque', 'Modèle', 'Notes'];
+                    break;
+                case 'desenfumages':
+                    headers = ['ID', 'Équipement', 'Installation'];
+                    break;
+                case 'peripheriques':
+                    headers = ['ID', 'Type', 'Marque', 'Modèle', 'Localisation'];
+                    break;
+            }
+
+            // Ajouter le tableau (format paysage avec marges de 10mm)
+            doc.autoTable({
+                head: [headers],
+                body: tableData,
+                startY: y,
+                margin: { left: 10, right: 10 },
+                repeatHeader: true, // Répéter l'en-tête sur les pages suivantes
+                didDrawPage: function(data) {
+                    // Numérotation des pages sur chaque page
+                    doc.setFontSize(8);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`page ${data.pageNumber}`, 280, 202, { align: 'right' });
+                },
+                styles: {
+                    fontSize: 7,
+                    cellPadding: 2
+                },
+                            headStyles: {
+                fontStyle: 'bold',
+                textColor: [0, 0, 0],
+                fillColor: false, // Pas de fond pour l'en-tête
+                lineWidth: 0.1, // Bordure très fine
+                halign: 'center' // Centrer tous les en-têtes
+            },
+                bodyStyles: {
+                    fillColor: false, // Pas de fond pour le corps du tableau
+                    lineWidth: 0.1 // Bordure très fine
+                },
+                alternateRowStyles: {
+                    fillColor: false // Pas d'alternance de couleurs
+                },
+                columnStyles: type === 'extincteurs' ? {
+                    // Largeurs spécifiques pour les extincteurs
+                    0: { cellWidth: 10, halign: 'center' }, // Num.
+                    1: { cellWidth: 8, halign: 'center' }, // Niv.
+                    2: { cellWidth: 60 }, // Emplacement
+                    3: { cellWidth: 18, halign: 'center' }, // Agent (réduit de 2mm)
+                    4: { cellWidth: 10, halign: 'center' }, // Cap.
+                    5: { cellWidth: 18 }, // Marque (réduit de 2mm)
+                    6: { cellWidth: 28 }, // Modèle (élargi de 8mm)
+                    7: { cellWidth: 12, halign: 'center' }, // MES
+                    8: { cellWidth: 12, halign: 'center' }, // RCM
+                    9: { cellWidth: 12, halign: 'center' }, // MAA
+                    10: { cellWidth: 12, halign: 'center' }, // EIE
+                    11: { cellWidth: 'auto' } // Observation
+                } : type === 'eclairages' ? {
+                    // Largeurs spécifiques pour les éclairages
+                    0: { cellWidth: 10, halign: 'center' }, // Num. (même taille que extincteurs)
+                    1: { cellWidth: 8, halign: 'center' }, // Niv. (même taille que extincteurs)
+                    2: { cellWidth: 60 }, // Emplacement (même taille que extincteurs)
+                    3: { cellWidth: 17 }, // Famille (réduit de 3mm)
+                    4: { cellWidth: 17 }, // Marque (réduit de 3mm)
+                    5: { cellWidth: 23 }, // Modèle (augmenté de 3mm)
+                    6: { cellWidth: 15 }, // Veilleuse
+                    7: { cellWidth: 15 }, // Secours
+                    8: { cellWidth: 12 }, // SATI
+                    9: { cellWidth: 12 }, // Batterie
+                    10: { cellWidth: 'auto' } // Observation
+                } : type === 'alarmes' ? {
+                    // Largeurs spécifiques pour les alarmes
+                    0: { cellWidth: 15 }, // ID
+                    1: { cellWidth: 25 }, // Type
+                    2: { cellWidth: 25 }, // Marque
+                    3: { cellWidth: 25 }, // Modèle
+                    4: { cellWidth: 'auto' } // Notes
+                } : type === 'desenfumages' ? {
+                    // Largeurs spécifiques pour les désenfumages
+                    0: { cellWidth: 15 }, // ID
+                    1: { cellWidth: 40 }, // Équipement
+                    2: { cellWidth: 'auto' } // Installation
+                } : type === 'peripheriques' ? {
+                    // Largeurs spécifiques pour les périphériques
+                    0: { cellWidth: 15 }, // ID
+                    1: { cellWidth: 25 }, // Type
+                    2: { cellWidth: 25 }, // Marque
+                    3: { cellWidth: 25 }, // Modèle
+                    4: { cellWidth: 'auto' } // Localisation
+                } : {}
+            });
+
+                            return doc.lastAutoTable.finalY + 8; // 8mm en dessous de la fin du tableau
+        }
+
+        // Générer un inventaire partiel
+        async function generatePartialPDF(type) {
+            if (!currentSite || !currentClient) {
+                showError('Aucun site sélectionné');
+                return;
+            }
+
+            const equipmentTypeNames = {
+                'extincteurs': 'Extincteurs',
+                'eclairages': 'Éclairages de sécurité',
+                'alarmes': 'Alarmes',
+                'desenfumages': 'Désenfumages',
+                'peripheriques': 'Périphériques'
+            };
+
+            const equipmentCount = equipmentData[type].length;
+            if (equipmentCount === 0) {
+                showError(`Aucun ${equipmentTypeNames[type]} trouvé pour ce site`);
+                return;
+            }
+
+            try {
+                showLoading(true);
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Couleurs JPSI
+                const jpsiRed = [155, 36, 35];
+                const jpsiDark = [29, 29, 31];
+
+                // En-tête avec logo en haut à gauche et marges de 10mm
+                let y = 10; // Marge de 10mm
+                
+                // Dessiner la grille de 5mm x 5mm
+                drawGrid(doc);
+                
+                // Ajouter l'image de pages en arrière-plan
+                // await addPagesBackground(doc);
+                
+                // Logo en haut à gauche (si disponible)
+                try {
+                    const logoImg = new Image();
+                    logoImg.src = 'img/logo.png';
+                    await new Promise((resolve, reject) => {
+                        logoImg.onload = resolve;
+                        logoImg.onerror = reject;
+                    });
+                    
+                    // Logo en haut à gauche
+                    doc.addImage(logoImg, 'PNG', 10, y, 60, 30);
+                } catch (error) {
+                    console.log('Logo non trouvé, utilisation du texte');
+                    doc.setFillColor(...jpsiRed);
+                    doc.rect(10, y, 60, 30, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('JPSI', 40, y + 20, { align: 'center' });
+                }
+
+                // Icône officielle en haut à droite (si disponible)
+                try {
+                    const icobmImg = new Image();
+                    icobmImg.src = 'img/logo.png';
+                    await new Promise((resolve, reject) => {
+                        icobmImg.onload = resolve;
+                        icobmImg.onerror = reject;
+                    });
+                    
+                    // Icône officielle en haut à droite
+                    doc.addImage(icobmImg, 'PNG', 350, y, 30, 30);
+                } catch (error) {
+                    console.log('Icône officielle logo.png non trouvée');
+                }
+
+                // Vignette JPSI à droite du logo (alignée sur la grille 5mm)
+                const jpsiVignetteX = 72; // 15 * 5mm - 3mm (décalé vers la gauche)
+                const jpsiVignetteY = y + 2.5; // Descendu de 2.5mm
+                const jpsiVignetteWidth = 60; // Réduit à 60mm
+                const jpsiVignetteHeight = 25; // Réduit à 25mm
+
+                // Bordure fine noire de la vignette JPSI (transparente)
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.5);
+                doc.rect(jpsiVignetteX, jpsiVignetteY, jpsiVignetteWidth, jpsiVignetteHeight);
+                
+                // Contenu de la vignette JPSI (centré et interlignes réduites à 4mm)
+                doc.setFontSize(16); // Augmenté de +1 (test)
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(...jpsiDark);
+                doc.text('J.P. Sécurité Incendie', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 6, { align: 'center' });
+                
+                doc.setFontSize(10); // Augmenté de +1 (test)
+                doc.setFont('helvetica', 'normal');
+                doc.text('17 rue du Lieutenant Clerc', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 10, { align: 'center' });
+                doc.text('54112 - ALLAMPS', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 14, { align: 'center' });
+                doc.text('06 77 84 50 82', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 18, { align: 'center' });
+                doc.text('contact@jpsincendie.com', jpsiVignetteX + jpsiVignetteWidth/2, jpsiVignetteY + 22, { align: 'center' });
+
+                // Vignettes CLIENT et SITE côte à côte (alignées sur la grille 5mm)
+                const vignetteWidth = 65; // 65mm
+                const vignetteHeight = 30; // 30mm
+                const siteVignetteX = 297 - 10 - vignetteWidth; // 222mm
+                const clientVignetteX = siteVignetteX - vignetteWidth; // 157mm
+                const clientVignetteY = y;
+                const siteVignetteY = y;
+
+                // Vignette CLIENT (à gauche)
+                doc.setFillColor(245, 245, 245);
+                doc.rect(clientVignetteX, clientVignetteY, vignetteWidth, vignetteHeight, 'F');
+                // Bordure très fine noire (même que les tableaux)
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+                doc.rect(clientVignetteX, clientVignetteY, vignetteWidth, vignetteHeight);
+                // Titre CLIENT en Calibri 16 gras
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text('CLIENT', clientVignetteX + vignetteWidth/2, clientVignetteY + 6, { align: 'center' });
+                // Séparateur CLIENT descendu de 1mm
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+                doc.line(clientVignetteX + 5, clientVignetteY + 8, clientVignetteX + vignetteWidth - 5, clientVignetteY + 8);
+                // Contenu de la vignette client, interligne 4mm (remonté de 3mm)
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(...jpsiDark);
+                let yContent = clientVignetteY + 12;
+                doc.text(`${currentClient.code_client || ''}`, clientVignetteX + 5, yContent);
+                yContent += 4;
+                doc.text(`${currentClient.nom_client || 'N/A'}`, clientVignetteX + 5, yContent);
+                yContent += 4;
+                doc.text(currentClient.adr_client || 'N/A', clientVignetteX + 5, yContent);
+                yContent += 4;
+                doc.text(`${currentClient.cp_client || ''} ${currentClient.ville_client || ''}`, clientVignetteX + 5, yContent);
+
+                // Vignette SITE (à droite)
+                doc.setFillColor(245, 245, 245);
+                doc.rect(siteVignetteX, siteVignetteY, vignetteWidth, vignetteHeight, 'F');
+                // Bordure très fine noire (même que les tableaux)
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+                doc.rect(siteVignetteX, siteVignetteY, vignetteWidth, vignetteHeight);
+                // Titre SITE en Calibri 16 gras
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text('SITE', siteVignetteX + vignetteWidth/2, siteVignetteY + 6, { align: 'center' });
+                // Séparateur SITE descendu de 1mm
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+                doc.line(siteVignetteX + 5, siteVignetteY + 8, siteVignetteX + vignetteWidth - 5, siteVignetteY + 8);
+                // Contenu de la vignette site, interligne 4mm (remonté de 3mm)
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(...jpsiDark);
+                let yContentSite = siteVignetteY + 12;
+                doc.text(`${currentSite.num_site || ''}`, siteVignetteX + 5, yContentSite);
+                yContentSite += 4;
+                doc.text(`${currentSite.nom_site || 'N/A'}`, siteVignetteX + 5, yContentSite);
+                yContentSite += 4;
+                doc.text(currentSite.adr_site || 'N/A', siteVignetteX + 5, yContentSite);
+                yContentSite += 4;
+                doc.text(`${currentSite.cp_site} ${currentSite.ville_site}`, siteVignetteX + 5, yContentSite);
+
+                // Position pour le contenu suivant
+                y = 50; // 10mm en dessous du logo
+
+                // Générer uniquement le type d'équipement sélectionné
+                tableY = addEquipmentSection(doc, equipmentTypeNames[type].toUpperCase(), equipmentData[type], tableY, type);
+
+                // Pied de page (format paysage avec marges de 10mm)
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                // Date de génération supprimée selon demande utilisateur
+                const today = new Date();
+                // doc.text(`Généré le ${today.toLocaleTimeString('fr-FR')} à ${today.toLocaleTimeString('fr-FR')}`, 10, 190);
+
+                // Sauvegarder le PDF
+                const fileName = `Inventaire - ${currentClient.code_client} ${currentClient.nom_client} - ${currentSite.nom_site} - ${today.getFullYear()}.PDF`;
+                doc.save(fileName);
+
+                showSuccess(`Inventaire ${equipmentTypeNames[type]} généré avec succès !`);
+                showLoading(false);
+            } catch (error) {
+                console.error('Erreur lors de la génération du PDF partiel:', error);
+                showError('Erreur lors de la génération du PDF partiel');
+                showLoading(false);
+            }
+        }
+
+
+        // Fonctions utilitaires
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.add('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function hidePreview() {
+            const previewSection = document.getElementById('previewSection');
+            previewSection.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

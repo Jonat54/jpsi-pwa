@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Éditer Site</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .site-info {
+      font-size: 1.1rem;
+      color: #6b7280;
+      font-weight: 500;
+      margin-left: auto;
+    }
+    
+    .form-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+    
+    .form-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .form-section h3 {
+      color: #9B2423;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .form-textarea {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    
+    .form-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .actions-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .action-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .action-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-1px);
+    }
+    
+    .action-button.secondary {
+      background: #6b7280;
+    }
+    
+    .action-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 3rem;
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .form-card, .actions-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .actions-card {
+        flex-direction: column;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .site-info {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <h1 class="header-title">Éditer Site</h1>
+      <div class="site-info" id="siteInfo">Chargement...</div>
+    </div>
+    
+    <!-- Form Card -->
+    <div class="form-card">
+      <div id="formContent">
+        <div class="loading">Chargement des données du site...</div>
+      </div>
+    </div>
+    
+    <!-- Actions Card -->
+    <div class="actions-card">
+      <button class="action-button secondary" onclick="goBack()">
+        ❌ Annuler
+      </button>
+      <button class="action-button" onclick="saveSite()">
+        💾 Sauvegarder
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentSite = null;
+    let currentClient = null;
+    
+    // Fonction pour récupérer l'ID du site depuis l'URL
+    function getSiteIdFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const siteId = urlParams.get('site');
+      
+      if (!siteId) {
+        console.error('❌ Aucun ID de site fourni dans l\'URL');
+        return null;
+      }
+      
+      console.log(`🔍 ID du site récupéré: ${siteId}`);
+      return decodeURIComponent(siteId);
+    }
+    
+    // Fonction pour charger les données du site
+    async function loadSiteData(siteId) {
+      try {
+        console.log(`📥 Chargement des données pour le site: ${siteId}`);
+        
+        const { data: site, error } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id_site', siteId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du site:', error);
+          showError('Erreur lors du chargement du site');
+          return;
+        }
+        
+        if (!site) {
+          console.error('❌ Site non trouvé');
+          showError('Site non trouvé');
+          return;
+        }
+        
+        console.log('✅ Données du site chargées:', site);
+        currentSite = site;
+        
+        // Charger les informations du client
+        await loadClientInfo(site.id_client);
+        
+        // Mettre à jour l'interface
+        updateFormDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour charger les informations du client
+    async function loadClientInfo(clientId) {
+      try {
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id_client', clientId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du client:', error);
+          return;
+        }
+        
+        currentClient = client;
+        console.log('✅ Informations du client chargées:', client);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement du client:', error);
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage du formulaire
+    function updateFormDisplay() {
+      if (!currentSite) return;
+      
+      // Mettre à jour les informations du site dans le header
+      const clientName = currentClient ? currentClient.nom_client : 'Client inconnu';
+      document.getElementById('siteInfo').textContent = `${currentSite.nom_site} - ${clientName}`;
+      
+      // Créer le formulaire
+      const formContainer = document.getElementById('formContent');
+      
+      formContainer.innerHTML = `
+        <div class="form-grid">
+          <div class="form-section">
+            <h3>Informations du Site</h3>
+            <div class="form-group">
+              <label class="form-label">Numéro du Site</label>
+              <input type="text" class="form-input" id="num_site" value="${currentSite.num_site || ''}" placeholder="Numéro interne du site">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nom du Site</label>
+              <input type="text" class="form-input" id="nom_site" value="${currentSite.nom_site || ''}" placeholder="Nom du site" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Adresse du Site</label>
+              <input type="text" class="form-input" id="adr_site" value="${currentSite.adr_site || ''}" placeholder="Adresse complète du site" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ville</label>
+              <input type="text" class="form-input" id="ville_site" value="${currentSite.ville_site || ''}" placeholder="Ville du site" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Code Postal</label>
+              <input type="text" class="form-input" id="cp_site" value="${currentSite.cp_site || ''}" placeholder="Code postal">
+            </div>
+          </div>
+          
+          <div class="form-section">
+            <h3>Contact du Site</h3>
+            <div class="form-group">
+              <label class="form-label">Responsable du Site</label>
+              <input type="text" class="form-input" id="resp_site" value="${currentSite.resp_site || ''}" placeholder="Nom du responsable">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Téléphone Responsable</label>
+              <input type="tel" class="form-input" id="telresp_site" value="${currentSite.telresp_site || ''}" placeholder="Téléphone du responsable">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Responsable</label>
+              <input type="email" class="form-input" id="mailresp_site" value="${currentSite.mailresp_site || ''}" placeholder="Email du responsable">
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Fonction pour sauvegarder les modifications
+    async function saveSite() {
+      if (!currentSite) {
+        alert('⚠️ Impossible de sauvegarder : site non chargé');
+        return;
+      }
+      
+      // Validation des champs obligatoires
+      const nomSite = document.getElementById('nom_site').value.trim();
+      const adrSite = document.getElementById('adr_site').value.trim();
+      const villeSite = document.getElementById('ville_site').value.trim();
+      
+      if (!nomSite || !adrSite || !villeSite) {
+        alert('⚠️ Veuillez remplir tous les champs obligatoires (Nom, Adresse, Ville)');
+        return;
+      }
+      
+      try {
+        console.log('💾 Sauvegarde des modifications du site...');
+        
+        // Récupérer les valeurs du formulaire
+        const updatedData = {
+          num_site: document.getElementById('num_site').value.trim(),
+          nom_site: nomSite,
+          adr_site: adrSite,
+          ville_site: villeSite,
+          cp_site: document.getElementById('cp_site').value.trim(),
+          resp_site: document.getElementById('resp_site').value.trim(),
+          telresp_site: document.getElementById('telresp_site').value.trim(),
+          mailresp_site: document.getElementById('mailresp_site').value.trim()
+        };
+        
+        // Mettre à jour dans Supabase
+        const { error } = await supabase
+          .from('sites')
+          .update(updatedData)
+          .eq('id_site', currentSite.id_site);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          alert('❌ Erreur lors de la sauvegarde');
+          return;
+        }
+        
+        console.log('✅ Site mis à jour avec succès');
+        alert('✅ Site mis à jour avec succès');
+        
+        // Rediriger vers la page du client
+        if (currentClient) {
+          window.location.href = `client.html?code=${encodeURIComponent(currentClient.code_client)}`;
+        } else {
+          window.location.href = 'ListClients.html';
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('❌ Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      if (currentClient) {
+        window.location.href = `client.html?code=${encodeURIComponent(currentClient.code_client)}`;
+      } else {
+        window.location.href = 'ListClients.html';
+      }
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('formContent').innerHTML = `
+        <div class="error">${message}</div>
+      `;
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Éditer Site...');
+      
+      // Récupérer l'ID du site depuis l'URL
+      const siteId = getSiteIdFromURL();
+      
+      if (!siteId) {
+        showError('ID du site manquant dans l\'URL');
+        return;
+      }
+      
+      // Charger les données du site
+      await loadSiteData(siteId);
+    });
+  </script>
+</body>
+</html> 

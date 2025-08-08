@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
+  <title>JPSI - Splash</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI 1.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120x120.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="icons/icon-114x114.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="icons/icon-76x76.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="icons/icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="icons/icon-60x60.png">
+  <link rel="apple-touch-icon" sizes="57x57" href="icons/icon-57x57.png">
+  <!-- Splash iPad portrait -->
+  <link rel="apple-touch-startup-image" href="icons/icon-180x180.png" media="(device-width: 768px) and (device-height: 1024px) and (orientation: portrait) and (-webkit-device-pixel-ratio: 2)">
+  <!-- Splash iPad paysage -->
+  <link rel="apple-touch-startup-image" href="icons/icon-180x180.png" media="(device-width: 1024px) and (device-height: 768px) and (orientation: landscape) and (-webkit-device-pixel-ratio: 2)">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+    }
+    .splash-container {
+      background: linear-gradient(135deg, #fff 80%, #f3f4f6 100%);
+      border: 2.5px solid #d1d5db;
+      border-radius: 22px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.18), 0 1.5px 0 #e5e7eb inset;
+      padding: 2.5rem 2.2rem 2.2rem 2.2rem;
+      max-width: 340px;
+      width: 90vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .splash-logo {
+      width: 240px;
+      height: 240px;
+      object-fit: contain;
+      margin-bottom: 1.1rem;
+      margin-top: -0.5rem;
+      filter: drop-shadow(0 2px 8px #23272b22);
+    }
+    .splash-title {
+      font-size: 1.1rem;
+      color: #6b7280;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.2rem;
+      opacity: 0.82;
+      text-align: center;
+    }
+    .splash-version {
+      font-size: 0.92rem;
+      color: #b0b3b8;
+      font-weight: 400;
+      margin-bottom: 1.3rem;
+      opacity: 0.7;
+      text-align: center;
+    }
+    .progress-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.2rem;
+      width: 100%;
+      justify-content: center;
+    }
+    .progress-segment {
+      width: 28px;
+      height: 7px;
+      border-radius: 4px;
+      background: #e5e7eb;
+      box-shadow: 0 1px 2px #23272b11;
+      transition: background 0.3s;
+    }
+    .progress-segment.active {
+      background: #9B2423;
+      box-shadow: 0 2px 6px #9B242344;
+    }
+    
+
+  </style>
+</head>
+<body>
+  <div class="splash-container" id="splashContainer">
+    <img src="img/logo.png" alt="Logo JPSI" class="splash-logo">
+    <div class="splash-title">Business Manager</div>
+    <div class="splash-version">v1.3.12 - Optimisé pour iPad</div>
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-segment"></div>
+      <div class="progress-segment"></div>
+      <div class="progress-segment"></div>
+      <div class="progress-segment"></div>
+      <div class="progress-segment"></div>
+      <div class="progress-segment"></div>
+    </div>
+
+  </div>
+  <div id="mainContent" style="display:none;text-align:center;color:#fff;font-size:1.2rem;">
+    <br><br>
+    <button onclick="window.location.href='accueil.html'" style="
+      background: #9B2423; 
+      color: white; 
+      border: none; 
+      padding: 10px 20px; 
+      border-radius: 8px; 
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 20px;
+    ">
+      Aller à l'accueil
+    </button>
+    
+  </div>
+  
+  <script>
+    // Attendre que la page soit complètement chargée avant d'enregistrer le Service Worker
+    window.addEventListener('load', function() {
+      // Petit délai pour iOS Safari
+      setTimeout(() => {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('service-worker.js', {
+            scope: '/'
+          }).then(function(registration) {
+            console.log('ServiceWorker enregistré avec succès:', registration.scope);
+            
+            // Vérifier les mises à jour du Service Worker
+            registration.addEventListener('updatefound', () => {
+              console.log('🔄 Nouvelle version du Service Worker détectée');
+              const newWorker = registration.installing;
+              
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('✅ Nouvelle version installée, rechargement...');
+                  // Forcer le rechargement pour appliquer la mise à jour
+                  window.location.reload();
+                }
+              });
+            });
+            
+            // Écouter les messages du Service Worker
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              if (event.data && event.data.type === 'SKIP_WAITING') {
+                window.location.reload();
+              }
+            });
+            
+          }, function(err) {
+            console.log('Échec de l\'enregistrement du ServiceWorker:', err);
+          });
+        }
+      }, 1000); // Délai de 1 seconde pour iOS
+    });
+  </script>
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Animation de la barre de progression
+    const segments = document.querySelectorAll('.progress-segment');
+    let idx = 0;
+    let connectionEstablished = false;
+    
+    function animateProgress() {
+      if(idx < segments.length) {
+        segments[idx].classList.add('active');
+        idx++;
+        setTimeout(animateProgress, 350);
+      } else {
+        setTimeout(() => {
+          segments.forEach(s => s.classList.remove('active'));
+          idx = 0;
+          setTimeout(animateProgress, 400);
+        }, 700);
+      }
+    }
+    
+    // Fonction pour établir la connexion Supabase (optimisée)
+    async function initializeSupabase() {
+      try {
+        console.log('🔌 Initialisation de la connexion Supabase...');
+        
+        // Vérifier que Supabase est disponible
+        if (!window.supabaseClient) {
+          console.log('⏳ Attente de Supabase...');
+          let attempts = 0;
+          const maxAttempts = 20;
+          
+          while (!window.supabaseClient && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            attempts++;
+          }
+          
+          if (!window.supabaseClient) {
+            throw new Error('Supabase non disponible après 4 secondes');
+          }
+        }
+        
+        // Test de connexion avec timeout
+        const connectionPromise = JPSI.testConnection();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout connexion')), 5000)
+        );
+        
+        const success = await Promise.race([connectionPromise, timeoutPromise]);
+        
+        if (success) {
+          connectionEstablished = true;
+          console.log('✅ Connexion Supabase établie');
+          return true;
+        } else {
+          throw new Error('Échec de la connexion Supabase');
+        }
+      } catch (error) {
+        console.error('❌ Échec de l\'initialisation Supabase:', error);
+        return false;
+      }
+    }
+    
+    // Fonction pour gérer la fin du chargement (optimisée)
+    async function handleLoadingComplete() {
+      try {
+        console.log('🚀 Début de l\'initialisation...');
+        
+        // Établir la connexion Supabase
+        const connectionSuccess = await initializeSupabase();
+        
+        if (connectionSuccess) {
+          document.getElementById('mainContent').textContent = 'Connexion établie - Redirection...';
+          console.log('✅ Redirection vers login.html');
+        } else {
+          document.getElementById('mainContent').textContent = 'Mode hors ligne - Redirection...';
+          console.log('⚠️ Mode hors ligne - redirection');
+        }
+        
+        // Redirection sécurisée avec vérification
+        setTimeout(() => {
+          console.log('🔄 Tentative de redirection vers login.html...');
+          console.log('📍 URL actuelle:', window.location.href);
+          
+          if (window.location.href.includes('index.html')) {
+            console.log('✅ Redirection vers login.html');
+            window.location.replace('login.html');
+          } else {
+            console.log('⚠️ Pas de redirection - URL ne contient pas index.html');
+          }
+        }, 1500);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement:', error);
+        document.getElementById('mainContent').textContent = 'Erreur - Redirection...';
+        
+        // Redirection de secours
+        setTimeout(() => {
+          console.log('🔄 Redirection de secours vers login.html...');
+          console.log('📍 URL actuelle:', window.location.href);
+          
+          if (window.location.href.includes('index.html')) {
+            console.log('✅ Redirection de secours vers login.html');
+            window.location.replace('login.html');
+          } else {
+            console.log('⚠️ Pas de redirection de secours - URL ne contient pas index.html');
+            // Forcer la redirection même si l'URL ne contient pas index.html
+            console.log('🔄 Forçage de la redirection...');
+            window.location.href = 'login.html';
+          }
+        }, 2000);
+      }
+    }
+    
+    // Protection contre les redirections multiples
+    let isRedirecting = false;
+    
+    // Démarrer l'animation
+    animateProgress();
+    
+    // Après 3 secondes, initialiser Supabase et rediriger
+    setTimeout(async () => {
+      if (isRedirecting) return; // Éviter les redirections multiples
+      
+      isRedirecting = true;
+      document.getElementById('splashContainer').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+      document.getElementById('mainContent').textContent = 'Initialisation...';
+      
+      await handleLoadingComplete();
+    }, 3000);
+    
+    // Redirection de sécurité après 6 secondes maximum
+    setTimeout(() => {
+      if (!isRedirecting) return;
+      
+      console.log('🔄 Redirection de sécurité après timeout...');
+      console.log('📍 URL actuelle:', window.location.href);
+      
+      // Redirection forcée
+      window.location.href = 'login.html';
+    }, 6000);
+  </script>
+</body>
+</html> 

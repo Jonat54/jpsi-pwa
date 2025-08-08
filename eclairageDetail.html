@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Fiche Éclairage</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 3px solid #0F8558;
+      border-radius: 24px;
+      box-shadow: 
+        0 10px 40px rgba(15, 133, 88, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      padding: 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .header-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #0F8558, #10b981, #0F8558);
+      border-radius: 24px 24px 0 0;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, #0F8558 0%, #10b981 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 600;
+      box-shadow: 
+        0 4px 12px rgba(15, 133, 88, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .back-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .back-button:hover {
+      background: linear-gradient(135deg, #0c6b41 0%, #0F8558 100%);
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 
+        0 8px 20px rgba(15, 133, 88, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .back-button:hover::before {
+      left: 100%;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .edit-button {
+      background: linear-gradient(135deg, #0F8558 0%, #10b981 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-left: auto;
+      box-shadow: 
+        0 4px 12px rgba(15, 133, 88, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .edit-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .edit-button:hover {
+      background: linear-gradient(135deg, #0c6b41 0%, #0F8558 100%);
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 
+        0 8px 20px rgba(15, 133, 88, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .edit-button:hover::before {
+      left: 100%;
+    }
+    
+    .info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .info-section {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 2px solid #0F8558;
+      border-radius: 20px;
+      box-shadow: 
+        0 8px 32px rgba(15, 133, 88, 0.12),
+        0 4px 16px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      padding: 2rem;
+      width: 100%;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .info-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #0F8558, #10b981, #0F8558);
+      border-radius: 20px 20px 0 0;
+    }
+    
+    /* Boutons d'état et contrôle */
+    .battery-error-btn, .bloc-error-btn {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+      font-weight: 600;
+      box-shadow: 
+        0 4px 12px rgba(239, 68, 68, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 140px;
+      justify-content: center;
+    }
+    
+    .battery-error-btn:hover, .bloc-error-btn:hover {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 20px rgba(239, 68, 68, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .battery-indicator, .bloc-indicator {
+      font-size: 1.2rem;
+      transition: all 0.3s ease;
+    }
+    
+    .battery-indicator.blinking, .bloc-indicator.blinking {
+      animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0.3; }
+    }
+    
+    .info-section:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 12px 40px rgba(15, 133, 88, 0.18),
+        0 6px 20px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    
+    .info-section h3 {
+      margin: 0 0 1.5rem 0;
+      color: #1f2937;
+      font-size: 1.4rem;
+      font-weight: 700;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .info-section h3::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(180deg, #0F8558, #10b981);
+      border-radius: 2px;
+    }
+    
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .info-table th {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #1f2937;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.95rem;
+      position: relative;
+    }
+    
+    .info-table th::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #0F8558, #10b981);
+    }
+    
+    .info-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 0.95rem;
+      color: #374151;
+      background: white;
+      transition: background-color 0.2s;
+    }
+    
+    .info-table tr:hover td {
+      background: #f8fafc;
+    }
+    
+    .info-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    /* SATI Indicator */
+    .sati-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+    
+    .sati-indicator.active {
+      animation: blink 2s infinite;
+    }
+    
+    .sati-indicator.inactive {
+      color: #6b7280;
+      font-weight: 700;
+      font-size: 1.1em;
+    }
+    
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0.3; }
+    }
+    
+    /* Battery Status Buttons */
+    .battery-error-btn,
+    .battery-ok-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .battery-error-btn {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+    
+    .battery-error-btn:hover {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+    }
+    
+    .battery-ok-btn {
+      background: linear-gradient(135deg, #10b981 0%, #0F8558 100%);
+      color: white;
+    }
+    
+    .battery-ok-btn:hover {
+      background: linear-gradient(135deg, #0F8558 0%, #0c6b41 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    }
+    
+    .battery-indicator {
+      animation: blink 1.5s infinite;
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .status-ok {
+      background: #0F8558;
+    }
+    
+    .status-warning {
+      background: #f59e0b;
+    }
+    
+    .status-error {
+      background: #ef4444;
+    }
+    
+    .status-gray {
+      background: #6b7280;
+    }
+    
+    .boolean-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    .boolean-true {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .boolean-false {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+    
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #10b981;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+      font-family: inherit;
+      resize: vertical;
+      background: white;
+      color: #374151;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #0F8558;
+      box-shadow: 0 0 0 3px rgba(15, 133, 88, 0.1);
+      transform: translateY(-1px);
+    }
+    
+    .form-input:hover {
+      border-color: #0F8558;
+    }
+    
+    .buttons-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .action-button {
+      background: linear-gradient(135deg, #0F8558 0%, #10b981 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+      font-weight: 600;
+      box-shadow: 
+        0 4px 12px rgba(15, 133, 88, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .action-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .action-button:hover {
+      background: linear-gradient(135deg, #0c6b41 0%, #0F8558 100%);
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 20px rgba(15, 133, 88, 0.35),
+        0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .action-button:hover::before {
+      left: 100%;
+    }
+    
+    .action-button.secondary {
+      background: #6b7280;
+    }
+    
+    .action-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    .action-button.danger {
+      background: #ef4444;
+    }
+    
+    .action-button.danger:hover {
+      background: #dc2626;
+    }
+    
+    .action-button.primary {
+      background: #0F8558;
+    }
+    
+    .action-button.primary:hover {
+      background: #0c6b41;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 3rem;
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #374151;
+    }
+    
+    .empty-state-description {
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .header-subtitle {
+        font-size: 0.8rem;
+      }
+      
+      .edit-button {
+        margin-left: 0;
+        margin-top: 1rem;
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+      }
+      
+      .info-grid {
+        gap: 1rem;
+      }
+      
+      .info-section {
+        border-radius: 18px;
+        padding: 1rem 1.5rem;
+      }
+      
+      .info-section h3 {
+        font-size: 1.2rem;
+      }
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 1rem;
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease-out;
+      border: 3px solid #0F8558;
+    }
+    
+    /* Modal Header */
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 2rem;
+      border-bottom: 2px solid #f3f4f6;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 24px 24px 0 0;
+    }
+    
+    .modal-title-section {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .modal-icon {
+      font-size: 2rem;
+      background: #0F8558;
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(15, 133, 88, 0.3);
+    }
+    
+    .modal-title-text h3 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    
+    .modal-title-text p {
+      margin: 0.25rem 0 0 0;
+      font-size: 0.9rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 8px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-close:hover {
+      background: #f3f4f6;
+      color: #374151;
+      transform: scale(1.1);
+    }
+    
+    /* Form Styles */
+    #editEclairageForm {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .form-section {
+      background: #f8fafc;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.2s;
+    }
+    
+    .form-section:hover {
+      border-color: #0F8558;
+      box-shadow: 0 4px 12px rgba(15, 133, 88, 0.1);
+    }
+    
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .section-icon {
+      font-size: 1.5rem;
+      background: #0F8558;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .section-header h4 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .label-text {
+      flex: 1;
+    }
+    
+    .required {
+      color: #ef4444;
+      font-weight: 700;
+    }
+    
+    .search-indicator {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+    
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      box-sizing: border-box;
+      font-family: inherit;
+      background: white;
+      color: #374151;
+    }
+    
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: #0F8558;
+      box-shadow: 0 0 0 3px rgba(15, 133, 88, 0.1);
+      transform: translateY(-1px);
+    }
+    
+    .form-input:hover,
+    .form-select:hover {
+      border-color: #0F8558;
+    }
+    
+    /* Input with button */
+    .input-with-button {
+      display: flex;
+      gap: 0.5rem;
+      align-items: stretch;
+    }
+    
+    .input-with-button .form-input {
+      flex: 1;
+    }
+    
+    .led-button {
+      background: #0F8558;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 48px;
+    }
+    
+    .led-button:hover {
+      background: #0c6b41;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(15, 133, 88, 0.3);
+    }
+    
+    /* Switch styles */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+    }
+    
+    .switch-label {
+      font-size: 0.9rem;
+      color: #6b7280;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    
+    .switch-label-yes {
+      color: #0F8558;
+      font-weight: 600;
+    }
+    
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 56px;
+      height: 28px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #d1d5db;
+      transition: 0.3s;
+      border-radius: 28px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    input:checked + .slider {
+      background-color: #0F8558;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(28px);
+    }
+    
+    /* Modal Actions */
+    .modal-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      padding-top: 1.5rem;
+      border-top: 2px solid #f3f4f6;
+      margin-top: 1rem;
+    }
+    
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #4b5563;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+    }
+    
+    .btn-primary {
+      background: #0F8558;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0c6b41;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(15, 133, 88, 0.3);
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .modal-content {
+        margin: 1rem;
+        max-height: calc(100vh - 2rem);
+      }
+      
+      .modal-header {
+        padding: 1rem 1.5rem;
+      }
+      
+      #editEclairageForm {
+        padding: 1.5rem;
+        gap: 1.5rem;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .modal-actions {
+        flex-direction: column;
+      }
+      
+      .btn {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ←
+      </button>
+      <div style="flex: 1;">
+        <h1 class="header-title" id="mainTitle">Éclairage de Sécurité</h1>
+        <div class="header-subtitle" id="subTitle">Chargement...</div>
+      </div>
+      <button class="edit-button" onclick="editEclairage()" title="Modifier">
+        ✏️
+      </button>
+    </div>
+    
+    <!-- Content -->
+    <div class="info-grid" id="content">
+      <div class="loading">
+        Chargement des données...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentEclairage = null;
+    let currentSite = null;
+    let currentClient = null;
+    let currentIntervention = null;
+    
+    // Fonction pour récupérer les paramètres depuis l'URL
+    function getUrlParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return {
+        eclairageId: urlParams.get('eclairage'),
+        siteId: urlParams.get('site'),
+        interventionId: urlParams.get('intervention')
+      };
+    }
+    
+    // Fonction pour charger les données de l'éclairage
+    async function loadEclairageData(eclairageId, siteId, interventionId) {
+      try {
+        console.log(`📥 Chargement de l'éclairage: ${eclairageId}`);
+        console.log(`📥 Chargement de l'intervention: ${interventionId}`);
+        
+        // Charger l'éclairage
+        const { data: eclairageData, error: eclairageError } = await supabase
+          .from('eclairages')
+          .select('*')
+          .eq('id_ecl', eclairageId)
+          .single();
+        
+        if (eclairageError) {
+          console.error('❌ Erreur lors du chargement de l\'éclairage:', eclairageError);
+          throw new Error('Éclairage non trouvé');
+        }
+        
+        currentEclairage = eclairageData;
+        console.log('✅ Éclairage chargé:', currentEclairage);
+        
+        // Charger les données de l'intervention (incluant site et client)
+        await loadInterventionData(interventionId);
+        
+        // Mettre à jour l'affichage
+        updateDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des données:', error);
+        showError('Erreur lors du chargement des données');
+      }
+    }
+    
+    // Fonction pour charger les données de l'intervention
+    async function loadInterventionData(interventionId) {
+      try {
+        console.log(`📥 Chargement de l'intervention: ${interventionId}`);
+        
+        const { data: intervention, error } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            sites!inner(
+              *,
+              clients!inner(*)
+            )
+          `)
+          .eq('id_intervention', interventionId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement de l\'intervention:', error);
+          showError('Erreur lors du chargement de l\'intervention');
+          return;
+        }
+        
+        currentIntervention = intervention;
+        currentSite = intervention.sites;
+        currentClient = intervention.sites.clients;
+        
+        console.log('✅ Intervention chargée:', currentIntervention);
+        console.log('✅ Données du site chargées:', currentSite);
+        console.log('✅ Données du client chargées:', currentClient);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement de l\'intervention:', error);
+      }
+    }
+    
+    // Ajoute une fonction utilitaire pour récupérer les ampoules du catalogue si besoin
+    async function getAmpoulesFromCatalogue(lcie) {
+      if (!lcie) return { ampveille: 'N/A', ampsecours: 'N/A' };
+      const { data, error } = await supabase
+        .from('eclairage_catalogue')
+        .select('ampveille_es, ampsecours_es')
+        .eq('lcie_es', lcie)
+        .maybeSingle();
+      if (error || !data) return { ampveille: 'N/A', ampsecours: 'N/A' };
+      return {
+        ampveille: data.ampveille_es || 'N/A',
+        ampsecours: data.ampsecours_es || 'N/A'
+      };
+    }
+
+    // Modifie updateDisplay pour afficher les ampoules du catalogue si besoin
+    async function updateDisplay() {
+      if (!currentEclairage) return;
+      
+      // Mettre à jour le titre avec le format demandé
+      const mainTitle = `${currentClient ? currentClient.nom_client : 'Client inconnu'} - ${currentSite ? currentSite.nom_site : 'Site inconnu'}`;
+      const subTitle = `Intervention ${currentIntervention ? currentIntervention.numero_intervention : 'N/A'}`;
+      
+      document.getElementById('mainTitle').textContent = mainTitle;
+      document.getElementById('subTitle').textContent = subTitle;
+      
+      // Obtenir le statut
+      const statusClass = getStatusClass(currentEclairage);
+      const statusText = getStatusText(currentEclairage);
+      
+      // Créer le contenu
+      const contentContainer = document.getElementById('content');
+      
+      let ampveille = currentEclairage.ampveille_es;
+      let ampsecours = currentEclairage.ampsecours_es;
+      if (!ampveille || !ampveille.trim() || !ampsecours || !ampsecours.trim()) {
+        const cat = await getAmpoulesFromCatalogue(currentEclairage.lcie_ecl);
+        if (!ampveille || !ampveille.trim()) ampveille = cat.ampveille;
+        if (!ampsecours || !ampsecours.trim()) ampsecours = cat.ampsecours;
+      }
+
+      const batterieOK = currentEclairage.etat_batterie_ecl === false ? false : true;
+      
+      contentContainer.innerHTML = `
+        <!-- Informations générales -->
+        <div class="info-section">
+          <h3>📋 Informations générales</h3>
+          <table class="info-table">
+            <tr>
+              <th>Numéro</th>
+              <td>${currentEclairage.num_ecl || 'N/A'}</td>
+              <th>Niveau/Étage</th>
+              <td>${currentEclairage.niv_ecl || 'N/A'}</td>
+            </tr>
+            <tr>
+              <th>Localisation</th>
+              <td colspan="3">${currentEclairage.loc_ecl || 'N/A'}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Caractéristiques techniques -->
+        <div class="info-section">
+          <h3>⚙️ Caractéristiques techniques</h3>
+          <table class="info-table">
+            <tr>
+              <th>Marque</th>
+              <td>${currentEclairage.marque_ecl || 'N/A'}</td>
+              <th>Modèle</th>
+              <td>${currentEclairage.modele_ecl || 'N/A'}</td>
+            </tr>
+            <tr>
+              <th>LCIE</th>
+              <td>${currentEclairage.lcie_ecl || 'N/A'}</td>
+              <th>Famille/Type</th>
+              <td>${currentEclairage.family_ecl || 'N/A'}</td>
+            </tr>
+            <tr>
+              <th>Ampoule veille</th>
+              <td>${ampveille || 'N/A'}</td>
+              <th>Ampoule secours</th>
+              <td>${ampsecours || 'N/A'}</td>
+            </tr>
+            <tr>
+              <th>Indice de protection</th>
+              <td>${currentEclairage.ip_ecl || 'N/A'}</td>
+              <th>SATI</th>
+              <td>
+                ${currentEclairage.sati_ecl ? 
+                  '<span class="sati-indicator active" title="Système d\'Autotest Intégré">🟢</span>' : 
+                  '<span class="sati-indicator inactive">NON</span>'
+                }
+              </td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- État et contrôle -->
+        <div class="info-section">
+          <h3>🔍 État et contrôle</h3>
+          <table class="info-table">
+            <tr>
+              <td style="text-align: center; padding: 1.5rem;">
+                <button type="button" class="battery-error-btn" onclick="toggleBatteryHS()">
+                  <span class="battery-indicator ${currentEclairage.obs_ecl && currentEclairage.obs_ecl.includes('Batterie HS') ? 'blinking' : ''}">🟡</span> 
+                  Batterie HS
+                </button>
+              </td>
+              <td style="text-align: center; padding: 1.5rem;">
+                <button type="button" class="bloc-error-btn" onclick="toggleBlocHS()">
+                  <span class="bloc-indicator ${currentEclairage.obs_ecl && currentEclairage.obs_ecl.includes('Bloc HS') ? 'blinking' : ''}">🔴</span> 
+                  Bloc HS
+                </button>
+              </td>
+            </tr>
+          </table>
+        </div>
+        
+        <div class="info-section">
+          <h3>📝 Observation</h3>
+          <textarea class="form-input" id="obs_ecl" rows="3" placeholder="Observations sur l'état de l'éclairage...">${currentEclairage.obs_ecl || ''}</textarea>
+          <div class="buttons-row">
+            <button class="action-button primary" onclick="markEclairageVerifie()">✅ Vérifié</button>
+            <button class="action-button danger" onclick="deleteEclairage()">🗑️ Supprimer</button>
+            <button class="action-button secondary" onclick="saveEclairageObservation()">💾 Enregistrer</button>
+            <button class="action-button secondary" onclick="cancelEclairageEdit()">❌ Annuler</button>
+          </div>
+        </div>
+      `;
+      
+      // Les boutons seront mis à jour automatiquement lors des clics
+    }
+    
+    // Fonction pour obtenir la classe CSS du statut
+    function getStatusClass(eclairage) {
+      const currentDate = new Date();
+      const lastEclDate = eclairage.last_ecl ? new Date(eclairage.last_ecl) : null;
+      
+      // Calculer la différence en mois
+      let monthsDiff = 0;
+      if (lastEclDate) {
+        const yearDiff = currentDate.getFullYear() - lastEclDate.getFullYear();
+        const monthDiff = currentDate.getMonth() - lastEclDate.getMonth();
+        monthsDiff = yearDiff * 12 + monthDiff;
+      }
+      
+      // Si last_ecl > 10 mois par rapport à la date courante → gris
+      if (!lastEclDate || monthsDiff > 10) {
+        return 'status-gray';
+      }
+      
+      // Si last_ecl < 10 mois et pas d'observation → vert
+      if (monthsDiff <= 10 && (!eclairage.obs_ecl || eclairage.obs_ecl.trim() === '')) {
+        return 'status-ok';
+      }
+      
+      // Si last_ecl < 10 mois et observation de bouton orange → orange
+      const orangeObservations = ['Défaut mineur', 'Légère dégradation'];
+      if (monthsDiff <= 10 && eclairage.obs_ecl && orangeObservations.some(obs => eclairage.obs_ecl.includes(obs))) {
+        return 'status-warning';
+      }
+      
+      // Si last_ecl < 10 mois et observation de bouton rouge → rouge
+      const redObservations = [
+        'Défaut majeur', 'Panne complète', 'Réformé'
+      ];
+      if (monthsDiff <= 10 && eclairage.obs_ecl && redObservations.some(obs => eclairage.obs_ecl.includes(obs))) {
+        return 'status-error';
+      }
+      
+      // Par défaut → vert
+      return 'status-ok';
+    }
+    
+    // Fonction pour obtenir le texte du statut
+    function getStatusText(eclairage) {
+      const currentDate = new Date();
+      const lastEclDate = eclairage.last_ecl ? new Date(eclairage.last_ecl) : null;
+      
+      if (!lastEclDate) {
+        return 'Jamais contrôlé';
+      }
+      
+      // Calculer la différence en mois
+      const yearDiff = currentDate.getFullYear() - lastEclDate.getFullYear();
+      const monthDiff = currentDate.getMonth() - lastEclDate.getMonth();
+      const monthsDiff = yearDiff * 12 + monthDiff;
+      
+      if (monthsDiff > 10) {
+        return `Contrôlé il y a ${monthsDiff} mois (à vérifier)`;
+      } else if (monthsDiff > 0) {
+        return `Contrôlé il y a ${monthsDiff} mois`;
+      } else {
+        return 'Contrôlé ce mois';
+      }
+    }
+    
+    // Fonction pour éditer l'éclairage
+    function editEclairage() {
+      if (!currentEclairage) {
+        showTemporaryMessage('⚠️ Éclairage non chargé', 'warning');
+        return;
+      }
+      
+      console.log('✏️ Ouverture de l\'édition de l\'éclairage:', currentEclairage.id_ecl);
+      
+      // Pour l'instant, on peut rediriger vers une page d'édition
+      // ou ouvrir une modal d'édition
+      openEditEclairageModal();
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      // Retourner vers eclairageSite.html avec l'ID du site et de l'intervention
+      if (currentSite && currentSite.id_site && currentIntervention && currentIntervention.id_intervention) {
+        window.location.href = `eclairageSite.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+      } else {
+        // Fallback si pas de site ou intervention chargé
+        window.location.href = 'eclairageSite.html';
+      }
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('content').innerHTML = `
+        <div class="error">
+          ${message}
+        </div>
+      `;
+    }
+
+    // Fonction pour basculer le statut de la batterie
+    function toggleBatteryStatus() {
+      if (!currentEclairage) return;
+      
+      const newBatteryStatus = !currentEclairage.etat_batterie_ecl;
+      const obsTextarea = document.getElementById('obs_ecl');
+      
+      if (!newBatteryStatus) {
+        // Batterie HS - ajouter dans l'observation
+        if (obsTextarea && !obsTextarea.value.includes('Batterie HS')) {
+          obsTextarea.value = obsTextarea.value ? obsTextarea.value + '\nBatterie HS' : 'Batterie HS';
+        }
+      } else {
+        // Batterie OK - retirer de l'observation
+        if (obsTextarea && obsTextarea.value.includes('Batterie HS')) {
+          obsTextarea.value = obsTextarea.value
+            .split('\n')
+            .filter(line => line.trim() !== 'Batterie HS')
+            .join('\n')
+            .replace(/^\n+|\n+$/g, '');
+        }
+      }
+      
+      // Mettre à jour l'affichage
+      updateDisplay();
+    }
+    
+    // Fonction pour basculer "Batterie HS"
+    function toggleBatteryHS() {
+      const obsTextarea = document.getElementById('obs_ecl');
+      if (!obsTextarea) return;
+      
+      const currentObs = obsTextarea.value || '';
+      
+      if (currentObs.includes('Batterie HS')) {
+        // Supprimer "Batterie HS" de l'observation
+        const newObs = currentObs
+          .split('\n')
+          .filter(line => line.trim() !== 'Batterie HS')
+          .join('\n')
+          .replace(/^\n+|\n+$/g, '');
+        obsTextarea.value = newObs;
+        console.log('❌ Batterie HS supprimé des observations');
+      } else {
+        // Ajouter "Batterie HS" à l'observation
+        const newObs = currentObs ? `${currentObs}\nBatterie HS` : 'Batterie HS';
+        obsTextarea.value = newObs;
+        console.log('✅ Batterie HS ajouté aux observations');
+      }
+      
+      // Mettre à jour l'affichage des boutons
+      updateBatteryButtonDisplay();
+    }
+    
+    // Fonction pour basculer "Bloc HS"
+    function toggleBlocHS() {
+      const obsTextarea = document.getElementById('obs_ecl');
+      if (!obsTextarea) return;
+      
+      const currentObs = obsTextarea.value || '';
+      
+      if (currentObs.includes('Bloc HS')) {
+        // Supprimer "Bloc HS" de l'observation
+        const newObs = currentObs
+          .split('\n')
+          .filter(line => line.trim() !== 'Bloc HS')
+          .join('\n')
+          .replace(/^\n+|\n+$/g, '');
+        obsTextarea.value = newObs;
+        console.log('❌ Bloc HS supprimé des observations');
+      } else {
+        // Ajouter "Bloc HS" à l'observation
+        const newObs = currentObs ? `${currentObs}\nBloc HS` : 'Bloc HS';
+        obsTextarea.value = newObs;
+        console.log('✅ Bloc HS ajouté aux observations');
+      }
+      
+      // Mettre à jour l'affichage des boutons
+      updateBlocButtonDisplay();
+    }
+    
+    // Fonction pour mettre à jour l'affichage du bouton Batterie HS
+    function updateBatteryButtonDisplay() {
+      const obsTextarea = document.getElementById('obs_ecl');
+      if (!obsTextarea) return;
+      
+      const batteryButton = document.querySelector('.battery-error-btn');
+      const batteryIndicator = document.querySelector('.battery-indicator');
+      
+      if (batteryButton && batteryIndicator) {
+        if (obsTextarea.value.includes('Batterie HS')) {
+          batteryIndicator.classList.add('blinking');
+          batteryButton.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+        } else {
+          batteryIndicator.classList.remove('blinking');
+          batteryButton.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+        }
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage du bouton Bloc HS
+    function updateBlocButtonDisplay() {
+      const obsTextarea = document.getElementById('obs_ecl');
+      if (!obsTextarea) return;
+      
+      const blocButton = document.querySelector('.bloc-error-btn');
+      const blocIndicator = document.querySelector('.bloc-indicator');
+      
+      if (blocButton && blocIndicator) {
+        if (obsTextarea.value.includes('Bloc HS')) {
+          blocIndicator.classList.add('blinking');
+          blocButton.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+        } else {
+          blocIndicator.classList.remove('blinking');
+          blocButton.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+        }
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage des boutons
+    function updateButtonsDisplay() {
+      updateBatteryButtonDisplay();
+      updateBlocButtonDisplay();
+    }
+    
+    // Fonction pour vérifier si l'équipement a déjà été vérifié dans cette intervention
+    async function checkExistingVerification() {
+      try {
+        if (!currentIntervention || !currentEclairage) {
+          return null;
+        }
+        
+        const { data, error } = await supabase
+          .from('verifications')
+          .select('*')
+          .eq('id_intervention', currentIntervention.id_intervention)
+          .eq('type_equipement', 'eclairages')
+          .eq('id_equipement', currentEclairage.id_ecl)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('❌ Erreur lors de la vérification:', error);
+          return null;
+        }
+        
+        return data || null;
+      } catch (error) {
+        console.error('❌ Erreur lors de la vérification:', error);
+        return null;
+      }
+    }
+    
+    // Fonction pour créer ou mettre à jour une vérification
+    async function createOrUpdateVerification(observations = null) {
+      try {
+        if (!currentIntervention) {
+          console.log('ℹ️ Aucune intervention en cours');
+          return;
+        }
+        
+        // Vérifier s'il existe déjà une vérification
+        const existingVerification = await checkExistingVerification();
+        
+        const verificationData = {
+          id_intervention: currentIntervention.id_intervention,
+          date_verification: new Date().toISOString(),
+          type_equipement: 'eclairages',
+          id_equipement: currentEclairage.id_ecl,
+          etat_verification: 'OK',
+          observations: observations || ''
+        };
+        
+        let result;
+        if (existingVerification) {
+          // Mettre à jour la vérification existante
+          const { data, error } = await supabase
+            .from('verifications')
+            .update(verificationData)
+            .eq('id_verification', existingVerification.id_verification)
+            .select()
+            .single();
+          
+          if (error) {
+            console.error('❌ Erreur mise à jour vérification:', error);
+          } else {
+            console.log('✅ Vérification mise à jour:', data);
+            result = data;
+          }
+        } else {
+          // Créer une nouvelle vérification
+          const { data, error } = await supabase
+            .from('verifications')
+            .insert([verificationData])
+            .select()
+            .single();
+          
+          if (error) {
+            console.error('❌ Erreur création vérification:', error);
+          } else {
+            console.log('✅ Vérification créée:', data);
+            result = data;
+          }
+        }
+        
+        return result;
+      } catch (error) {
+        console.error('❌ Erreur lors de la création/mise à jour de la vérification:', error);
+        return null;
+      }
+    }
+    
+    // Fonction pour forcer une revérification
+    async function forceReverify() {
+      if (!confirm('Êtes-vous sûr de vouloir revérifier cet équipement ?')) {
+        return;
+      }
+      
+      await markEclairageVerifie();
+    }
+    
+    // Fonction pour marquer comme vérifié (sauvegarde + date de vérification)
+    async function markEclairageVerifie() {
+      if (!currentEclairage) {
+        alert('⚠️ Éclairage non chargé');
+        return;
+      }
+      
+      try {
+        let observation = document.getElementById('obs_ecl').value.trim();
+        const etatBatterie = currentEclairage.etat_batterie_ecl;
+        if (!etatBatterie) {
+          if (!observation.includes('Batterie HS')) {
+            observation = observation ? observation + '\nBatterie HS' : 'Batterie HS';
+          }
+        }
+        const today = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+        
+        console.log('✅ Sauvegarde avec vérification:', {
+          id: currentEclairage.id_ecl,
+          last_ecl: today,
+          etat_batterie_ecl: etatBatterie
+        });
+        
+        // Mettre à jour l'éclairage (sans obs_ecl)
+        const { error } = await supabase
+          .from('eclairages')
+          .update({
+            last_ecl: today,
+            etat_batterie_ecl: etatBatterie
+          })
+          .eq('id_ecl', currentEclairage.id_ecl);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          showTemporaryMessage('❌ Erreur lors de la sauvegarde', 'error');
+          return;
+        }
+        
+        // Créer ou mettre à jour la vérification avec les observations
+        await createOrUpdateVerification(observation);
+        
+        console.log('✅ Éclairage vérifié et sauvegardé');
+        showTemporaryMessage('✅ Éclairage marqué comme vérifié', 'success');
+        showSuccessMessage('✅ Éclairage vérifié et sauvegardé !');
+        
+        // Retourner à la liste des éclairages du site
+        goBack();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour supprimer l'éclairage
+    async function deleteEclairage() {
+      if (!currentEclairage) {
+        showTemporaryMessage('⚠️ Éclairage non chargé', 'warning');
+        return;
+      }
+      
+      if (!confirm('🗑️ Êtes-vous sûr de vouloir supprimer cet éclairage ?')) {
+        return;
+      }
+      
+      try {
+        console.log('🗑️ Suppression de l\'éclairage:', currentEclairage.id_ecl);
+        
+        const { error } = await supabase
+          .from('eclairages')
+          .delete()
+          .eq('id_ecl', currentEclairage.id_ecl);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la suppression:', error);
+          showTemporaryMessage('❌ Erreur lors de la suppression', 'error');
+          return;
+        }
+        
+        console.log('✅ Éclairage supprimé');
+        showTemporaryMessage('✅ Éclairage supprimé', 'success');
+        
+        // Retourner à la liste des éclairages du site
+        goBack();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showTemporaryMessage('❌ Erreur de connexion à la base de données', 'error');
+      }
+    }
+    
+    // Fonction pour sauvegarder l'observation (sans date de vérification)
+    async function saveEclairageObservation() {
+      if (!currentEclairage) {
+        showTemporaryMessage('⚠️ Éclairage non chargé', 'warning');
+        return;
+      }
+      
+      try {
+        let observation = document.getElementById('obs_ecl').value.trim();
+        const etatBatterie = currentEclairage.etat_batterie_ecl;
+        if (!etatBatterie) {
+          if (!observation.includes('Batterie HS')) {
+            observation = observation ? observation + '\nBatterie HS' : 'Batterie HS';
+          }
+        }
+        
+        console.log('💾 Sauvegarde observation:', {
+          id: currentEclairage.id_ecl,
+          obs: observation,
+          etat_batterie_ecl: etatBatterie
+        });
+        
+        // Mettre à jour l'éclairage (sans obs_ecl)
+        const { error } = await supabase
+          .from('eclairages')
+          .update({
+            etat_batterie_ecl: etatBatterie
+          })
+          .eq('id_ecl', currentEclairage.id_ecl);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          showTemporaryMessage('❌ Erreur lors de la sauvegarde', 'error');
+          return;
+        }
+        
+        // Créer ou mettre à jour la vérification avec les observations
+        if (currentIntervention) {
+          await createOrUpdateVerification(observation);
+        }
+        
+        console.log('✅ Observation sauvegardée dans la vérification');
+        showTemporaryMessage('💾 Observation sauvegardée', 'success');
+        showSuccessMessage('💾 Observation sauvegardée !');
+        
+        // Retourner à la liste des éclairages du site
+        goBack();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showTemporaryMessage('❌ Erreur de connexion à la base de données', 'error');
+    }
+    }
+    
+    // Fonction pour annuler (fermer la page)
+    function cancelEclairageEdit() {
+      // Retourner à la liste des éclairages du site
+      goBack();
+    }
+
+    // Ajoute la fonction showSuccessMessage (copiée/adaptée de eclairageSite.html)
+    function showSuccessMessage(message) {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        z-index: 10000;
+        font-weight: 600;
+        animation: slideIn 0.3s ease-out;
+      `;
+      toast.textContent = message;
+      // Animation CSS
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(100%); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => {
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 300);
+      }, 3000);
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Éclairage Detail...');
+      
+      // Récupérer les paramètres depuis l'URL
+      const { eclairageId, siteId, interventionId } = getUrlParams();
+      
+      if (!eclairageId) {
+        showError('ID de l\'éclairage manquant dans l\'URL');
+        return;
+      }
+      
+      if (!siteId) {
+        showError('ID du site manquant dans l\'URL');
+        return;
+      }
+      
+      if (!interventionId) {
+        showError('ID de l\'intervention manquant dans l\'URL');
+        return;
+      }
+      
+      // Charger les données
+      await loadEclairageData(eclairageId, siteId, interventionId);
+    });
+
+    // Fonction pour ouvrir la modale d'édition d'éclairage
+    async function openEditEclairageModal() {
+      if (!currentEclairage) {
+        showTemporaryMessage('⚠️ Éclairage non chargé', 'warning');
+        return;
+      }
+      
+      // Récupérer les ampoules depuis le catalogue si elles ne sont pas définies
+      let ampveille = currentEclairage.ampveille_es;
+      let ampsecours = currentEclairage.ampsecours_es;
+      
+      if (!ampveille || !ampveille.trim() || !ampsecours || !ampsecours.trim()) {
+        const cat = await getAmpoulesFromCatalogue(currentEclairage.lcie_ecl);
+        if (!ampveille || !ampveille.trim()) ampveille = cat.ampveille;
+        if (!ampsecours || !ampsecours.trim()) ampsecours = cat.ampsecours;
+      }
+      
+      const modalHTML = `
+        <div class="modal-overlay" id="editEclairageModal">
+          <div class="modal-content">
+            <!-- Header -->
+            <div class="modal-header">
+              <div class="modal-title-section">
+                <div class="modal-icon">✏️</div>
+                <div class="modal-title-text">
+                  <h3>Modifier l'éclairage</h3>
+                  <p>Éclairage ${currentEclairage.num_ecl || 'N/A'} - ${currentEclairage.loc_ecl || 'Localisation'}</p>
+                </div>
+              </div>
+              <button class="modal-close" onclick="closeEditEclairageModal()" title="Fermer">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Form -->
+            <form id="editEclairageForm" autocomplete="off">
+              <!-- Section Informations générales -->
+              <div class="form-section">
+                <div class="section-header">
+                  <div class="section-icon">📋</div>
+                  <h4>Informations générales</h4>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="edit_num_ecl">
+                      <span class="label-text">Numéro</span>
+                      <span class="required">*</span>
+                    </label>
+                    <input type="text" class="form-input" id="edit_num_ecl" maxlength="5" required value="${currentEclairage.num_ecl || ''}">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="edit_niv_ecl">
+                      <span class="label-text">Niveau/Étage</span>
+                    </label>
+                    <input type="text" class="form-input" id="edit_niv_ecl" maxlength="20" value="${currentEclairage.niv_ecl || ''}">
+                  </div>
+                  <div class="form-group full-width">
+                    <label class="form-label" for="edit_loc_ecl">
+                      <span class="label-text">Localisation</span>
+                      <span class="required">*</span>
+                    </label>
+                    <input type="text" class="form-input" id="edit_loc_ecl" required value="${currentEclairage.loc_ecl || ''}">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section Caractéristiques techniques -->
+              <div class="form-section">
+                <div class="section-header">
+                  <div class="section-icon">⚙️</div>
+                  <h4>Caractéristiques techniques</h4>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="edit_lcie_es">
+                      <span class="label-text">LCIE</span>
+                      <span class="search-indicator" title="Recherche automatique">🔍</span>
+                    </label>
+                    <input type="text" class="form-input" id="edit_lcie_es" maxlength="8" value="${currentEclairage.lcie_ecl || ''}" oninput="searchEditLCIECatalogue()">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="edit_famille_es">
+                      <span class="label-text">Famille/Type</span>
+                      <span class="required">*</span>
+                    </label>
+                    <select class="form-select" id="edit_famille_es" required>
+                      <option value="">Sélectionner la famille</option>
+                      <option value="BAES" ${currentEclairage.family_ecl === 'BAES' ? 'selected' : ''}>BAES</option>
+                      <option value="BAEH" ${currentEclairage.family_ecl === 'BAEH' ? 'selected' : ''}>BAEH</option>
+                      <option value="BAES+BAEH" ${currentEclairage.family_ecl === 'BAES+BAEH' ? 'selected' : ''}>BAES+BAEH</option>
+                      <option value="Ambiant Permanent" ${currentEclairage.family_ecl === 'Ambiant Permanent' ? 'selected' : ''}>Ambiant Permanent</option>
+                      <option value="Ambiant NP" ${currentEclairage.family_ecl === 'Ambiant NP' ? 'selected' : ''}>Ambiant NP</option>
+                      <option value="Bloc Phares" ${currentEclairage.family_ecl === 'Bloc Phares' ? 'selected' : ''}>Bloc Phares</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="edit_marque_es">
+                      <span class="label-text">Marque</span>
+                    </label>
+                    <input type="text" class="form-input" id="edit_marque_es" value="${currentEclairage.marque_ecl || ''}">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="edit_modele_es">
+                      <span class="label-text">Modèle</span>
+                    </label>
+                    <input type="text" class="form-input" id="edit_modele_es" value="${currentEclairage.modele_ecl || ''}">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="edit_ip_es">
+                      <span class="label-text">Indice de protection</span>
+                    </label>
+                    <input type="text" class="form-input" id="edit_ip_es" value="${currentEclairage.ip_ecl || ''}">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">SATI</label>
+                    <div class="switch-container">
+                      <span class="switch-label">Non</span>
+                      <label class="switch">
+                        <input type="checkbox" id="edit_sati_ecl" ${currentEclairage.sati_ecl ? 'checked' : ''}>
+                        <span class="slider"></span>
+                      </label>
+                      <span class="switch-label switch-label-yes">Oui</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section Ampoules -->
+              <div class="form-section">
+                <div class="section-header">
+                  <div class="section-icon">💡</div>
+                  <h4>Ampoules</h4>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="edit_ampveille_es">
+                      <span class="label-text">Ampoule veille</span>
+                    </label>
+                    <div class="input-with-button">
+                      <input type="text" class="form-input" id="edit_ampveille_es" value="${ampveille || ''}">
+                      <button type="button" class="led-button" onclick="document.getElementById('edit_ampveille_es').value='LED'" title="Insérer LED">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="edit_ampsecours_es">
+                      <span class="label-text">Ampoule secours</span>
+                    </label>
+                    <div class="input-with-button">
+                      <input type="text" class="form-input" id="edit_ampsecours_es" value="${ampsecours || ''}">
+                      <button type="button" class="led-button" onclick="document.getElementById('edit_ampsecours_es').value='LED'" title="Insérer LED">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section Options d'installation -->
+              <div class="form-section">
+                <div class="section-header">
+                  <div class="section-icon">🔧</div>
+                  <h4>Options d'installation</h4>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Télécommande</label>
+                    <div class="switch-container">
+                      <span class="switch-label">Non</span>
+                      <label class="switch">
+                        <input type="checkbox" id="edit_telecommande_ecl" ${currentEclairage.telecommande_ecl ? 'checked' : ''}>
+                        <span class="slider"></span>
+                      </label>
+                      <span class="switch-label switch-label-yes">Oui</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditEclairageModal()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  Annuler
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                    <polyline points="7,3 7,8 15,8"></polyline>
+                  </svg>
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      document.getElementById('editEclairageForm').addEventListener('submit', handleEditEclairageSubmit);
+      setTimeout(() => {
+        document.getElementById('edit_num_ecl').focus();
+      }, 100);
+    }
+
+    // Fonction pour fermer la modale d'édition
+    function closeEditEclairageModal() {
+      const modal = document.getElementById('editEclairageModal');
+      if (modal) modal.remove();
+    }
+
+    // Fonction de soumission du formulaire d'édition
+    async function handleEditEclairageSubmit(event) {
+      event.preventDefault();
+      if (!currentEclairage) return;
+      
+      console.log('💾 Sauvegarde des modifications de l\'éclairage...');
+      
+      // Récupérer les valeurs du formulaire
+      const num_ecl = document.getElementById('edit_num_ecl').value.trim();
+      const niv_ecl = document.getElementById('edit_niv_ecl').value.trim();
+      const loc_ecl = document.getElementById('edit_loc_ecl').value.trim();
+      const lcie_ecl = document.getElementById('edit_lcie_es').value.trim();
+      const family_ecl = document.getElementById('edit_famille_es').value;
+      const marque_ecl = document.getElementById('edit_marque_es').value.trim();
+      const modele_ecl = document.getElementById('edit_modele_es').value.trim();
+      const ip_ecl = document.getElementById('edit_ip_es').value.trim();
+      const ampveille_es = document.getElementById('edit_ampveille_es').value.trim();
+      const ampsecours_es = document.getElementById('edit_ampsecours_es').value.trim();
+      const sati_ecl = document.getElementById('edit_sati_ecl').checked;
+      const telecommande_ecl = document.getElementById('edit_telecommande_ecl').checked;
+      
+      // Mettre à jour dans la base
+      try {
+        const { error } = await supabase
+          .from('eclairages')
+          .update({
+            num_ecl,
+            niv_ecl,
+            loc_ecl,
+            lcie_ecl,
+            family_ecl,
+            marque_ecl,
+            modele_ecl,
+            ip_ecl,
+            ampveille_es,
+            ampsecours_es,
+            sati_ecl,
+            telecommande_ecl
+          })
+          .eq('id_ecl', currentEclairage.id_ecl);
+          
+        if (error) {
+          console.error('❌ Erreur lors de la mise à jour:', error);
+          showTemporaryMessage('❌ Erreur lors de la mise à jour : ' + error.message, 'error');
+          return;
+        }
+        
+        console.log('✅ Éclairage mis à jour avec succès');
+        showSuccessMessage('💾 Éclairage modifié avec succès !');
+        closeEditEclairageModal();
+        
+        // Recharger les données pour affichage à jour
+        await loadEclairageData(currentEclairage.id_ecl, currentSite.id_site);
+        
+      } catch (err) {
+        console.error('❌ Erreur lors de la mise à jour:', err);
+        showTemporaryMessage('❌ Erreur lors de la mise à jour : ' + err.message, 'error');
+      }
+      
+      // Ajout/MAJ dans le catalogue si nécessaire
+      if (lcie_ecl && lcie_ecl.trim()) {
+        try {
+          console.log('🔍 Vérification du catalogue pour LCIE:', lcie_ecl);
+          
+          const { data: catExist, error: catError } = await supabase
+            .from('eclairage_catalogue')
+            .select('*')
+            .eq('lcie_es', lcie_ecl)
+            .maybeSingle();
+            
+          if (catError) {
+            console.error('❌ Erreur lors de la vérification du catalogue:', catError);
+          } else if (!catExist) {
+            // Ajout d'un nouvel éclairage dans le catalogue
+            console.log('📝 Ajout d\'un nouvel éclairage dans le catalogue:', {
+              lcie_ecl,
+              marque_ecl,
+              modele_ecl,
+              family_ecl,
+              ampveille_es,
+              ampsecours_es,
+              ip_ecl
+            });
+            
+            const catalogueData = {
+              lcie_es: lcie_ecl,
+              marque_es: marque_ecl || null,
+              modele_es: modele_ecl || null,
+              family_es: family_ecl || null,
+              ampveille_es: ampveille_es || null,
+              ampsecours_es: ampsecours_es || null,
+              ip_es: ip_ecl || null
+            };
+            
+            const { error: insertError } = await supabase
+              .from('eclairage_catalogue')
+              .insert(catalogueData);
+              
+            if (insertError) {
+              console.error('❌ Erreur lors de l\'ajout au catalogue:', insertError);
+            } else {
+              console.log('✅ Nouvel éclairage ajouté au catalogue');
+            }
+          } else {
+            // Mise à jour de l'éclairage existant dans le catalogue
+            console.log('📝 Mise à jour de l\'éclairage existant dans le catalogue:', {
+              lcie_ecl,
+              marque_ecl,
+              modele_ecl,
+              family_ecl,
+              ampveille_es,
+              ampsecours_es,
+              ip_ecl
+            });
+            
+            const updateData = {};
+            if (marque_ecl) updateData.marque_es = marque_ecl;
+            if (modele_ecl) updateData.modele_es = modele_ecl;
+            if (family_ecl) updateData.family_es = family_ecl;
+            if (ampveille_es) updateData.ampveille_es = ampveille_es;
+            if (ampsecours_es) updateData.ampsecours_es = ampsecours_es;
+            if (ip_ecl) updateData.ip_es = ip_ecl;
+            
+            if (Object.keys(updateData).length > 0) {
+              const { error: updateError } = await supabase
+                .from('eclairage_catalogue')
+                .update(updateData)
+                .eq('lcie_es', lcie_ecl);
+                
+              if (updateError) {
+                console.error('❌ Erreur lors de la mise à jour du catalogue:', updateError);
+              } else {
+                console.log('✅ Éclairage mis à jour dans le catalogue');
+              }
+            }
+          }
+        } catch (catErr) {
+          console.error('❌ Erreur lors de la gestion du catalogue:', catErr);
+        }
+      } else {
+        console.log('⚠️ LCIE manquant, pas d\'ajout/mise à jour dans le catalogue');
+      }
+    }
+
+    async function searchEditLCIECatalogue() {
+      const lcieInput = document.getElementById('edit_lcie_es');
+      if (!lcieInput) return;
+      
+      let lcie = lcieInput.value.trim().toUpperCase().replace(/\s+/g, '');
+      lcie = lcie.replace(/^0+/, ''); // supprime les zéros en début
+      
+      if (!lcie) {
+        lcieInput.setCustomValidity('');
+        return;
+      }
+      
+      console.log('🔍 Recherche LCIE dans le catalogue:', lcie);
+      
+      // Afficher un indicateur de chargement
+      lcieInput.style.borderColor = '#f59e0b';
+      lcieInput.setCustomValidity('Recherche en cours...');
+      lcieInput.reportValidity();
+      
+      try {
+        // Récupérer tout le catalogue
+        const { data, error } = await supabase
+          .from('eclairage_catalogue')
+          .select('*');
+          
+        if (error) {
+          console.error('❌ Erreur lors de la recherche LCIE:', error);
+          lcieInput.setCustomValidity('Erreur lors de la recherche');
+          lcieInput.style.borderColor = '#ef4444';
+          lcieInput.reportValidity();
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          // Chercher la correspondance en JS
+          const found = data.find(cat => {
+            if (!cat.lcie_es) return false;
+            let catLCIE = cat.lcie_es.trim().toUpperCase().replace(/\s+/g, '');
+            catLCIE = catLCIE.replace(/^0+/, '');
+            return catLCIE === lcie;
+          });
+          
+          if (found) {
+            console.log('✅ Référence trouvée:', found);
+            
+            // Remplir les champs automatiquement
+            if (found.family_es) document.getElementById('edit_famille_es').value = found.family_es;
+            if (found.marque_es) document.getElementById('edit_marque_es').value = found.marque_es;
+            if (found.modele_es) document.getElementById('edit_modele_es').value = found.modele_es;
+            if (found.ampveille_es) document.getElementById('edit_ampveille_es').value = found.ampveille_es;
+            if (found.ampsecours_es) document.getElementById('edit_ampsecours_es').value = found.ampsecours_es;
+            if (found.ip_es) document.getElementById('edit_ip_es').value = found.ip_es;
+            
+            // Indiquer le succès
+            lcieInput.setCustomValidity('');
+            lcieInput.style.borderColor = '#0F8558';
+            console.log('✅ Champs remplis automatiquement');
+            
+            // Afficher un message de succès temporaire
+            showTemporaryMessage('✅ Référence trouvée et champs remplis automatiquement', 'success');
+          } else {
+            console.log('❌ Aucune référence trouvée pour LCIE:', lcie);
+            lcieInput.setCustomValidity('Aucune référence catalogue trouvée pour ce LCIE');
+            lcieInput.style.borderColor = '#ef4444';
+            lcieInput.reportValidity();
+            
+            // Afficher un message d'information
+            showTemporaryMessage('ℹ️ Aucune référence trouvée. Les champs peuvent être remplis manuellement.', 'info');
+          }
+        } else {
+          console.log('❌ Catalogue vide');
+          lcieInput.setCustomValidity('Catalogue vide ou erreur');
+          lcieInput.style.borderColor = '#ef4444';
+          lcieInput.reportValidity();
+          
+          showTemporaryMessage('⚠️ Catalogue vide. Les champs doivent être remplis manuellement.', 'warning');
+        }
+      } catch (err) {
+        console.error('❌ Erreur lors de la recherche:', err);
+        lcieInput.setCustomValidity('Erreur lors de la recherche');
+        lcieInput.style.borderColor = '#ef4444';
+        lcieInput.reportValidity();
+      }
+    }
+    
+    // Fonction pour afficher des messages temporaires
+    function showTemporaryMessage(message, type = 'info') {
+      const colors = {
+        success: '#0F8558',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+      };
+      
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${colors[type]};
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10001;
+        font-weight: 500;
+        font-size: 0.9rem;
+        max-width: 300px;
+        animation: slideIn 0.3s ease-out;
+      `;
+      toast.textContent = message;
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => {
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html> 

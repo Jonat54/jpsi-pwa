@@ -1,0 +1,35 @@
+# Fichiers de configuration sensibles
+config.env
+.env
+.env.local
+.env.production
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Dossiers de build
+dist/
+build/
+node_modules/
+
+# Fichiers de cache
+.cache/
+*.cache
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+
+# Fichiers de test
+test-*.html
+diagnostic*.html
+
+# Fichiers de développement
+*.zip
+*.tar.gz 

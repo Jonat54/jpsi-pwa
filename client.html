@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Détail Client</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .client-code {
+      font-size: 1.1rem;
+      color: #6b7280;
+      font-weight: 500;
+      margin-left: auto;
+    }
+    
+    .actions-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .action-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .action-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-1px);
+    }
+    
+    .action-button.secondary {
+      background: #6b7280;
+    }
+    
+    .action-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    .details-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .sites-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      overflow: hidden;
+    }
+    
+    .sites-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .sites-table th {
+      background: #9B2423;
+      color: white;
+      padding: 1.2rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .sites-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.95rem;
+    }
+    
+    .sites-table tr:hover {
+      background: #f8f9fa;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
+    }
+    
+    .sites-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .site-status {
+      width: 12px;
+      height: 12px;
+      background: #10b981;
+      border-radius: 50%;
+      margin: 0 auto;
+      display: block;
+    }
+    
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+    
+    .detail-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .detail-section h3 {
+      color: #9B2423;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .detail-value {
+      color: #1f2937;
+      font-size: 0.95rem;
+      text-align: right;
+      max-width: 200px;
+      word-wrap: break-word;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 3rem;
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+    
+    /* Modale site */
+    .modal-site {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(30,32,36,0.25);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+    .modal-site-content {
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(30,32,36,0.18);
+      padding: 2rem 2.5rem;
+      min-width: 340px;
+      max-width: 95vw;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      border: 3px solid #9B2423;
+    }
+    .modal-site-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #9B2423;
+      cursor: pointer;
+    }
+    .modal-site-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #23272b;
+      margin-bottom: 0.5rem;
+    }
+    .modal-site-info {
+      color: #374151;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .modal-site-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .modal-site-actions .action-button {
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      padding: 0.7rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .modal-site-actions .edit {
+      background: #10b981;
+      color: white;
+    }
+    .modal-site-actions .edit:hover {
+      background: #059669;
+    }
+    .modal-site-actions .delete {
+      background: #ef4444;
+      color: white;
+    }
+    .modal-site-actions .delete:hover {
+      background: #b91c1c;
+    }
+    .modal-site-actions .suspend {
+      background: #f59e42;
+      color: white;
+    }
+    .modal-site-actions .suspend:hover {
+      background: #d97706;
+    }
+    
+    .add-site-button {
+      background: #10b981;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 1.1rem 2.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 8px rgba(16,185,129,0.08);
+    }
+    .add-site-button:hover {
+      background: #059669;
+      box-shadow: 0 4px 16px rgba(16,185,129,0.18);
+      transform: translateY(-2px);
+    }
+    .edit-site-button {
+      background: #3b82f6;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 1.1rem 2.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 8px rgba(59,130,246,0.08);
+    }
+    .edit-site-button:hover {
+      background: #2563eb;
+      box-shadow: 0 4px 16px rgba(59,130,246,0.18);
+      transform: translateY(-2px);
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .actions-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+      }
+      
+      .details-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .details-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .client-code {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="window.location.href='ListClients.html'" title="Retour">
+        ‹
+      </button>
+      <h1 class="header-title">Détail Client</h1>
+      <div class="client-code" id="clientCode">Chargement...</div>
+    </div>
+    
+    <!-- Actions Card -->
+    <div class="actions-card">
+      <button class="action-button" onclick="editClient()">
+        ✏️ Éditer
+      </button>
+      <button class="add-site-button" onclick="addSite()">
+        ➕ Ajouter un site
+      </button>
+    </div>
+    
+    <!-- Details Card -->
+    <div class="details-card">
+      <div id="clientDetails">
+        <div class="loading">Chargement des détails du client...</div>
+      </div>
+    </div>
+    
+    <!-- Sites Card -->
+    <div class="sites-card">
+      <h2 style="color: #23272b; font-size: 1.5rem; font-weight: 600; margin: 0 0 1.5rem 0;">Sites du Client</h2>
+      <div id="sitesContent">
+        <div class="loading">Chargement des sites...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalSite" class="modal-site" style="display:none;">
+    <div class="modal-site-content" id="modalSiteContent">
+      <!-- contenu dynamique -->
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentClient = null;
+    let clientSites = [];
+    
+    // Fonction pour récupérer le code client depuis l'URL
+    function getClientCodeFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (!code) {
+        console.error('❌ Aucun code client fourni dans l\'URL');
+        return null;
+      }
+      
+      console.log(`🔍 Code client récupéré: ${code}`);
+      return decodeURIComponent(code);
+    }
+    
+    // Fonction pour charger les détails du client depuis Supabase
+    async function loadClientDetails(codeClient) {
+      try {
+        console.log(`📥 Chargement des détails pour le client: ${codeClient}`);
+        
+        const { data: clients, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('code_client', codeClient)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du client:', error);
+          showError('Erreur lors du chargement du client');
+          return;
+        }
+        
+        if (!clients) {
+          console.error('❌ Client non trouvé');
+          showError('Client non trouvé');
+          return;
+        }
+        
+        console.log('✅ Détails du client chargés:', clients);
+        currentClient = clients;
+        
+        // Mettre à jour l'interface
+        updateClientDisplay();
+        
+        // Charger les sites du client
+        await loadClientSites(codeClient);
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage du client
+    function updateClientDisplay() {
+      if (!currentClient) return;
+      
+      // Mettre à jour le code client dans le header
+      document.getElementById('clientCode').textContent = currentClient.code_client;
+      
+      // Créer le contenu des détails
+      const detailsContainer = document.getElementById('clientDetails');
+      
+      detailsContainer.innerHTML = `
+        <div class="details-grid">
+          <div class="detail-section">
+            <h3>Informations Générales</h3>
+            <div class="detail-item">
+              <span class="detail-label">Code Client</span>
+              <span class="detail-value">${currentClient.code_client || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Nom</span>
+              <span class="detail-value">${currentClient.nom_client || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Adresse</span>
+              <span class="detail-value">${currentClient.adr_client || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Ville</span>
+              <span class="detail-value">${currentClient.ville_client || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Téléphone</span>
+              <span class="detail-value">${currentClient.tel_client || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">SIREN</span>
+              <span class="detail-value">${currentClient.siren_client || 'N/A'}</span>
+            </div>
+          </div>
+          
+          <div class="detail-section">
+            <h3>Responsable</h3>
+            <div class="detail-item">
+              <span class="detail-label">Nom du Responsable</span>
+              <span class="detail-value">${currentClient.resp_client || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Téléphone Responsable</span>
+              <span class="detail-value">${currentClient.telresp_client || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Email Responsable</span>
+              <span class="detail-value">${currentClient.mailresp_client || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Fonction pour éditer le client
+    function editClient() {
+      if (!currentClient || !currentClient.code_client) {
+        alert('⚠️ Impossible d\'éditer : client non chargé');
+        return;
+      }
+      
+      console.log(`✏️ Édition du client: ${currentClient.code_client}`);
+      
+      // Rediriger vers la page d'édition
+      window.location.href = `editClient.html?code=${encodeURIComponent(currentClient.code_client)}`;
+    }
+    
+    // Fonction pour ajouter un site
+    function addSite() {
+      if (!currentClient || !currentClient.code_client) {
+        alert('⚠️ Impossible d\'ajouter un site : client non chargé');
+        return;
+      }
+      
+      console.log(`➕ Ajout de site pour le client: ${currentClient.code_client}`);
+      
+      // Rediriger vers la page d'ajout de site
+      window.location.href = `addSite.html?client=${encodeURIComponent(currentClient.code_client)}`;
+    }
+    
+    // Fonction pour ouvrir les détails d'un site
+    function openSiteDetail(siteId) {
+      if (!siteId) {
+        alert('⚠️ ID du site invalide');
+        return;
+      }
+      
+      console.log(`🔍 Ouverture des détails pour le site: ${siteId}`);
+      
+      // Rediriger vers detailSite.html avec l'ID du site
+      window.location.href = `detailSite.html?site=${encodeURIComponent(siteId)}`;
+    }
+    
+    // Fonction pour ouvrir l'édition d'un site
+    function openSiteEdit(siteId) {
+      if (!siteId) {
+        alert('⚠️ ID du site invalide');
+        return;
+      }
+      
+      console.log(`✏️ Ouverture de l'édition pour le site: ${siteId}`);
+      
+      // Rediriger vers editSite.html avec l'ID du site
+      window.location.href = `editSite.html?site=${encodeURIComponent(siteId)}`;
+    }
+    
+    // Fonction pour charger les sites du client
+    async function loadClientSites(codeClient) {
+      try {
+        console.log('currentClient:', currentClient); // LOG AJOUTÉ POUR DEBUG
+        console.log(`📥 Chargement des sites pour le client: ${codeClient}`);
+        
+        const { data: sites, error } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id_client', currentClient.id_client)
+          .order('nom_site', { ascending: true });
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des sites:', error);
+          showSitesError('Erreur lors du chargement des sites');
+          return;
+        }
+        
+        console.log('✅ Sites du client chargés:', sites);
+        clientSites = sites || [];
+        
+        // Afficher les sites
+        displayClientSites();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showSitesError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour afficher les sites du client
+    function displayClientSites() {
+      const sitesContainer = document.getElementById('sitesContent');
+      
+      if (clientSites.length === 0) {
+        sitesContainer.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: #6b7280; font-size: 1rem;">
+            Aucun site trouvé pour ce client
+          </div>
+        `;
+        return;
+      }
+      
+      // Créer le tableau des sites
+      sitesContainer.innerHTML = `
+        <table class="sites-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;"></th>
+              <th>Numéro du Site</th>
+              <th>Nom du Site</th>
+              <th>Adresse du Site</th>
+              <th>Ville du Site</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${clientSites.map(site => `
+              <tr onclick="openSiteModal(${site.id_site})" style="cursor: pointer;">
+                <td><div class="site-status"></div></td>
+                <td>${site.num_site || 'N/A'}</td>
+                <td>${site.nom_site || 'N/A'}</td>
+                <td>${site.adr_site || 'N/A'}</td>
+                <td>${site.ville_site || 'N/A'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+    
+
+    
+    // Fonction pour afficher une erreur dans la section sites
+    function showSitesError(message) {
+      document.getElementById('sitesContent').innerHTML = `
+        <div class="error">${message}</div>
+      `;
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('clientDetails').innerHTML = `
+        <div class="error">${message}</div>
+      `;
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Détail Client...');
+      
+      // Récupérer le code client depuis l'URL
+      const codeClient = getClientCodeFromURL();
+      
+      if (!codeClient) {
+        showError('Code client manquant dans l\'URL');
+        return;
+      }
+      
+      // Charger les détails du client
+      await loadClientDetails(codeClient);
+    });
+
+    // Fonction pour ouvrir la modale d'un site
+    async function openSiteModal(siteId) {
+      const modal = document.getElementById('modalSite');
+      const content = document.getElementById('modalSiteContent');
+      content.innerHTML = '<div style="text-align:center;">Chargement...</div>';
+      modal.style.display = 'flex';
+      // Charger les infos du site
+      const { data: site, error } = await supabase.from('sites').select('*').eq('id_site', siteId).single();
+      if (error || !site) {
+        content.innerHTML = '<div style="color:#ef4444;">Erreur lors du chargement du site.</div>';
+        return;
+      }
+      content.innerHTML = `
+        <button class="modal-site-close" onclick="closeSiteModal()">×</button>
+        <div class="modal-site-title">${site.nom_site}</div>
+        <div class="modal-site-info"><strong>Numéro :</strong> ${site.num_site || ''}</div>
+        <div class="modal-site-info"><strong>Adresse :</strong> ${site.adr_site || ''}, ${site.cp_site || ''} ${site.ville_site || ''}</div>
+        <div class="modal-site-info"><strong>Responsable :</strong> ${site.resp_site || ''}</div>
+        <div class="modal-site-info"><strong>Téléphone :</strong> ${site.telresp_site || ''}</div>
+        <div class="modal-site-info"><strong>Email :</strong> ${site.mailresp_site || ''}</div>
+        <div class="modal-site-actions">
+          <button class="edit-site-button" onclick="editSiteFromModal(${site.id_site})">✏️ Éditer</button>
+          <button class="action-button suspend" onclick="suspendSiteFromModal(${site.id_site})">⏸️ Suspendre</button>
+          <button class="action-button delete" onclick="deleteSiteFromModal(${site.id_site})">🗑️ Supprimer</button>
+        </div>
+      `;
+    }
+    function closeSiteModal() {
+      document.getElementById('modalSite').style.display = 'none';
+    }
+    function editSiteFromModal(siteId) {
+      window.location.href = `editSite.html?site=${encodeURIComponent(siteId)}`;
+    }
+    function deleteSiteFromModal(siteId) {
+      if (confirm('Voulez-vous vraiment supprimer ce site ? Cette action est irréversible.')) {
+        supabase.from('sites').delete().eq('id_site', siteId).then(({ error }) => {
+          if (error) {
+            alert('Erreur lors de la suppression du site.');
+          } else {
+            alert('Site supprimé.');
+            closeSiteModal();
+            location.reload();
+          }
+        });
+      }
+    }
+    function suspendSiteFromModal(siteId) {
+      supabase.from('sites').update({ statut: 'suspendu' }).eq('id_site', siteId).then(({ error }) => {
+        if (error) {
+          alert('Erreur lors de la suspension du site.');
+        } else {
+          alert('Site suspendu.');
+          closeSiteModal();
+          location.reload();
+        }
+      });
+    }
+  </script>
+</body>
+</html> 

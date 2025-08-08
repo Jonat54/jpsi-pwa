@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Éditer Client</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .client-code {
+      font-size: 1.1rem;
+      color: #6b7280;
+      font-weight: 500;
+      margin-left: auto;
+    }
+    
+    .form-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+    
+    .form-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .form-section h3 {
+      color: #9B2423;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .actions-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .action-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .action-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-1px);
+    }
+    
+    .action-button.secondary {
+      background: #6b7280;
+    }
+    
+    .action-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    .save-button {
+      background: #10b981;
+      font-size: 1.1rem;
+      padding: 1.2rem 3rem;
+    }
+    
+    .save-button:hover {
+      background: #059669;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 3rem;
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .form-card, .actions-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .actions-card {
+        flex-direction: column;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .client-code {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <h1 class="header-title">Éditer Client</h1>
+      <div class="client-code" id="clientCode">Chargement...</div>
+    </div>
+    
+    <!-- Form Card -->
+    <div class="form-card">
+      <div id="formContent">
+        <div class="loading">Chargement des données du client...</div>
+      </div>
+    </div>
+    
+    <!-- Actions Card -->
+    <div class="actions-card">
+      <button class="action-button save-button" onclick="saveClient()">
+        💾 Enregistrer
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentClient = null;
+    
+    // Fonction pour récupérer le code client depuis l'URL
+    function getClientCodeFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (!code) {
+        console.error('❌ Aucun code client fourni dans l\'URL');
+        return null;
+      }
+      
+      console.log(`🔍 Code client récupéré: ${code}`);
+      return decodeURIComponent(code);
+    }
+    
+    // Fonction pour charger les données du client
+    async function loadClientData(codeClient) {
+      try {
+        console.log(`📥 Chargement des données pour le client: ${codeClient}`);
+        
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('code_client', codeClient)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du client:', error);
+          showError('Erreur lors du chargement du client');
+          return;
+        }
+        
+        if (!client) {
+          console.error('❌ Client non trouvé');
+          showError('Client non trouvé');
+          return;
+        }
+        
+        console.log('✅ Données du client chargées:', client);
+        currentClient = client;
+        
+        // Mettre à jour l'interface
+        updateFormDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage du formulaire
+    function updateFormDisplay() {
+      if (!currentClient) return;
+      
+      // Mettre à jour le code client dans le header
+      document.getElementById('clientCode').textContent = currentClient.code_client;
+      
+      // Créer le formulaire
+      const formContainer = document.getElementById('formContent');
+      
+      formContainer.innerHTML = `
+        <div class="form-grid">
+          <div class="form-section">
+            <h3>Informations Générales</h3>
+            <div class="form-group">
+              <label class="form-label">Code Client</label>
+              <input type="text" class="form-input" id="code_client" value="${currentClient.code_client || ''}" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nom</label>
+              <input type="text" class="form-input" id="nom_client" value="${currentClient.nom_client || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Adresse</label>
+              <input type="text" class="form-input" id="adr_client" value="${currentClient.adr_client || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ville</label>
+              <input type="text" class="form-input" id="ville_client" value="${currentClient.ville_client || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Téléphone</label>
+              <input type="tel" class="form-input" id="tel_client" value="${currentClient.tel_client || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">SIREN</label>
+              <input type="text" class="form-input" id="siren_client" value="${currentClient.siren_client || ''}">
+            </div>
+          </div>
+          
+          <div class="form-section">
+            <h3>Responsable</h3>
+            <div class="form-group">
+              <label class="form-label">Nom du Responsable</label>
+              <input type="text" class="form-input" id="resp_client" value="${currentClient.resp_client || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Téléphone Responsable</label>
+              <input type="tel" class="form-input" id="telresp_client" value="${currentClient.telresp_client || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Responsable</label>
+              <input type="email" class="form-input" id="mailresp_client" value="${currentClient.mailresp_client || ''}">
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Fonction pour sauvegarder les modifications
+    async function saveClient() {
+      if (!currentClient) {
+        alert('⚠️ Impossible de sauvegarder : client non chargé');
+        return;
+      }
+      
+      try {
+        console.log('💾 Sauvegarde des modifications...');
+        
+        // Récupérer les valeurs du formulaire
+        const updatedData = {
+          nom_client: document.getElementById('nom_client').value,
+          adr_client: document.getElementById('adr_client').value,
+          ville_client: document.getElementById('ville_client').value,
+          tel_client: document.getElementById('tel_client').value,
+          siren_client: document.getElementById('siren_client').value,
+          resp_client: document.getElementById('resp_client').value,
+          telresp_client: document.getElementById('telresp_client').value,
+          mailresp_client: document.getElementById('mailresp_client').value
+        };
+        
+        // Mettre à jour dans Supabase
+        const { error } = await supabase
+          .from('clients')
+          .update(updatedData)
+          .eq('code_client', currentClient.code_client);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          alert('❌ Erreur lors de la sauvegarde');
+          return;
+        }
+        
+        console.log('✅ Client mis à jour avec succès');
+        alert('✅ Client mis à jour avec succès');
+        
+        // Rediriger vers la page de détail
+        window.location.href = `client.html?code=${encodeURIComponent(currentClient.code_client)}`;
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('❌ Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      if (currentClient) {
+        window.location.href = `client.html?code=${encodeURIComponent(currentClient.code_client)}`;
+      } else {
+        window.location.href = 'ListClients.html';
+      }
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('formContent').innerHTML = `
+        <div class="error">${message}</div>
+      `;
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Éditer Client...');
+      
+      // Récupérer le code client depuis l'URL
+      const codeClient = getClientCodeFromURL();
+      
+      if (!codeClient) {
+        showError('Code client manquant dans l\'URL');
+        return;
+      }
+      
+      // Charger les données du client
+      await loadClientData(codeClient);
+    });
+  </script>
+</body>
+</html> 

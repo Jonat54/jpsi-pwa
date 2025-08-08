@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Liste des Clients</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .add-button {
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-left: auto;
+    }
+    
+    .add-button:hover {
+      background: #059669;
+    }
+    
+
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .search-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .search-container {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    .search-input {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      transition: border-color 0.2s;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .search-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .search-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .table-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      overflow: hidden;
+    }
+    
+    .clients-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .clients-table th {
+      background: #9B2423;
+      color: white;
+      padding: 1.2rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .clients-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.95rem;
+    }
+    
+    .clients-table tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .clients-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      background: #9ca3af;
+      border-radius: 50%;
+      margin: 0 auto;
+      display: block;
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .search-card, .table-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .search-container {
+        flex-direction: column;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .clients-table {
+        font-size: 0.9rem;
+      }
+      
+      .clients-table th,
+      .clients-table td {
+        padding: 0.8rem 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="window.location.href='accueil.html'" title="Retour">
+        ‹
+      </button>
+      <h1 class="header-title">Liste des Clients</h1>
+      <button class="add-button" onclick="window.location.href='addClient.html'" title="Ajouter un client">
+        ➕
+      </button>
+    </div>
+    
+    <!-- Search Card -->
+    <div class="search-card">
+      <div class="search-container">
+        <input type="text" class="search-input" placeholder="Rechercher par code, nom ou ville..." id="searchInput">
+        <button class="search-button" onclick="searchClients()">Rechercher</button>
+      </div>
+    </div>
+    
+    <!-- Table Card -->
+    <div class="table-card">
+      <table class="clients-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;"></th>
+            <th>CodeClient</th>
+            <th>Nom</th>
+            <th>Adresse</th>
+            <th>Ville</th>
+          </tr>
+        </thead>
+        <tbody id="clientsTableBody">
+          <!-- Les données des clients seront chargées dynamiquement depuis Supabase -->
+          <tr id="loadingRow">
+            <td colspan="5" style="text-align: center; padding: 2rem;">
+              <div style="color: #6b7280; font-size: 1rem;">Chargement des clients...</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let allClients = [];
+    
+    // Fonction pour charger les clients depuis Supabase
+    async function loadClientsFromSupabase() {
+      try {
+        console.log('📥 Chargement des clients depuis Supabase...');
+        
+        // Récupérer les données de la table 'clients'
+        const { data: clients, error } = await supabase
+          .from('clients')
+          .select('*')
+          .order('nom_client', { ascending: true });
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des clients:', error);
+          showError('Erreur lors du chargement des clients');
+          return;
+        }
+        
+        console.log('✅ Clients chargés avec succès:', clients);
+        allClients = clients || [];
+        
+        // Afficher les clients dans le tableau
+        displayClients(allClients);
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour afficher les clients dans le tableau
+    function displayClients(clients) {
+      const tableBody = document.getElementById('clientsTableBody');
+      
+      // Vider le tableau
+      tableBody.innerHTML = '';
+      
+      if (clients.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2rem;">
+              <div style="color: #6b7280; font-size: 1rem;">Aucun client trouvé</div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      // Ajouter chaque client
+      clients.forEach(client => {
+        const row = document.createElement('tr');
+        
+        // Voyant gris par défaut (status à implémenter plus tard)
+        
+        row.innerHTML = `
+          <td><div class="status-indicator"></div></td>
+          <td>${client.code_client || 'N/A'}</td>
+          <td>${client.nom_client || 'N/A'}</td>
+          <td>${client.adr_client || 'N/A'}</td>
+          <td>${client.ville_client || 'N/A'}</td>
+        `;
+        
+        // Rendre la ligne cliquable
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', () => {
+          openClientDetail(client.code_client);
+        });
+        
+        // Effet hover pour indiquer que c'est cliquable
+        row.addEventListener('mouseenter', () => {
+          row.style.backgroundColor = '#f3f4f6';
+        });
+        
+        row.addEventListener('mouseleave', () => {
+          row.style.backgroundColor = '';
+        });
+        
+        tableBody.appendChild(row);
+      });
+    }
+    
+    // Fonction pour déterminer la couleur du voyant (à implémenter plus tard)
+    function getStatusColor(status) {
+      // Pour l'instant, toujours gris
+      return '#9ca3af';
+    }
+    
+    // Fonction pour ouvrir la page détail client
+    function openClientDetail(codeClient) {
+      if (!codeClient || codeClient === 'N/A') {
+        alert('⚠️ Code client invalide');
+        return;
+      }
+      
+      console.log(`🔍 Ouverture du détail pour le client: ${codeClient}`);
+      
+      // Rediriger vers client.html avec le code client en paramètre
+      window.location.href = `client.html?code=${encodeURIComponent(codeClient)}`;
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      const tableBody = document.getElementById('clientsTableBody');
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 2rem;">
+            <div style="color: #ef4444; font-size: 1rem;">${message}</div>
+          </td>
+        </tr>
+      `;
+    }
+    
+
+    
+    // Fonction de recherche par code, nom ou ville
+    function searchClients() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+      
+      // Si la recherche est vide, afficher tous les clients
+      if (!searchTerm) {
+        displayClients(allClients);
+        return;
+      }
+      
+      // Filtrer les clients selon les critères : code, nom ou ville
+      const filteredClients = allClients.filter(client => {
+        const code = (client.code_client || '').toLowerCase();
+        const nom = (client.nom_client || '').toLowerCase();
+        const ville = (client.ville_client || '').toLowerCase();
+        
+        // Recherche dans code_client, nom_client ou ville_client
+        return code.includes(searchTerm) || 
+               nom.includes(searchTerm) || 
+               ville.includes(searchTerm);
+      });
+      
+      // Afficher les résultats
+      displayClients(filteredClients);
+      
+      // Log pour debugging
+      console.log(`🔍 Recherche: "${searchTerm}" - ${filteredClients.length} résultat(s) trouvé(s)`);
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 Initialisation de la page Liste des Clients...');
+      
+      // Charger les clients depuis Supabase
+      loadClientsFromSupabase();
+    });
+    
+    // Recherche en temps réel
+    document.getElementById('searchInput').addEventListener('input', searchClients);
+  </script>
+</body>
+</html> 

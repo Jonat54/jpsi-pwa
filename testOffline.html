@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
+  <title>JPSI - Test Offline</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script>
+    // Enregistrer le Service Worker pour le mode offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {
+        scope: '/'
+      }).then(function(registration) {
+        console.log('✅ ServiceWorker enregistré:', registration.scope);
+      }).catch(function(err) {
+        console.log('❌ Échec ServiceWorker:', err);
+      });
+    }
+  </script>
+  <style>
+    body {
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      color: #333;
+      padding: 2rem;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      padding: 2rem;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13);
+    }
+    
+    .test-section {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 20px;
+      border: 2px solid #e5e7eb;
+    }
+    
+    .test-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 5px;
+      transition: all 0.3s ease;
+    }
+    
+    .test-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-2px);
+    }
+    
+    .status {
+      padding: 10px;
+      border-radius: 10px;
+      margin: 10px 0;
+      font-weight: 600;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    
+    .log {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 10px;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .network-indicator {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .network-online {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    .network-offline {
+      background: #f44336;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+      <button onclick="window.location.href='index.html'" style="
+        background: #6c757d; 
+        color: white; 
+        border: none; 
+        padding: 8px 16px; 
+        border-radius: 6px; 
+        cursor: pointer;
+        font-size: 12px;
+        margin-right: 15px;
+      ">
+        ← Retour
+      </button>
+      <h1 style="margin: 0;">🌐 Test Mode Offline - JPSI</h1>
+    </div>
+    
+    <div class="test-section">
+      <h2>📡 Service Worker</h2>
+      <button class="test-button" onclick="testServiceWorker()">Tester Service Worker</button>
+      <button class="test-button" onclick="testCache()">Tester Cache</button>
+      <div id="serviceWorkerResult"></div>
+    </div>
+    
+    <div class="test-section">
+      <h2>🌐 Réseau</h2>
+      <button class="test-button" onclick="testNetwork()">Tester réseau</button>
+      <button class="test-button" onclick="simulateOffline()">Simuler hors ligne</button>
+      <div id="networkResult"></div>
+    </div>
+    
+    <div class="test-section">
+      <h2>📱 Navigation</h2>
+      <button class="test-button" onclick="testNavigation()">Tester navigation</button>
+      <button class="test-button" onclick="testOfflinePages()">Tester pages offline</button>
+      <div id="navigationResult"></div>
+    </div>
+    
+    <div class="test-section">
+      <h2>📝 Logs</h2>
+      <button class="test-button" onclick="clearLogs()">Effacer les logs</button>
+      <div id="logs" class="log"></div>
+    </div>
+  </div>
+
+  <script>
+    // Fonction pour ajouter des logs
+    function addLog(message, type = 'info') {
+      const logsDiv = document.getElementById('logs');
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = document.createElement('div');
+      logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> ${message}`;
+      logsDiv.appendChild(logEntry);
+      logsDiv.scrollTop = logsDiv.scrollHeight;
+    }
+
+    // Fonction pour afficher un résultat
+    function showResult(elementId, message, type = 'info') {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<div class="status ${type}">${message}</div>`;
+    }
+
+    // Afficher l'indicateur réseau
+    function showNetworkIndicator() {
+      let indicator = document.getElementById('networkIndicator');
+      if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'networkIndicator';
+        indicator.className = 'network-indicator';
+        document.body.appendChild(indicator);
+      }
+      
+      const isOnline = navigator.onLine;
+      indicator.textContent = isOnline ? '🌐 En ligne' : '❌ Hors ligne';
+      indicator.className = `network-indicator ${isOnline ? 'network-online' : 'network-offline'}`;
+    }
+
+    // Test Service Worker
+    async function testServiceWorker() {
+      addLog('🔧 Test Service Worker...');
+      
+      try {
+        // Diagnostic détaillé
+        addLog('📱 User Agent: ' + navigator.userAgent);
+        addLog('🌐 HTTPS: ' + (location.protocol === 'https:'));
+        addLog('🏠 Localhost: ' + (location.hostname === 'localhost' || location.hostname === '127.0.0.1'));
+        
+        if ('serviceWorker' in navigator) {
+          addLog('✅ Service Worker supporté par le navigateur');
+          
+          const registration = await navigator.serviceWorker.getRegistration();
+          
+          if (registration) {
+            addLog('✅ Service Worker enregistré');
+            addLog('📋 Scope: ' + registration.scope);
+            addLog('📋 État: ' + registration.active ? 'Actif' : 'Inactif');
+            
+            showResult('serviceWorkerResult', '✅ Service Worker fonctionne', 'success');
+          } else {
+            addLog('❌ Service Worker non enregistré');
+            addLog('🔄 Tentative d\'enregistrement...');
+            
+            try {
+              const newRegistration = await navigator.serviceWorker.register('service-worker.js', {
+                scope: '/'
+              });
+              addLog('✅ Service Worker enregistré avec succès');
+              showResult('serviceWorkerResult', '✅ Service Worker enregistré', 'success');
+            } catch (regError) {
+              addLog('❌ Erreur enregistrement: ' + regError.message);
+              showResult('serviceWorkerResult', '❌ Erreur enregistrement: ' + regError.message, 'error');
+            }
+          }
+        } else {
+          addLog('❌ Service Worker non supporté par le navigateur');
+          addLog('💡 Vérifiez que vous utilisez HTTPS ou localhost');
+          showResult('serviceWorkerResult', '❌ Service Worker non supporté', 'error');
+        }
+      } catch (error) {
+        addLog('❌ Erreur Service Worker: ' + error.message);
+        showResult('serviceWorkerResult', '❌ Erreur: ' + error.message, 'error');
+      }
+    }
+
+    // Test Cache
+    async function testCache() {
+      addLog('🗄️ Test Cache...');
+      
+      try {
+        // Vérifier si Cache API est disponible
+        if ('caches' in window) {
+          addLog('✅ Cache API supportée');
+          
+          const cache = await caches.open('jpsi-cache-v1.3.12');
+          const keys = await cache.keys();
+          
+          addLog('✅ Cache ouvert');
+          addLog('📋 Nombre de fichiers en cache: ' + keys.length);
+          
+          for (const request of keys.slice(0, 5)) {
+            addLog('📄 ' + request.url.split('/').pop());
+          }
+          
+          showResult('serviceWorkerResult', '✅ Cache fonctionne (' + keys.length + ' fichiers)', 'success');
+        } else {
+          addLog('❌ Cache API non supportée');
+          addLog('💡 Vérifiez que vous utilisez HTTPS ou localhost');
+          showResult('serviceWorkerResult', '❌ Cache API non supportée', 'error');
+        }
+      } catch (error) {
+        addLog('❌ Erreur Cache: ' + error.message);
+        showResult('serviceWorkerResult', '❌ Erreur Cache: ' + error.message, 'error');
+      }
+    }
+
+    // Test réseau
+    function testNetwork() {
+      addLog('🌐 Test réseau...');
+      
+      const isOnline = navigator.onLine;
+      addLog('📡 Statut: ' + (isOnline ? 'En ligne' : 'Hors ligne'));
+      
+      showNetworkIndicator();
+      
+      if (isOnline) {
+        showResult('networkResult', '✅ Connexion réseau active', 'success');
+      } else {
+        showResult('networkResult', '❌ Pas de connexion réseau', 'error');
+      }
+    }
+
+    // Simuler hors ligne
+    function simulateOffline() {
+      addLog('🔄 Simulation hors ligne...');
+      
+      // Simuler un changement de statut réseau
+      const event = new Event('offline');
+      window.dispatchEvent(event);
+      
+      addLog('📡 Statut simulé: Hors ligne');
+      showNetworkIndicator();
+      
+      showResult('networkResult', '🔄 Mode hors ligne simulé', 'info');
+    }
+
+    // Test navigation
+    async function testNavigation() {
+      addLog('🧭 Test navigation...');
+      
+      try {
+        // Tester si les pages principales sont en cache
+        const pages = [
+          'index.html',
+          'verification.html',
+          'newVerification.html',
+          'verifSite.html'
+        ];
+        
+        let cachedPages = 0;
+        
+        for (const page of pages) {
+          try {
+            const response = await caches.match(page);
+            if (response) {
+              cachedPages++;
+              addLog('✅ ' + page + ' en cache');
+            } else {
+              addLog('❌ ' + page + ' pas en cache');
+            }
+          } catch (error) {
+            addLog('❌ Erreur test ' + page + ': ' + error.message);
+          }
+        }
+        
+        showResult('navigationResult', 
+          `📊 Navigation testée: ${cachedPages}/${pages.length} pages en cache`, 
+          cachedPages === pages.length ? 'success' : 'info');
+        
+      } catch (error) {
+        addLog('❌ Erreur navigation: ' + error.message);
+        showResult('navigationResult', '❌ Erreur navigation: ' + error.message, 'error');
+      }
+    }
+
+    // Test pages offline
+    async function testOfflinePages() {
+      addLog('📱 Test pages offline...');
+      
+      const testPages = [
+        { name: 'Accueil', url: 'index.html' },
+        { name: 'Vérifications', url: 'verification.html' },
+        { name: 'Nouvelle vérification', url: 'newVerification.html' },
+        { name: 'Site de vérification', url: 'verifSite.html' }
+      ];
+      
+      let results = [];
+      
+      for (const page of testPages) {
+        try {
+          const response = await fetch(page.url, { method: 'HEAD' });
+          if (response.ok) {
+            results.push(`✅ ${page.name}`);
+            addLog(`✅ ${page.name} accessible`);
+          } else {
+            results.push(`❌ ${page.name}`);
+            addLog(`❌ ${page.name} non accessible`);
+          }
+        } catch (error) {
+          results.push(`❌ ${page.name}`);
+          addLog(`❌ ${page.name} erreur: ${error.message}`);
+        }
+      }
+      
+      showResult('navigationResult', results.join('<br>'), 'info');
+    }
+
+    // Effacer les logs
+    function clearLogs() {
+      document.getElementById('logs').innerHTML = '';
+      addLog('🧹 Logs effacés');
+    }
+
+    // Listeners pour les événements réseau
+    window.addEventListener('online', () => {
+      addLog('🌐 Connexion rétablie');
+      showNetworkIndicator();
+    });
+
+    window.addEventListener('offline', () => {
+      addLog('❌ Connexion perdue');
+      showNetworkIndicator();
+    });
+
+    // Initialisation au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+      addLog('🚀 Page de test offline chargée');
+      addLog('📱 User Agent: ' + navigator.userAgent);
+      addLog('🌐 En ligne: ' + navigator.onLine);
+      
+      showNetworkIndicator();
+      
+      // Test automatique du Service Worker
+      setTimeout(() => {
+        testServiceWorker();
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

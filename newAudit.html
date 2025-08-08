@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nouvel Audit Prospect</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    .form-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .form-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+    .form-section h3 {
+      color: #9B2423;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    .equip-section {
+      margin-bottom: 1.5rem;
+    }
+    .equip-types {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      margin-bottom: 1rem;
+    }
+    .equip-type-btn {
+      background: #9B2423;
+      border: 2px solid #9B2423;
+      color: #fff;
+      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .equip-type-btn.selected {
+      background: #7a1d1c;
+      color: #fff;
+      border-bottom: 4px solid #000;
+      border: 3px solid #000;
+    }
+    .equip-type-btn:hover {
+      background: #7a1d1c;
+      color: #fff;
+    }
+    
+    .equip-type-btn.eau {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #fff;
+    }
+    .equip-type-btn.eau.selected {
+      background: #1742a0;
+      border-color: #1742a0;
+      color: #fff;
+      border-bottom: 4px solid #000;
+      border: 3px solid #000;
+    }
+    .equip-type-btn.eau:hover {
+      background: #1742a0;
+      border-color: #1742a0;
+      color: #fff;
+    }
+    
+    .equip-type-btn.co2 {
+      background: #6b7280;
+      border-color: #6b7280;
+      color: #fff;
+    }
+    .equip-type-btn.co2.selected {
+      background: #374151;
+      border-color: #374151;
+      color: #fff;
+      border-bottom: 4px solid #000;
+      border: 3px solid #000;
+    }
+    .equip-type-btn.co2:hover {
+      background: #374151;
+      border-color: #374151;
+      color: #fff;
+    }
+    
+    .equip-type-btn.poudre {
+      background: #fbbf24;
+      border-color: #f59e1b;
+      color: #fff;
+    }
+    .equip-type-btn.poudre.selected {
+      background: #f59e1b;
+      border-color: #d97706;
+      color: #fff;
+      border-bottom: 4px solid #000;
+      border: 3px solid #000;
+    }
+    .equip-type-btn.poudre:hover {
+      background: #f59e1b;
+      border-color: #d97706;
+      color: #fff;
+    }
+    
+    /* Styles pour les boutons de signalétique */
+    .signal-btn {
+      border: 2px solid;
+      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #fff;
+      white-space: nowrap;
+    }
+    
+    .signal-btn.plan-intervention {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+    .signal-btn.plan-intervention.selected {
+      background: #b91c1c;
+      border-color: #b91c1c;
+      border-bottom: 4px solid #000;
+      border: 3px solid #000;
+    }
+    .signal-btn.plan-intervention:hover {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+    
+    .signal-btn.plan-evacuation {
+      background: #16a34a;
+      border-color: #16a34a;
+    }
+    .signal-btn.plan-evacuation.selected {
+      background: #15803d;
+      border-color: #15803d;
+      border-bottom: 4px solid #000;
+      border: 3px solid #000;
+    }
+    .signal-btn.plan-evacuation:hover {
+      background: #15803d;
+      border-color: #15803d;
+    }
+    
+    .signal-btn.consigne-urgence, .signal-btn.consigne-appel {
+      background: #1e40af;
+      border-color: #1e40af;
+    }
+    .signal-btn.consigne-urgence.selected, .signal-btn.consigne-appel.selected {
+      background: #1e3a8a;
+      border-color: #1e3a8a;
+      border-bottom: 4px solid #000;
+      border: 3px solid #000;
+    }
+    .signal-btn.consigne-urgence:hover, .signal-btn.consigne-appel:hover {
+      background: #1e3a8a;
+      border-color: #1e3a8a;
+    }
+    
+    .signal-btn.autre {
+      background: #fff;
+      border-color: #374151;
+      color: #374151;
+    }
+    .signal-btn.autre.selected {
+      background: #f3f4f6;
+      border-color: #1f2937;
+      color: #1f2937;
+      border-bottom: 4px solid #000;
+      border: 3px solid #000;
+    }
+    .signal-btn.autre:hover {
+      background: #f3f4f6;
+      border-color: #1f2937;
+      color: #1f2937;
+    }
+    
+    /* Styles pour la modale */
+    .modale {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modale-contenu {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modale-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .modale-header h3 {
+      margin: 0;
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    
+    .modale-fermer {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modale-fermer:hover {
+      color: #374151;
+    }
+    
+    .modale-body {
+      padding: 1.5rem;
+    }
+    
+    .modale-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+    }
+    
+    .btn-secondaire {
+      background: #f3f4f6;
+      color: #374151;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-secondaire:hover {
+      background: #e5e7eb;
+      border-color: #9ca3af;
+    }
+    
+    .etablissement-types {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .etab-type-btn {
+      background: #9B2423;
+      border: 2px solid #9B2423;
+      color: #fff;
+      border-radius: 8px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .etab-type-btn.selected, .etab-type-btn:hover {
+      background: #7a1d1c;
+      color: #fff;
+    }
+    
+    .form-select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      background: white;
+    }
+    
+    .form-select:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    .equip-list {
+      margin-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 1rem;
+    }
+    .equip-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .equip-item:last-child {
+      border-bottom: none;
+    }
+    .remove-equip-btn {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-left: 1rem;
+      transition: background 0.2s;
+    }
+    .remove-equip-btn:hover {
+      background: #b91c1c;
+    }
+    .action-btn {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      align-self: flex-end;
+    }
+    .action-btn:hover {
+      background: #7a1d1c;
+      transform: translateY(-1px);
+    }
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      .header-card, .form-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      .form-section {
+        border-radius: 10px;
+        padding: 1rem;
+      }
+      .header-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">‹</button>
+      <h1 class="header-title">Nouvel Audit</h1>
+    </div>
+    <!-- Form Card -->
+    <div class="form-card">
+      <!-- Section Contact -->
+      <div class="form-section">
+        <h3>Contact</h3>
+        <div class="form-group"><label class="form-label">Nom</label><input type="text" class="form-input" id="nom_prospect" required></div>
+        <div class="form-group"><label class="form-label">Téléphone</label><input type="text" class="form-input" id="tel_prospect"></div>
+        <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="mail_prospect"></div>
+        <div class="form-group"><label class="form-label">Fonction</label><input type="text" class="form-input" id="fonction_prospect"></div>
+      </div>
+      
+      <!-- Section Établissement -->
+      <div class="form-section">
+        <h3>Informations Établissement</h3>
+        <div class="form-group"><label class="form-label">Nom de l'établissement</label><input type="text" class="form-input" id="nom_etablissement"></div>
+        <div class="form-group"><label class="form-label">Adresse</label><input type="text" class="form-input" id="adr_prospect"></div>
+        <div class="form-group"><label class="form-label">Ville</label><input type="text" class="form-input" id="ville_prospect"></div>
+        <div class="form-group"><label class="form-label">Code Postal</label><input type="text" class="form-input" id="cp_prospect"></div>
+        <div class="form-group"><label class="form-label">SIREN</label><input type="text" class="form-input" id="siren_prospect"></div>
+      </div>
+      
+      <!-- Section Type d'établissement -->
+      <div class="form-section">
+        <h3>Type d'établissement</h3>
+        <div class="form-group">
+          <label class="form-label">Famille</label>
+          <div class="etablissement-types">
+            <button type="button" class="etab-type-btn" data-type="ERP">ERP</button>
+            <button type="button" class="etab-type-btn" data-type="ERT">ERT</button>
+            <button type="button" class="etab-type-btn" data-type="Habitation">Habitation</button>
+          </div>
+        </div>
+        <div id="erp-fields" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">Type ERP</label>
+            <select class="form-select" id="type_erp">
+              <option value="">Sélectionner</option>
+              <option value="J">J - Structures d’accueil pour personnes âgées ou handicapées</option>
+              <option value="L">L - Salles d’auditions, de conférences, de réunions, de spectacles ou à usage multiple</option>
+              <option value="M">M - Magasins de vente, centres commerciaux</option>
+              <option value="N">N - Restaurants et débits de boissons</option>
+              <option value="O">O - Hôtels et pensions de famille</option>
+              <option value="P">P - Salles de danse et salles de jeux</option>
+              <option value="R">R - Établissements d’enseignement, colonies de vacances</option>
+              <option value="S">S - Bibliothèques, centres de documentation</option>
+              <option value="T">T - Salles d’exposition à vocation commerciale</option>
+              <option value="U">U - Établissements de soins</option>
+              <option value="V">V - Établissements de culte</option>
+              <option value="W">W - Administrations, banques, bureaux</option>
+              <option value="X">X - Établissements sportifs couverts</option>
+              <option value="Y">Y - Musées</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catégorie ERP</label>
+            <select class="form-select" id="categorie_erp">
+              <option value="">Sélectionner</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Section Observation -->
+      <div class="form-section">
+        <h3>Observation sur le site</h3>
+        <textarea class="form-textarea" id="observation_site" placeholder="Observations, remarques, contexte..."></textarea>
+      </div>
+      <!-- Section Ajout Equipement -->
+      <div class="form-section equip-section">
+        <h3>Ajouter un équipement proposé</h3>
+        <div class="form-group"><label class="form-label">Localisation</label><input type="text" class="form-input" id="localisation_equip"></div>
+        <div class="form-group"><label class="form-label">Type d'extincteur</label>
+          <div class="equip-types" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="display: flex; flex-wrap: wrap; gap: 0.7rem;">
+              <button type="button" class="equip-type-btn eau" data-type="EP6">EP6</button>
+              <button type="button" class="equip-type-btn eau" data-type="EP9">EP9</button>
+              <button type="button" class="equip-type-btn eau" data-type="EP6A">EP6A</button>
+              <button type="button" class="equip-type-btn eau" data-type="EP9A">EP9A</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.7rem;">
+              <button type="button" class="equip-type-btn co2" data-type="CO²2kg">CO²2kg</button>
+              <button type="button" class="equip-type-btn co2" data-type="CO²5kg">CO²5kg</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.7rem;">
+              <button type="button" class="equip-type-btn poudre" data-type="PP1">PP1</button>
+              <button type="button" class="equip-type-btn poudre" data-type="PP2">PP2</button>
+              <button type="button" class="equip-type-btn poudre" data-type="PP6">PP6</button>
+              <button type="button" class="equip-type-btn poudre" data-type="PP9">PP9</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.7rem;">
+              <button type="button" class="signal-btn plan-intervention" data-type="Plan d'intervention">Plan d'intervention</button>
+              <button type="button" class="signal-btn plan-evacuation" data-type="Plan d'évacuation">Plan d'évacuation</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.7rem;">
+              <button type="button" class="signal-btn consigne-urgence" data-type="Consigne d'urgence">Consigne d'urgence</button>
+              <button type="button" class="signal-btn consigne-appel" data-type="Consigne d'appel">Consigne d'appel</button>
+              <button type="button" class="signal-btn autre" onclick="ouvrirModaleAutre()">AUTRE...</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Justification</label><input type="text" class="form-input" id="justification_equip"></div>
+        <button type="button" class="action-btn" onclick="addEquipement()">Ajouter à la liste</button>
+        <div class="equip-list" id="equipList"></div>
+      </div>
+      <button class="action-btn" onclick="validerAudit()">Valider l'audit</button>
+    </div>
+  </div>
+
+  <!-- Modale pour AUTRE -->
+  <div id="modaleAutre" class="modale" style="display: none;">
+    <div class="modale-contenu">
+      <div class="modale-header">
+        <h3>Autre élément de signalétique</h3>
+        <button class="modale-fermer" onclick="fermerModaleAutre()">&times;</button>
+      </div>
+      <div class="modale-body">
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-input" id="autre_signaletique" placeholder="Décrivez l'élément de signalétique...">
+        </div>
+        <div class="modale-actions">
+          <button type="button" class="action-btn" onclick="ajouterAutreSignaletique()">Ajouter</button>
+          <button type="button" class="btn-secondaire" onclick="fermerModaleAutre()">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let selectedType = null;
+    let selectedEtabType = null;
+    let equipements = [];
+    let etablissementInfo = {}; // Pour stocker les infos ERP localement
+    let signaletiqueSelectionnee = []; // Pour stocker les éléments de signalétique sélectionnés
+    
+    // Sélection unique globale (un seul bouton à la fois)
+    document.querySelectorAll('.equip-type-btn, .signal-btn:not(.autre)').forEach(btn => {
+      btn.addEventListener('click', function() {
+        // Désélectionner tous les boutons
+        document.querySelectorAll('.equip-type-btn, .signal-btn').forEach(b => b.classList.remove('selected'));
+        
+        // Sélectionner le bouton cliqué
+        this.classList.add('selected');
+        
+        // Mettre à jour la variable appropriée
+        if (this.classList.contains('equip-type-btn')) {
+          selectedType = this.getAttribute('data-type');
+          signaletiqueSelectionnee = [];
+        } else {
+          selectedType = null;
+          signaletiqueSelectionnee = [this.getAttribute('data-type')];
+        }
+        
+        console.log('Type sélectionné:', selectedType);
+        console.log('Signalétique sélectionnée:', signaletiqueSelectionnee);
+      });
+    });
+    
+    // Sélection du type d'établissement
+    document.querySelectorAll('.etab-type-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.etab-type-btn').forEach(b => b.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedEtabType = this.getAttribute('data-type');
+        
+        // Afficher/masquer les champs ERP
+        const erpFields = document.getElementById('erp-fields');
+        if (selectedEtabType === 'ERP') {
+          erpFields.style.display = 'block';
+        } else {
+          erpFields.style.display = 'none';
+        }
+      });
+    });
+    
+    function addEquipement() {
+      const localisation = document.getElementById('localisation_equip').value.trim();
+      const justification = document.getElementById('justification_equip').value.trim();
+      
+      // Vérifier qu'un élément est sélectionné
+      if (!selectedType && signaletiqueSelectionnee.length === 0) {
+        alert('Merci de sélectionner un équipement ou un élément de signalétique.');
+        return;
+      }
+      
+      // Ajouter l'élément sélectionné
+      if (selectedType) {
+        // C'est un extincteur
+        if (!localisation) {
+          alert('Merci de renseigner la localisation pour les extincteurs.');
+          return;
+        }
+        equipements.push({ type: selectedType, localisation, justification });
+      } else {
+        // C'est un élément de signalétique
+        equipements.push({ type: signaletiqueSelectionnee[0], localisation: 'Signalétique', justification: '' });
+      }
+      
+      renderEquipList();
+      
+      // Reset des champs
+      document.getElementById('localisation_equip').value = '';
+      document.getElementById('justification_equip').value = '';
+      document.querySelectorAll('.equip-type-btn, .signal-btn').forEach(b => b.classList.remove('selected'));
+      selectedType = null;
+      signaletiqueSelectionnee = [];
+    }
+    
+    function removeEquipement(idx) {
+      equipements.splice(idx, 1);
+      renderEquipList();
+    }
+    
+    function renderEquipList() {
+      const list = document.getElementById('equipList');
+      if (equipements.length === 0) {
+        list.innerHTML = '<em>Aucun équipement ajouté.</em>';
+        return;
+      }
+      list.innerHTML = equipements.map((e, i) =>
+        `<div class='equip-item'>
+          <span><b>${e.type}</b> - ${e.localisation}${e.justification ? ' <em>(' + e.justification + ')</em>' : ''}</span>
+          <button class='remove-equip-btn' onclick='removeEquipement(${i})'>Supprimer</button>
+        </div>`
+      ).join('');
+    }
+
+    // Navigation
+    function goBack() {
+      window.location.href = 'audits.html';
+    }
+
+    // Validation et enregistrement de l'audit
+    async function validerAudit() {
+      // ... (le code de validation et d'enregistrement existant ici) ...
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 Initialisation de la page Nouvel Audit...');
+      renderEquipList();
+    });
+
+    // Fonctions pour la modale
+    function ouvrirModaleAutre() {
+      document.getElementById('modaleAutre').style.display = 'flex';
+      document.getElementById('autre_signaletique').focus();
+    }
+
+    function fermerModaleAutre() {
+      document.getElementById('modaleAutre').style.display = 'none';
+      document.getElementById('autre_signaletique').value = '';
+    }
+
+    function ajouterAutreSignaletique() {
+      const description = document.getElementById('autre_signaletique').value.trim();
+      
+      if (!description) {
+        alert('Veuillez saisir une description.');
+        return;
+      }
+      
+      signaletiqueSelectionnee.push(description);
+      console.log('Signalétique sélectionnée:', signaletiqueSelectionnee);
+      
+      fermerModaleAutre();
+    }
+
+    // Fermer la modale en cliquant à l'extérieur
+    document.getElementById('modaleAutre').addEventListener('click', function(e) {
+      if (e.target === this) {
+        fermerModaleAutre();
+      }
+    });
+  </script>
+</body>
+</html>

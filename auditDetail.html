@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Détail Audit</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsPDF pour générer le PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Header uniforme avec le reste de l'app */
+    .header-section {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .back-btn {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .back-btn:hover {
+      background: #7a1d1c;
+    }
+
+    .header-content h1 {
+      color: #23272b;
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .header-content p {
+      color: #6b7280;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Grille principale */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* Cartes uniformes */
+    .card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(30,32,36,0.18);
+    }
+
+    .card-title {
+      color: #23272b;
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Informations */
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .info-item:last-child {
+      border-bottom: none;
+    }
+
+    .info-item:hover {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      margin: 0 -1rem;
+    }
+
+    .info-label {
+      color: #6b7280;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .info-value {
+      color: #23272b;
+      font-weight: 700;
+      text-align: right;
+      max-width: 60%;
+      word-break: break-word;
+    }
+
+    /* Liste des équipements */
+    .equip-list {
+      max-height: none;
+      overflow-y: visible;
+      padding-right: 0;
+    }
+
+    .equip-item {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .equip-item:hover {
+      transform: translateY(-1px);
+      border-color: #9B2423;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.1);
+    }
+
+    .equip-type {
+      color: #23272b;
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .equip-location {
+      color: #6b7280;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .equip-justification {
+      color: #9ca3af;
+      font-style: italic;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+
+
+    /* Actions */
+    .actions-section {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 1rem 2rem;
+      color: #23272b;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 180px;
+      justify-content: center;
+      font-family: inherit;
+    }
+
+    .action-btn:hover {
+      background: #f9fafb;
+      border-color: #d1d5db;
+      transform: translateY(-1px);
+    }
+
+    .action-btn.primary {
+      background: #9B2423;
+      color: white;
+      border-color: #9B2423;
+    }
+
+    .action-btn.primary:hover {
+      background: #7a1d1c;
+      border-color: #7a1d1c;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* États de chargement et erreur */
+    .loading, .error {
+      text-align: center;
+      padding: 2rem;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+
+    .error {
+      color: #dc2626;
+    }
+
+    /* Responsive uniforme */
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      
+      .container {
+        padding: 1.5rem;
+        gap: 1.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header-section {
+        padding: 1.5rem;
+        border-radius: 18px;
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
+
+      .header-content h1 {
+        font-size: 1.8rem;
+      }
+
+      .card {
+        padding: 1.5rem;
+        border-radius: 18px;
+      }
+
+      .actions-section {
+        flex-direction: column;
+        padding: 1.5rem;
+        border-radius: 18px;
+      }
+
+      .action-btn {
+        width: 100%;
+        min-width: auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+
+      .card {
+        padding: 1rem;
+      }
+
+      .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .info-value {
+        text-align: left;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header moderne -->
+    <div class="header-section">
+      <button class="back-btn" onclick="goBack()" title="Retour">‹</button>
+      <div class="header-content">
+        <h1>Détail Audit</h1>
+        <p>Consultez et gérez les informations de l'audit</p>
+      </div>
+    </div>
+
+    <!-- Grille principale -->
+    <div class="main-grid">
+      <!-- Informations Prospect & Audit -->
+      <div class="card">
+        <h2 class="card-title">📋 Informations Prospect</h2>
+        <div id="prospectInfo">
+          <div class="loading">Chargement...</div>
+        </div>
+      </div>
+
+      <!-- Équipements Proposés -->
+      <div class="card">
+        <h2 class="card-title">🔧 Équipements Proposés</h2>
+        <div id="equipementsList" class="equip-list">
+          <div class="loading">Chargement...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Détails Audit -->
+    <div class="card">
+      <h2 class="card-title">📊 Détails Audit</h2>
+      <div id="auditInfo">
+        <div class="loading">Chargement...</div>
+      </div>
+    </div>
+
+
+
+    <!-- Actions -->
+    <div class="actions-section">
+      <button class="action-btn" onclick="goBack()">
+        <span>←</span>
+        Retour
+      </button>
+      <button class="action-btn primary" id="validateButton" onclick="validateAndGeneratePDF()">
+        <span>✅</span>
+        Valider & Générer PDF
+      </button>
+      <button class="action-btn" onclick="updateStatut('Devis fait')">
+        <span>📋</span>
+        Devis Fait
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+        window.location.href = 'auditHistory.html';
+    }
+    
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    const RECIPIENT_EMAIL = 'contact@jpsincendie.com';
+    
+    let currentAudit = null;
+    let currentProspect = null;
+    let equipements = [];
+    
+    // Fonction pour envoyer un email via Supabase Edge Function
+    async function sendEmail(emailData) {
+      try {
+        const { data, error } = await supabase.functions.invoke('resend-email', {
+          body: emailData
+        });
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        return data;
+      } catch (error) {
+        console.error('❌ Erreur envoi email:', error);
+        throw error;
+      }
+    }
+    
+    function getAuditIdFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const auditId = urlParams.get('id');
+      if (!auditId) {
+        console.error('❌ Aucun ID d\'audit fourni dans l\'URL');
+        return null;
+      }
+      return decodeURIComponent(auditId);
+    }
+    
+    async function loadAuditData(auditId) {
+      try {
+        const { data: audit, error: auditError } = await supabase
+          .from('audits')
+          .select('*')
+          .eq('id_audit', auditId)
+          .single();
+        if (auditError || !audit) {
+          showError('Erreur lors du chargement de l\'audit');
+          return;
+        }
+        currentAudit = audit;
+        await loadProspectInfo(audit.id_prospect);
+        await loadEquipements(auditId);
+        updateDisplay();
+      } catch (error) {
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    async function loadProspectInfo(prospectId) {
+      try {
+        const { data: prospect, error } = await supabase
+          .from('prospects')
+          .select('*')
+          .eq('id_prospect', prospectId)
+          .single();
+        if (error || !prospect) {
+          showError('Erreur lors du chargement du prospect');
+          return;
+        }
+        currentProspect = prospect;
+      } catch (error) {
+        showError('Erreur lors du chargement du prospect');
+      }
+    }
+    
+    async function loadEquipements(auditId) {
+      try {
+        console.log('🔍 Chargement des équipements pour l\'audit:', auditId);
+        
+        const { data: equipementsData, error } = await supabase
+          .from('audit_equipements')
+          .select('*')
+          .eq('id_audit', auditId)
+          .order('type_extincteur');
+          
+        if (error) {
+          console.error('❌ Erreur lors du chargement des équipements:', error);
+          showError('Erreur lors du chargement des équipements');
+          return;
+        }
+        
+        equipements = equipementsData || [];
+        console.log('✅ Équipements chargés:', equipements.length, 'équipements');
+        console.log('📋 Types d\'équipements:', equipements.map(e => e.type_extincteur));
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des équipements:', error);
+        showError('Erreur lors du chargement des équipements');
+      }
+    }
+    
+    // Fonction pour obtenir l'icône selon le type d'équipement
+    function getEquipementIcon(type) {
+      const typeLower = type.toLowerCase();
+      
+      // Extincteurs Eau
+      if (typeLower.includes('ep6') || typeLower.includes('ep9') || typeLower.includes('eau')) {
+        return '💧';
+      }
+      // Extincteurs CO₂
+      if (typeLower.includes('co²') || typeLower.includes('co2') || typeLower.includes('co')) {
+        return '❄️';
+      }
+      // Extincteurs Poudre
+      if (typeLower.includes('pp') || typeLower.includes('poudre')) {
+        return '🧨';
+      }
+      // Plans
+      if (typeLower.includes('plan') || typeLower.includes('évacuation') || typeLower.includes('evacuation')) {
+        return '🗺️';
+      }
+      // Signalétique
+      if (typeLower.includes('signal') || typeLower.includes('consigne') || typeLower.includes('picto')) {
+        return '🚨';
+      }
+      // Autres équipements
+      return '🔧';
+    }
+    
+    function updateDisplay() {
+      if (!currentAudit || !currentProspect) return;
+      
+      // Prospect
+      const prospectContainer = document.getElementById('prospectInfo');
+      prospectContainer.innerHTML = `
+        <div class="info-item">
+          <span class="info-label">🏢 Nom</span>
+          <span class="info-value">${currentProspect.nom_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">📍 Adresse</span>
+          <span class="info-value">${currentProspect.adr_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">🏙️ Ville</span>
+          <span class="info-value">${currentProspect.ville_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">📮 Code Postal</span>
+          <span class="info-value">${currentProspect.cp_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">📞 Téléphone</span>
+          <span class="info-value">${currentProspect.tel_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">✉️ Email</span>
+          <span class="info-value">${currentProspect.mail_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">👤 Responsable</span>
+          <span class="info-value">${currentProspect.resp_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">📱 Téléphone Responsable</span>
+          <span class="info-value">${currentProspect.telresp_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">📧 Email Responsable</span>
+          <span class="info-value">${currentProspect.mailresp_prospect || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">🏛️ SIREN</span>
+          <span class="info-value">${currentProspect.siren_prospect || 'N/A'}</span>
+        </div>
+      `;
+      
+      // Audit
+      const auditContainer = document.getElementById('auditInfo');
+      auditContainer.innerHTML = `
+        <div class="info-item">
+          <span class="info-label">🔢 Numéro Audit</span>
+          <span class="info-value">${currentAudit.num_audit || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">📅 Date Audit</span>
+          <span class="info-value">${currentAudit.date_audit_site || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">📊 Statut</span>
+          <span class="info-value">${currentAudit.statut || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">📝 Observation</span>
+          <span class="info-value">${currentAudit.observation_site || 'Aucune observation'}</span>
+        </div>
+      `;
+      
+      // Équipements
+      const equipementsContainer = document.getElementById('equipementsList');
+      if (!equipements || equipements.length === 0) {
+        equipementsContainer.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.7); font-style: italic; padding: 2rem;">Aucun équipement trouvé.</div>';
+      } else {
+        console.log('🎯 Affichage de', equipements.length, 'équipements');
+        
+        // Grouper les équipements par type
+        const groupedEquipements = {};
+        equipements.forEach(equip => {
+          if (!groupedEquipements[equip.type_extincteur]) {
+            groupedEquipements[equip.type_extincteur] = [];
+          }
+          groupedEquipements[equip.type_extincteur].push(equip);
+        });
+        
+        let equipementsHTML = '';
+        
+        // Grouper les équipements par localisation
+        const groupedByLocation = {};
+        equipements.forEach(equip => {
+          if (!groupedByLocation[equip.localisation]) {
+            groupedByLocation[equip.localisation] = [];
+          }
+          groupedByLocation[equip.localisation].push(equip);
+        });
+        
+        // Afficher chaque localisation avec ses équipements
+        Object.entries(groupedByLocation).forEach(([location, equipList]) => {
+          equipementsHTML += `
+            <div class="equip-item">
+              <div class="equip-location">📍 ${location}</div>
+              <div style="margin-top: 0.5rem;">
+                ${equipList.map(equip => `
+                  <div class="equip-type" style="margin-bottom: 0.3rem;">
+                    ${getEquipementIcon(equip.type_extincteur)} ${equip.type_extincteur}
+                    ${equip.justification ? `<div class="equip-justification" style="margin-left: 1.5rem; margin-top: 0.2rem;">💡 ${equip.justification}</div>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        });
+        
+        equipementsContainer.innerHTML = equipementsHTML;
+      }
+    }
+    
+    // Fonction pour générer le PDF professionnel
+    function generatePDF() {
+      if (!currentAudit || !currentProspect) {
+        alert('❌ Impossible de générer le PDF : données manquantes');
+        return null;
+      }
+      
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      // === HEADER AVEC LOGO ===
+      
+             // Logo centré (vrai logo) - 20% plus grand
+       try {
+         const logoImg = new Image();
+         logoImg.src = 'img/logo.png';
+         doc.addImage(logoImg, 'PNG', 80, 10, 48, 24); // 40*1.2=48, 20*1.2=24
+       } catch (error) {
+         // Fallback si le logo ne charge pas
+         doc.setTextColor(0, 0, 0);
+         doc.setFontSize(16);
+         doc.text('J.P. SÉCURITÉ INCENDIE', 105, 25, { align: 'center' });
+       }
+       
+       // Titre en noir en dessous - en gras
+       doc.setFontSize(14);
+       doc.setFont(undefined, 'bold');
+       doc.text('Rapport d\'audit sécurité incendie', 105, 40, { align: 'center' });
+       doc.setFont(undefined, 'normal');
+      
+             // === INFORMATIONS AUDIT ===
+       let y = 50;
+       
+               // Cadre avec angles arrondis - marges réduites
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.2); // Encore plus fin
+        doc.roundedRect(10, y, 190, 14, 2, 2); // Hauteur réduite : 15→14 (bas remonté de 1px)
+       
+               doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        // Centrer verticalement le texte dans le cadre (hauteur 15, donc centré à y+7.5)
+        doc.text(`Numéro d'audit : ${currentAudit.num_audit || 'N/A'}`, 15, y+7.5); // Centré verticalement
+        doc.text(`Date : ${new Date(currentAudit.date_audit_site).toLocaleDateString('fr-FR')}`, 115, y+7.5); // Centré verticalement
+      
+      y += 30;
+      
+             // === INFORMATIONS CLIENT ===
+       
+                       // Titre au-dessus du cadre - remonté de 8px et en gras
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('INFORMATIONS CLIENT', 15, y-8); // Remonté de 8px et en gras
+        doc.setFont(undefined, 'normal');
+        
+        // Cadre fin noir avec angles arrondis - remonté de 1px en dessous du titre
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.2); // Même épaisseur que informations audit
+        doc.roundedRect(10, y-7, 190, 25, 2, 2); // Hauteur ajustée : 45→25 (dernière ligne à y+12, +2px = 14, donc hauteur 25)
+        
+        doc.setFontSize(10);
+        
+                          // Colonne de gauche - interlignes uniformisés à 5px
+         doc.text(`Raison sociale: ${currentProspect.nom_prospect || 'N/A'}`, 15, y-2);
+         doc.text(`Adresse: ${currentProspect.adr_prospect || 'N/A'}`, 15, y+3); // Interligne uniforme de 5px
+         doc.text(`${currentProspect.cp_prospect || ''} ${currentProspect.ville_prospect || ''}`, 15, y+8); // Interligne uniforme de 5px
+         doc.text(`SIREN: ${currentProspect.siren_prospect || 'N/A'}`, 15, y+13); // Interligne uniforme de 5px
+       
+              y += 30; // Même espacement que entre audit et client (30 points)
+         
+         // === INFORMATIONS CONTACT ===
+         
+         // Titre au-dessus du cadre - remonté de 8px et en gras
+         doc.setTextColor(0, 0, 0);
+         doc.setFontSize(12);
+         doc.setFont(undefined, 'bold');
+         doc.text('INFORMATIONS CONTACT', 15, y-8); // Remonté de 8px et en gras
+         doc.setFont(undefined, 'normal');
+         
+         // Cadre fin noir avec angles arrondis - remonté de 1px en dessous du titre
+         doc.setDrawColor(0, 0, 0);
+         doc.setLineWidth(0.2); // Même épaisseur que informations audit
+         doc.roundedRect(10, y-7, 190, 20, 2, 2); // Hauteur ajustée pour 3 lignes
+         
+         doc.setFontSize(10);
+         
+         // Informations de contact - interlignes uniformisés à 5px
+         doc.text(`Contact: ${currentProspect.resp_prospect || 'N/A'}`, 15, y-2);
+         doc.text(`Téléphone: ${currentProspect.tel_prospect || 'N/A'}`, 15, y+3); // Interligne uniforme de 5px
+         doc.text(`Email: ${currentProspect.mail_prospect || 'N/A'}`, 15, y+8); // Interligne uniforme de 5px
+         
+         y += 40;
+        
+        // === OBSERVATION ===
+       if (currentAudit.observation_site && currentAudit.observation_site !== 'N/A') {
+         doc.setTextColor(0, 0, 0);
+         doc.setFontSize(12);
+         doc.text('OBSERVATIONS', 15, y);
+         
+         doc.setFontSize(10);
+         y += 8;
+         
+         // Découper le texte long - marges réduites
+         const observations = doc.splitTextToSize(currentAudit.observation_site, 180);
+         doc.text(observations, 15, y);
+         y += observations.length * 5 + 10;
+       }
+      
+                      // === ÉQUIPEMENTS PROPOSÉS ===
+        
+        // Titre en gras, positionné à 4px en dessous du cadre précédent
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('ÉQUIPEMENTS PROPOSÉS', 15, y+4); // Positionné à 4px en dessous du cadre précédent
+        doc.setFont(undefined, 'normal');
+        y += 10;
+      
+      if (equipements && equipements.length > 0) {
+        equipements.forEach((equip, index) => {
+          // Vérifier si on a assez de place (grand cadre = 25 points minimum)
+          if (y > 250) {
+            doc.addPage();
+            
+            // Header simple sur nouvelle page
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.text('Rapport d\'audit sécurité incendie (suite)', 105, 20, { align: 'center' });
+            
+            y = 40;
+          }
+          
+                                // Grand cadre pour chaque équipement avec angles arrondis - marges réduites
+           doc.setDrawColor(0, 0, 0);
+           doc.setLineWidth(0.3);
+           
+           let hauteurCadre = 25; // Hauteur de base
+           
+           // Calculer hauteur si justification
+           if (equip.justification) {
+             const justifLines = doc.splitTextToSize(equip.justification, 180);
+             hauteurCadre += (justifLines.length * 4) + 5;
+           }
+           
+           doc.roundedRect(10, y, 190, hauteurCadre, 2, 2); // Marges réduites : 15→10, 180→190
+           
+           // Séparateur vertical au milieu pour diviser emplacement/équipement
+           doc.line(105, y, 105, y + 20);
+           
+           // EMPLACEMENT (à gauche)
+           doc.setFontSize(10);
+           doc.text('EMPLACEMENT:', 15, y + 8);
+           doc.setFontSize(11);
+           doc.text(equip.localisation, 15, y + 15);
+           
+           // ÉQUIPEMENT (à droite)
+           doc.setFontSize(10);
+           doc.text('ÉQUIPEMENT PROPOSÉ:', 110, y + 8);
+           doc.setFontSize(11);
+           const icon = getEquipementIcon(equip.type_extincteur);
+           doc.text(`${icon} ${equip.type_extincteur}`, 110, y + 15);
+           
+           // JUSTIFICATION (en dessous sur toute la largeur)
+           if (equip.justification) {
+             doc.setFontSize(10);
+             doc.text('JUSTIFICATION:', 15, y + 25);
+             doc.setFontSize(9);
+             doc.setTextColor(60, 60, 60);
+             const justifications = doc.splitTextToSize(equip.justification, 180);
+             doc.text(justifications, 15, y + 32);
+             doc.setTextColor(0, 0, 0);
+           }
+          
+          y += hauteurCadre + 5; // Espacement entre les cadres
+        });
+             } else {
+         doc.setTextColor(100, 100, 100);
+         doc.setFontSize(11);
+         doc.text('Aucun équipement proposé.', 15, y);
+         y += 20;
+       }
+      
+      // === RÉSUMÉ QUANTITATIF ===
+      
+      if (y > 200) {
+        doc.addPage();
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(14);
+        doc.text('Rapport d\'audit sécurité incendie (suite)', 105, 20, { align: 'center' });
+        y = 40;
+      }
+      
+             doc.setTextColor(0, 0, 0);
+       doc.setFontSize(12);
+       doc.text('RÉSUMÉ QUANTITATIF', 15, y);
+       y += 10;
+      
+      // Détail par type avec noms longs
+      const counts = {};
+      const typesLongs = {
+        'EP6': 'Extincteur à eau pulvérisée 6 litres',
+        'EP9': 'Extincteur à eau pulvérisée 9 litres',
+        'EP6A': 'Extincteur à eau pulvérisée + additif 6 litres',
+        'EP9A': 'Extincteur à eau pulvérisée + additif 9 litres',
+        'CO²2kg': 'Extincteur au dioxyde de carbone 2 kg',
+        'CO²5kg': 'Extincteur au dioxyde de carbone 5 kg',
+        'PP1': 'Extincteur à poudre polyvalente 1 kg',
+        'PP2': 'Extincteur à poudre polyvalente 2 kg',
+        'PP6': 'Extincteur à poudre polyvalente 6 kg',
+        'PP9': 'Extincteur à poudre polyvalente 9 kg'
+      };
+      
+      equipements.forEach(equip => {
+        counts[equip.type_extincteur] = (counts[equip.type_extincteur] || 0) + 1;
+      });
+      
+      // Calculer hauteur du cadre selon le nombre de types
+      const nbTypes = Object.keys(counts).length;
+      const hauteurCadre = Math.max(30, (nbTypes * 8) + 20);
+      
+                    // Grand cadre avec angles arrondis - marges réduites
+       doc.setDrawColor(0, 0, 0);
+       doc.setLineWidth(0.3);
+       doc.roundedRect(10, y, 190, hauteurCadre, 2, 2); // Marges réduites : 15→10, 180→190
+       
+       doc.setFontSize(11);
+       doc.text(`Total des équipements proposés: ${equipements.length}`, 15, y + 10);
+       
+       // Liste détaillée
+       doc.setFontSize(10);
+       let yInterne = y + 20;
+       
+       Object.entries(counts).forEach(([type, count]) => {
+         const nomLong = typesLongs[type] || type;
+         doc.text(`• ${nomLong}: ${count}`, 15, yInterne);
+         yInterne += 7;
+       });
+      
+      y += hauteurCadre + 20;
+      
+      // === FOOTER SIMPLE ===
+      
+      // Aller au bas de la page pour le footer
+      const pageHeight = doc.internal.pageSize.height;
+      
+             // Ligne séparatrice simple - marges réduites
+       doc.setDrawColor(0, 0, 0);
+       doc.setLineWidth(0.3);
+       doc.line(15, pageHeight - 25, 195, pageHeight - 25);
+       
+       // Informations de contact discrètes
+       doc.setTextColor(0, 0, 0);
+       doc.setFontSize(9);
+       doc.text('J.P. SÉCURITÉ INCENDIE', 15, pageHeight - 15);
+       doc.text('contact@jpsincendie.com', 105, pageHeight - 15, { align: 'center' });
+       
+       doc.setTextColor(100, 100, 100);
+       doc.setFontSize(8);
+       doc.text(`Document généré le ${new Date().toLocaleDateString('fr-FR')}`, 195, pageHeight - 15, { align: 'right' });
+      
+      return doc;
+    }
+    
+    // Fonction pour envoyer le PDF par email
+    async function sendPDFByEmail(pdfBlob) {
+      try {
+        // Convertir le PDF en base64
+        const reader = new FileReader();
+        return new Promise((resolve, reject) => {
+          reader.onload = async function() {
+            const pdfBase64 = reader.result.split(',')[1];
+            
+            // Paramètres pour EmailJS
+            const templateParams = {
+              to_email: RECIPIENT_EMAIL,
+              audit_number: currentAudit.num_audit || 'N/A',
+              prospect_name: currentProspect.nom_prospect || 'N/A',
+              pdf_attachment: pdfBase64,
+              message: `Rapport d'audit ${currentAudit.num_audit} pour ${currentProspect.nom_prospect}`
+            };
+            
+            // Envoi via client email par défaut (temporaire en attendant la config du domaine)
+            try {
+              const pdfBlob = new Blob([pdf_attachment], { type: 'application/pdf' });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
+              
+              // Créer le lien de téléchargement
+              const link = document.createElement('a');
+              link.href = pdfUrl;
+              link.download = `Audit_${currentAudit.num_audit}_${currentProspect.nom_prospect}.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              
+              // Libérer l'URL
+              URL.revokeObjectURL(pdfUrl);
+              
+              // Créer le contenu de l'email
+              const subject = `Rapport d'audit - ${currentAudit.num_audit}`;
+              const body = `Bonjour,
+
+Veuillez trouver ci-joint le rapport d'audit pour ${currentProspect.nom_prospect}.
+
+Numéro d'audit : ${currentAudit.num_audit}
+
+Cordialement,
+J.P. SÉCURITÉ INCENDIE`;
+              
+              // Ouvrir le client email avec les informations pré-remplies
+              const mailtoLink = `mailto:${RECIPIENT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+              window.location.href = mailtoLink;
+              
+              console.log('✅ Client email ouvert avec succès');
+              resolve(true);
+            } catch (error) {
+              console.error('❌ Erreur envoi email:', error);
+              reject(error);
+            }
+          };
+          reader.readAsDataURL(pdfBlob);
+        });
+      } catch (error) {
+        console.error('❌ Erreur lors de l\'envoi:', error);
+        throw error;
+      }
+    }
+    
+    // Fonction principale : valider audit + générer PDF
+    async function validateAndGeneratePDF() {
+      if (!currentAudit) {
+        alert('⚠️ Impossible de valider : audit non chargé');
+        return;
+      }
+      
+      const validateButton = document.getElementById('validateButton');
+      validateButton.disabled = true;
+      validateButton.textContent = '⏳ Génération PDF...';
+      
+      try {
+        // 1. Mettre à jour le statut
+        console.log('💾 Mise à jour du statut...');
+        const { error } = await supabase
+          .from('audits')
+          .update({ statut: 'Faire devis' })
+          .eq('id_audit', currentAudit.id_audit);
+        
+        if (error) {
+          throw new Error('Erreur lors de la mise à jour du statut');
+        }
+        
+        // 2. Générer le PDF
+        console.log('📄 Génération du PDF...');
+        validateButton.textContent = '📄 Génération PDF...';
+        const doc = generatePDF();
+        if (!doc) {
+          throw new Error('Erreur lors de la génération du PDF');
+        }
+        
+        // 3. Télécharger le PDF
+        const pdfBlob = doc.output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Audit_${currentAudit.num_audit}_${currentProspect.nom_prospect}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('✅ Audit validé ! PDF téléchargé avec succès !');
+        
+        // 4. Recharger les données
+        await loadAuditData(currentAudit.id_audit);
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        alert(`❌ Erreur: ${error.message}`);
+      } finally {
+        validateButton.disabled = false;
+        validateButton.textContent = '✅ Valider & Générer PDF';
+      }
+    }
+    
+    async function updateStatut(newStatut) {
+      if (!currentAudit) {
+        alert('⚠️ Impossible de mettre à jour : audit non chargé');
+        return;
+      }
+      
+      try {
+        const { error } = await supabase
+          .from('audits')
+          .update({ statut: newStatut })
+          .eq('id_audit', currentAudit.id_audit);
+        
+        if (error) {
+          alert('❌ Erreur lors de la mise à jour du statut');
+          return;
+        }
+        
+        alert(`✅ Statut mis à jour : ${newStatut}`);
+        await loadAuditData(currentAudit.id_audit);
+      } catch (error) {
+        alert('❌ Erreur de connexion à la base de données');
+      }
+    }
+    
+    function goBack() {
+      window.location.href = 'auditHistory.html';
+    }
+    
+    function showError(message) {
+      document.getElementById('prospectInfo').innerHTML = `<div class="error">${message}</div>`;
+      document.getElementById('auditInfo').innerHTML = `<div class="error">${message}</div>`;
+      document.getElementById('equipementsList').innerHTML = `<div class="error">${message}</div>`;
+      document.getElementById('summaryGrid').innerHTML = `<div class="error">${message}</div>`;
+    }
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+      const auditId = getAuditIdFromURL();
+      if (auditId) {
+        await loadAuditData(auditId);
+      } else {
+        showError('Aucun audit spécifié');
+      }
+    });
+  </script>
+</body>
+</html> 

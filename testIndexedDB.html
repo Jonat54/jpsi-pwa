@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
+  <title>JPSI - Test IndexedDB</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <style>
+    body {
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      color: #333;
+      padding: 2rem;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      padding: 2rem;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13);
+    }
+    
+    .test-section {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 20px;
+      border: 2px solid #e5e7eb;
+    }
+    
+    .test-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 5px;
+      transition: all 0.3s ease;
+    }
+    
+    .test-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-2px);
+    }
+    
+    .status {
+      padding: 10px;
+      border-radius: 10px;
+      margin: 10px 0;
+      font-weight: 600;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    
+    .log {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 10px;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+      <button onclick="window.location.href='index.html'" style="
+        background: #6c757d; 
+        color: white; 
+        border: none; 
+        padding: 8px 16px; 
+        border-radius: 6px; 
+        cursor: pointer;
+        font-size: 12px;
+        margin-right: 15px;
+      ">
+        ← Retour
+      </button>
+      <h1 style="margin: 0;">🧪 Test IndexedDB - JPSI</h1>
+    </div>
+    
+    <div class="test-section">
+      <h2>📱 Compatibilité</h2>
+      <button class="test-button" onclick="testCompatibility()">Tester la compatibilité</button>
+      <div id="compatibilityResult"></div>
+    </div>
+    
+    <div class="test-section">
+      <h2>🗄️ IndexedDB</h2>
+      <button class="test-button" onclick="testIndexedDB()">Tester IndexedDB</button>
+      <button class="test-button" onclick="testDataOperations()">Tester les opérations</button>
+      <div id="indexedDBResult"></div>
+    </div>
+    
+    <div class="test-section">
+      <h2>🔄 Synchronisation</h2>
+      <button class="test-button" onclick="testSyncManager()">Tester SyncManager</button>
+      <button class="test-button" onclick="testNetworkStatus()">Tester statut réseau</button>
+      <div id="syncResult"></div>
+    </div>
+    
+    <div class="test-section">
+      <h2>📊 Statut</h2>
+      <button class="test-button" onclick="showStatus()">Afficher le statut</button>
+      <div id="statusResult"></div>
+    </div>
+    
+    <div class="test-section">
+      <h2>📝 Logs</h2>
+      <button class="test-button" onclick="clearLogs()">Effacer les logs</button>
+      <div id="logs" class="log"></div>
+    </div>
+  </div>
+
+  <script>
+    // Fonction pour ajouter des logs
+    function addLog(message, type = 'info') {
+      const logsDiv = document.getElementById('logs');
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = document.createElement('div');
+      logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> ${message}`;
+      logsDiv.appendChild(logEntry);
+      logsDiv.scrollTop = logsDiv.scrollHeight;
+    }
+
+    // Fonction pour afficher un résultat
+    function showResult(elementId, message, type = 'info') {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<div class="status ${type}">${message}</div>`;
+    }
+
+    // Test de compatibilité
+    async function testCompatibility() {
+      addLog('🧪 Test de compatibilité...');
+      
+      const results = [];
+      
+      // Test IndexedDB
+      if (IndexedDBManager.isSupported()) {
+        results.push('✅ IndexedDB supporté');
+        addLog('✅ IndexedDB supporté');
+      } else {
+        results.push('❌ IndexedDB non supporté');
+        addLog('❌ IndexedDB non supporté');
+      }
+      
+      // Test SyncManager
+      if (SyncManager.isSupported()) {
+        results.push('✅ SyncManager supporté');
+        addLog('✅ SyncManager supporté');
+      } else {
+        results.push('❌ SyncManager non supporté');
+        addLog('❌ SyncManager non supporté');
+      }
+      
+      // Test Service Worker
+      if ('serviceWorker' in navigator) {
+        results.push('✅ Service Worker supporté');
+        addLog('✅ Service Worker supporté');
+      } else {
+        results.push('❌ Service Worker non supporté');
+        addLog('❌ Service Worker non supporté');
+      }
+      
+      showResult('compatibilityResult', results.join('<br>'), 'success');
+    }
+
+    // Test IndexedDB
+    async function testIndexedDB() {
+      addLog('🗄️ Test IndexedDB...');
+      
+      try {
+        await indexedDBManager.init();
+        addLog('✅ IndexedDB initialisé');
+        
+        // Test de sauvegarde
+        const testData = {
+          id: 'test',
+          name: 'Test Data',
+          timestamp: new Date().toISOString()
+        };
+        
+        await indexedDBManager.saveData('syncStatus', testData);
+        addLog('✅ Données sauvegardées');
+        
+        // Test de lecture
+        const retrievedData = await indexedDBManager.getData('syncStatus', 'test');
+        addLog('✅ Données récupérées: ' + JSON.stringify(retrievedData));
+        
+        showResult('indexedDBResult', '✅ IndexedDB fonctionne correctement', 'success');
+        
+      } catch (error) {
+        addLog('❌ Erreur IndexedDB: ' + error.message);
+        showResult('indexedDBResult', '❌ Erreur IndexedDB: ' + error.message, 'error');
+      }
+    }
+
+    // Test des opérations de données
+    async function testDataOperations() {
+      addLog('📊 Test des opérations de données...');
+      
+      try {
+        // Test de sauvegarde multiple
+        const testVerifications = [
+          { id: 1, type: 'extincteurs', status: 'OK', timestamp: new Date().toISOString() },
+          { id: 2, type: 'eclairages', status: 'Pas OK', timestamp: new Date().toISOString() }
+        ];
+        
+        for (const verification of testVerifications) {
+          await indexedDBManager.saveData('pendingVerifications', verification);
+        }
+        addLog('✅ Vérifications de test sauvegardées');
+        
+        // Test de lecture multiple
+        const allVerifications = await indexedDBManager.getData('pendingVerifications');
+        addLog('✅ Vérifications récupérées: ' + allVerifications.length + ' éléments');
+        
+        // Test de suppression
+        await indexedDBManager.deleteData('pendingVerifications', 1);
+        addLog('✅ Élément supprimé');
+        
+        showResult('indexedDBResult', '✅ Opérations de données fonctionnent', 'success');
+        
+      } catch (error) {
+        addLog('❌ Erreur opérations: ' + error.message);
+        showResult('indexedDBResult', '❌ Erreur opérations: ' + error.message, 'error');
+      }
+    }
+
+    // Test SyncManager
+    async function testSyncManager() {
+      addLog('🔄 Test SyncManager...');
+      
+      try {
+        // Test du statut réseau
+        addLog('📡 Statut réseau: ' + (syncManager.isOnline ? 'En ligne' : 'Hors ligne'));
+        
+        // Test de sauvegarde de vérification
+        const testVerification = {
+          type_equipement: 'extincteurs',
+          id_equipement: 999,
+          id_intervention: 1,
+          observations: 'Test offline',
+          statut: 'OK',
+          date_verification: new Date().toISOString()
+        };
+        
+        await syncManager.saveVerification(testVerification);
+        addLog('✅ Vérification de test sauvegardée');
+        
+        // Test du statut de synchronisation
+        await syncManager.updateSyncStatus();
+        addLog('✅ Statut de synchronisation mis à jour');
+        
+        showResult('syncResult', '✅ SyncManager fonctionne correctement', 'success');
+        
+      } catch (error) {
+        addLog('❌ Erreur SyncManager: ' + error.message);
+        showResult('syncResult', '❌ Erreur SyncManager: ' + error.message, 'error');
+      }
+    }
+
+    // Test du statut réseau
+    async function testNetworkStatus() {
+      addLog('📡 Test statut réseau...');
+      
+      const status = await indexedDBManager.getSyncStatus();
+      addLog('📊 Statut actuel: ' + JSON.stringify(status, null, 2));
+      
+      showResult('syncResult', '📊 Statut réseau affiché dans les logs', 'info');
+    }
+
+    // Afficher le statut complet
+    async function showStatus() {
+      addLog('📊 Affichage du statut complet...');
+      
+      try {
+        const status = await indexedDBManager.getSyncStatus();
+        const pendingVerifications = await indexedDBManager.getData('pendingVerifications');
+        const newEquipments = await indexedDBManager.getData('newEquipments');
+        const modifiedEquipments = await indexedDBManager.getData('modifiedEquipments');
+        
+        const statusInfo = {
+          syncStatus: status,
+          pendingVerifications: pendingVerifications.length,
+          newEquipments: newEquipments.length,
+          modifiedEquipments: modifiedEquipments.length,
+          networkStatus: syncManager.isOnline ? 'En ligne' : 'Hors ligne'
+        };
+        
+        addLog('📊 Statut complet: ' + JSON.stringify(statusInfo, null, 2));
+        
+        showResult('statusResult', 
+          `📊 Statut complet:<br>
+          Réseau: ${statusInfo.networkStatus}<br>
+          Vérifications en attente: ${statusInfo.pendingVerifications}<br>
+          Nouveaux équipements: ${statusInfo.newEquipments}<br>
+          Équipements modifiés: ${statusInfo.modifiedEquipments}`, 
+          'info');
+        
+      } catch (error) {
+        addLog('❌ Erreur affichage statut: ' + error.message);
+        showResult('statusResult', '❌ Erreur affichage statut: ' + error.message, 'error');
+      }
+    }
+
+    // Effacer les logs
+    function clearLogs() {
+      document.getElementById('logs').innerHTML = '';
+      addLog('🧹 Logs effacés');
+    }
+
+    // Initialisation au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+      addLog('🚀 Page de test IndexedDB chargée');
+      addLog('📱 User Agent: ' + navigator.userAgent);
+      addLog('🌐 En ligne: ' + navigator.onLine);
+    });
+  </script>
+</body>
+</html>

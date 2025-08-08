@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Désenfumages Site</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .add-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-left: auto;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
+    }
+    
+    .add-button:hover {
+      background: #7a1d1c;
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(155, 36, 35, 0.4);
+    }
+    
+    .desenfumages-table {
+      width: 100%;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 2px solid #e5e7eb;
+    }
+    
+    .desenfumages-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .desenfumages-table th {
+      background: #f9fafb;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+    
+    .desenfumages-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+    
+    .desenfumages-table tbody tr {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .desenfumages-table tbody tr:hover {
+      background-color: #f8fafc;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .desenfumages-table tbody tr:active {
+      transform: translateY(0);
+      background-color: #f1f5f9;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .edit-button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    
+    .edit-button:hover {
+      background: #2563eb;
+    }
+    
+    .delete-button {
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    
+    .delete-button:hover {
+      background: #dc2626;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .empty-state h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #374151;
+    }
+    
+    .empty-state p {
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .empty-state .add-first-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
+    }
+    
+    .empty-state .add-first-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(155, 36, 35, 0.4);
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #e5e7eb;
+      border-radius: 50%;
+      border-top-color: #9B2423;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 1rem;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .equipment-preview {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .location-preview {
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .number-cell {
+      text-align: center;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .voyant-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .voyant-on {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .voyant-off {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    
+    .voyant-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .voyant-on .voyant-light {
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+    
+    .voyant-off .voyant-light {
+      background: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    }
+    
+    .voyant-grey {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    
+    .voyant-grey .voyant-light {
+      background: #9ca3af;
+      box-shadow: 0 0 8px rgba(156, 163, 175, 0.3);
+    }
+    
+    .voyant-green {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .voyant-green .voyant-light {
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+    
+    .voyant-red {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    
+    .voyant-red .voyant-light {
+      background: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+    
+    .voyant-text {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    
+    .date-info {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 3rem;
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+    
+    /* Optimisations pour iPad */
+    @media (min-width: 768px) {
+      .desenfumages-table th,
+      .desenfumages-table td {
+        padding: 1.25rem;
+        font-size: 1rem;
+      }
+      
+      .voyant-indicator {
+        padding: 0.75rem;
+        font-size: 1rem;
+      }
+      
+      .voyant-light {
+        width: 14px;
+        height: 14px;
+      }
+      
+      .action-buttons {
+        gap: 0.75rem;
+      }
+      
+      .edit-button,
+      .delete-button {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.9rem;
+      }
+    }
+    
+    /* Responsive pour petits écrans */
+    @media (max-width: 768px) {
+      .desenfumages-table {
+        overflow-x: auto;
+      }
+      
+      .desenfumages-table table {
+        min-width: 800px;
+      }
+      
+      .voyant-indicator {
+        flex-direction: column;
+        gap: 0.25rem;
+        text-align: center;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .edit-button,
+      .delete-button {
+        width: 100%;
+        padding: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()">←</button>
+      <div>
+        <h1 class="header-title">
+          Désenfumages
+          <span class="header-subtitle" id="siteName">Chargement...</span>
+        </h1>
+      </div>
+      <button class="add-button" onclick="addDesenfumage()" title="Ajouter un désenfumage">+</button>
+    </div>
+
+    <div id="content">
+      <div class="loading">Chargement des désenfumages...</div>
+    </div>
+  </div>
+
+  <script>
+    // Utiliser la configuration Supabase existante
+    let supabaseClient = null;
+    
+    let currentSite = null;
+    let currentClient = null;
+    let currentIntervention = null;
+    let desenfumages = [];
+    let verifications = []; // Vérifications de l'intervention
+
+    // Récupérer l'ID du site et de l'intervention depuis l'URL
+    function getSiteIdFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const siteId = urlParams.get('site');
+      const interventionId = urlParams.get('intervention');
+      
+      if (!siteId) {
+        console.error('❌ Aucun ID de site fourni dans l\'URL');
+        return null;
+      }
+      
+      if (!interventionId) {
+        console.error('❌ Aucun ID d\'intervention fourni dans l\'URL');
+        return null;
+      }
+      
+      console.log(`🔍 ID du site récupéré: ${siteId}`);
+      console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
+      return { siteId: decodeURIComponent(siteId), interventionId: decodeURIComponent(interventionId) };
+    }
+
+    // Charger les données du site et de l'intervention
+    async function loadSiteData(params) {
+      try {
+        console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
+        console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
+        
+        // Charger l'intervention
+        const { data: intervention, error: interventionError } = await supabaseClient
+          .from('interventions')
+          .select(`
+            *,
+            sites!inner(
+              *,
+              clients!inner(*)
+            )
+          `)
+          .eq('id_intervention', params.interventionId)
+          .single();
+        
+        if (interventionError) {
+          console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+          showError('Erreur lors du chargement de l\'intervention');
+          return;
+        }
+        
+        currentIntervention = intervention;
+        currentSite = intervention.sites;
+        currentClient = intervention.sites.clients;
+        
+        console.log('✅ Intervention chargée:', currentIntervention);
+        console.log('✅ Données du site chargées:', currentSite);
+        console.log('✅ Données du client chargées:', currentClient);
+        
+        // Charger les désenfumages
+        await loadDesenfumages();
+        
+        // Charger les vérifications de l'intervention
+        await loadVerifications(params.interventionId);
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des données:', error);
+        showError('Erreur lors du chargement des données');
+      }
+    }
+
+    // Charger les désenfumages
+    async function loadDesenfumages() {
+      try {
+        console.log('Chargement des désenfumages pour le site:', currentSite.id_site);
+        
+        const { data, error } = await supabaseClient
+          .from('desenfumages')
+          .select('*')
+          .eq('id_site', currentSite.id_site)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Erreur désenfumages:', error);
+          throw error;
+        }
+
+        desenfumages = data || [];
+        console.log('Désenfumages chargés:', desenfumages);
+        
+        displayDesenfumages();
+      } catch (error) {
+        console.error('Erreur lors du chargement des désenfumages:', error);
+        showError('Erreur lors du chargement des désenfumages: ' + error.message);
+      }
+    }
+
+    // Fonction pour mettre à jour l'affichage
+    function updateDisplay() {
+      if (!currentSite || !currentClient || !currentIntervention) {
+        console.log('⏳ Attente du chargement des données...');
+        return;
+      }
+      
+      // Mettre à jour le titre avec le format demandé
+      const mainTitle = `${currentClient.nom_client} - ${currentSite.nom_site}`;
+      const subTitle = `Intervention ${currentIntervention.numero_intervention}`;
+      
+      document.getElementById('mainTitle').textContent = mainTitle;
+      document.getElementById('subTitle').textContent = subTitle;
+    }
+    
+    // Afficher les désenfumages
+    function displayDesenfumages() {
+      const content = document.getElementById('content');
+      
+      if (desenfumages.length === 0) {
+        content.innerHTML = `
+          <div class="empty-state">
+            <h3>Aucun désenfumage enregistré</h3>
+            <p>Ce site ne possède pas encore d'équipements de désenfumage.</p>
+            <button class="add-first-button" onclick="addDesenfumage()">
+              Ajouter le premier désenfumage
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+            content.innerHTML = `
+        <div class="desenfumages-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Voyant</th>
+                <th>Numéro</th>
+                <th>Localisation</th>
+                <th>Type de Commande</th>
+                <th>Type d'Ouvrant</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+                            ${desenfumages.map(des => {
+                const voyantStatus = calculateVoyantStatus(des);
+                return `
+                <tr onclick="openVerification(${des.id_desenfumage})" title="Cliquer pour ouvrir la vérification">
+                  <td>
+                    <div class="voyant-indicator voyant-${voyantStatus.status}" title="${voyantStatus.title}">
+                      <div class="voyant-light"></div>
+                      <span class="voyant-text">${voyantStatus.text}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="number-cell" title="Numéro: ${des.num_des || 'Non spécifié'}">
+                      <strong>${des.num_des || 'N/A'}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="location-preview" title="Localisation: ${des.localisation_des || 'Non spécifié'}">
+                      ${des.localisation_des || 'Non spécifié'}
+                    </div>
+                  </td>
+                  <td>
+                    <div class="equipment-preview" title="Type de commande: ${des.equipement_desenfumage || 'Non spécifié'}">
+                      ${des.equipement_desenfumage || 'Non spécifié'}
+                    </div>
+                  </td>
+                  <td>
+                    <div class="equipment-preview" title="Type d'ouvrant: ${des.descouvr_des || 'Non spécifié'}">
+                      ${des.descouvr_des || 'Non spécifié'}
+                    </div>
+                  </td>
+                  <td>
+                    <div class="action-buttons" onclick="event.stopPropagation()">
+                      <button class="edit-button" onclick="editDesenfumage(${des.id_desenfumage})">
+                        ✏️ Modifier
+                      </button>
+                      <button class="delete-button" onclick="deleteDesenfumage(${des.id_desenfumage})">
+                        🗑️ Supprimer
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // Fonction pour charger les vérifications de l'intervention
+    async function loadVerifications(interventionId) {
+      try {
+        console.log(`📥 Chargement des vérifications pour l'intervention: ${interventionId}`);
+        
+        const { data, error } = await supabaseClient
+          .from('verifications')
+          .select('*')
+          .eq('id_intervention', interventionId)
+          .eq('type_equipement', 'desenfumages');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des vérifications:', error);
+          return;
+        }
+        
+        verifications = data || [];
+        console.log(`✅ ${verifications.length} vérifications chargées:`, verifications);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des vérifications:', error);
+      }
+    }
+    
+    // Calculer l'état du voyant basé sur les vérifications de l'intervention
+    function calculateVoyantStatus(desenfumage) {
+      // Chercher la vérification pour ce désenfumage dans cette intervention
+      const verification = verifications.find(v => 
+        v.id_equipement === desenfumage.id_desenfumage && 
+        v.type_equipement === 'desenfumages'
+      );
+      
+      if (!verification) {
+        // Pas de vérification → gris
+        return { status: 'grey', text: 'N/A', title: 'Non vérifié dans cette intervention' };
+      }
+      
+      // Vérification trouvée, regarder l'état
+      if (verification.etat_verification === 'OK') {
+        return { status: 'green', text: 'OK', title: 'Vérifié et conforme' };
+      } else if (verification.etat_verification === 'Défaut') {
+        return { status: 'red', text: 'ATT', title: 'Vérifié avec problème' };
+      }
+      
+      // Statut inconnu → gris
+      return { status: 'grey', text: 'N/A', title: 'Statut inconnu' };
+    }
+
+    // Formater une date
+    function formatDate(dateString) {
+      if (!dateString) return 'Non spécifié';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR');
+      } catch (e) {
+        return 'Date invalide';
+      }
+    }
+
+    // Ajouter un désenfumage
+    function addDesenfumage() {
+      if (!currentSite || !currentIntervention) {
+        alert('Site ou intervention non chargé');
+        return;
+      }
+      
+      console.log('Redirection vers ajout désenfumage');
+      window.location.href = `addEfu.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+    }
+
+    // Ouvrir la vérification d'un désenfumage
+    function openVerification(id) {
+      if (!currentSite || !currentIntervention) {
+        alert('Site ou intervention non chargé');
+        return;
+      }
+      
+      console.log('Ouverture de la vérification pour le désenfumage:', id);
+      window.location.href = `verifDes.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}&desenfumage=${id}`;
+    }
+
+    // Modifier un désenfumage
+    function editDesenfumage(id) {
+      if (!currentSite || !currentIntervention) {
+        alert('Site ou intervention non chargé');
+        return;
+      }
+      
+      console.log('Redirection vers modification désenfumage:', id);
+      window.location.href = `desenfumageDetail.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}&id=${id}`;
+    }
+
+    // Supprimer un désenfumage
+    async function deleteDesenfumage(id) {
+      if (!confirm('Êtes-vous sûr de vouloir supprimer ce désenfumage ?')) {
+        return;
+      }
+
+      try {
+        console.log('Suppression du désenfumage:', id);
+        
+        const { error } = await supabaseClient
+          .from('desenfumages')
+          .delete()
+          .eq('id_desenfumage', id);
+
+        if (error) {
+          console.error('Erreur suppression:', error);
+          throw error;
+        }
+
+        alert('Désenfumage supprimé avec succès');
+        await loadDesenfumages(); // Recharger la liste
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        alert('Erreur lors de la suppression: ' + error.message);
+      }
+    }
+
+    // Retourner à la page précédente
+    function goBack() {
+      if (currentSite && currentIntervention) {
+        window.location.href = `verifSite.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+      } else {
+        window.history.back();
+      }
+    }
+
+    // Afficher une erreur
+    function showError(message) {
+      document.getElementById('content').innerHTML = `
+        <div class="error">
+          <h3>Erreur</h3>
+          <p>${message}</p>
+        </div>
+      `;
+    }
+
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('Initialisation de la page Désenfumages...');
+      
+      // Utiliser la configuration Supabase existante
+      if (window.supabaseClient) {
+        supabaseClient = window.supabaseClient;
+        console.log('✅ Supabase client trouvé');
+      } else {
+        console.log('❌ Supabase client non trouvé');
+        showError('Erreur de configuration Supabase');
+        return;
+      }
+      
+      const params = getSiteIdFromURL();
+      console.log('Paramètres depuis URL:', params);
+      
+      if (!params) {
+        showError('ID du site ou de l\'intervention manquant dans l\'URL');
+        return;
+      }
+      
+      await loadSiteData(params);
+    });
+  </script>
+</body>
+</html> 

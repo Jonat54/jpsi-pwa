@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Vérifications en cours</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="simple_auth.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .intervention-info {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .intervention-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .intervention-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #9B2423;
+    }
+    
+    .intervention-status {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .status-en-cours {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-termine {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .equipment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .equipment-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+    
+    .equipment-card:hover {
+      border-color: #9B2423;
+      transform: translateY(-2px);
+    }
+    
+    .equipment-card.verified {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    
+    .equipment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .equipment-type {
+      font-weight: 600;
+      color: #374151;
+      font-size: 1.1rem;
+    }
+    
+    .verification-status {
+      padding: 0.3rem 0.8rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-verified {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .equipment-details {
+      margin-bottom: 1rem;
+    }
+    
+    .equipment-detail {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .detail-label {
+      color: #6b7280;
+      font-weight: 500;
+    }
+    
+    .detail-value {
+      color: #374151;
+      font-weight: 600;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    
+    .action-button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    
+    .btn-verify {
+      background: #10b981;
+      color: white;
+    }
+    
+    .btn-verify:hover {
+      background: #059669;
+    }
+    
+    .btn-verify:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    .btn-detail {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .btn-detail:hover {
+      background: #2563eb;
+    }
+    
+    .progress-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: #9B2423;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+      text-align: center;
+      font-weight: 600;
+      color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">‹</button>
+      <h1 class="header-title">Vérifications en cours</h1>
+    </div>
+    
+    <!-- Informations de l'intervention -->
+    <div class="intervention-info" id="interventionInfo">
+      <!-- Contenu dynamique -->
+    </div>
+    
+    <!-- Barre de progression -->
+    <div class="progress-section">
+      <h3>Progression</h3>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">0%</div>
+      <button onclick="debugVariables()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer;">
+        Debug Variables
+      </button>
+      <button onclick="loadTestData()" style="margin-top: 1rem; margin-left: 1rem; padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
+        Charger données test
+      </button>
+      <button onclick="loadRealData()" style="margin-top: 1rem; margin-left: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">
+        Charger vraies données
+      </button>
+    </div>
+    
+    <!-- Grille des équipements -->
+    <div class="equipment-grid" id="equipmentGrid">
+      <!-- Contenu dynamique -->
+    </div>
+  </div>
+
+  <script>
+    // Variables globales
+    let currentIntervention = null;
+    let equipmentList = [];
+    let verifiedEquipment = [];
+    
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Fonction pour déboguer les variables
+    function debugVariables() {
+      console.log('🔍 Debug variables:');
+      console.log('- equipmentList:', equipmentList);
+      console.log('- verifiedEquipment:', verifiedEquipment);
+      console.log('- equipmentList.length:', equipmentList.length);
+      console.log('- verifiedEquipment.length:', verifiedEquipment.length);
+      console.log('- currentIntervention:', currentIntervention);
+    }
+    
+    // Fonction pour récupérer les informations du site
+    async function getSiteInfo(siteId) {
+      try {
+        const { data: site, error } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id_site', siteId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur récupération site:', error);
+          return null;
+        }
+        
+        return site;
+      } catch (error) {
+        console.error('❌ Erreur récupération site:', error);
+        return null;
+      }
+    }
+    
+    // Fonction pour créer une nouvelle intervention
+    async function createIntervention(siteId, siteName) {
+      try {
+        const interventionData = {
+          numero_intervention: `INT-${Date.now()}`,
+          id_site: siteId,
+          type_intervention: 'Vérification périodique',
+          scope_equipements: 'Tous les équipements',
+          date_debut: new Date().toISOString(),
+          etat_intervention: 'En cours',
+          technicien: 'Technicien JPSI',
+          observations: `Intervention sur le site ${siteName}`,
+          created_at: new Date().toISOString()
+        };
+        
+        const { data, error } = await supabase
+          .from('interventions')
+          .insert([interventionData])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        return data;
+      } catch (error) {
+        console.error('Erreur création intervention:', error);
+        throw error;
+      }
+    }
+    
+    // Fonction pour charger les équipements d'un site
+    async function loadEquipment(siteId) {
+      try {
+        console.log('🔍 Chargement équipements pour site:', siteId);
+        const equipment = [];
+        
+        // Charger les extincteurs
+        const { data: extincteurs, error: errorExt } = await supabase
+          .from('extincteurs')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (errorExt) {
+          console.error('❌ Erreur chargement extincteurs:', errorExt);
+        } else {
+          console.log('✅ Extincteurs trouvés:', extincteurs?.length || 0);
+          if (extincteurs && extincteurs.length > 0) {
+            extincteurs.forEach(ext => {
+              equipment.push({
+                id: ext.id_ext,
+                type: 'Extincteur',
+                type_detail: ext.type_ext,
+                localisation: ext.loc_ext,
+                marque: ext.marque_ext,
+                modele: ext.modele_ext,
+                last_verification: ext.last_ext,
+                equipment_type: 'extincteur'
+              });
+            });
+          }
+        }
+        
+        // Charger les éclairages
+        const { data: eclairages, error: errorEcl } = await supabase
+          .from('eclairages')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (errorEcl) {
+          console.error('❌ Erreur chargement éclairages:', errorEcl);
+        } else {
+          console.log('✅ Éclairages trouvés:', eclairages?.length || 0);
+          if (eclairages && eclairages.length > 0) {
+            eclairages.forEach(ecl => {
+              equipment.push({
+                id: ecl.id_ecl,
+                type: 'Éclairage',
+                type_detail: ecl.family_ecl,
+                localisation: ecl.loc_ecl,
+                marque: ecl.marque_ecl,
+                modele: ecl.modele_ecl,
+                last_verification: ecl.last_ecl,
+                equipment_type: 'eclairage'
+              });
+            });
+          }
+        }
+        
+        // Charger les alarmes
+        const { data: alarmes, error: errorAl } = await supabase
+          .from('alarmes')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (errorAl) {
+          console.error('❌ Erreur chargement alarmes:', errorAl);
+        } else {
+          console.log('✅ Alarmes trouvées:', alarmes?.length || 0);
+          if (alarmes && alarmes.length > 0) {
+            alarmes.forEach(al => {
+              equipment.push({
+                id: al.id_alarme,
+                type: 'Alarme',
+                type_detail: al.type_alarme,
+                localisation: 'Système central',
+                marque: al.marque_alarme,
+                modele: al.modele_alarme,
+                last_verification: al.last_alarme,
+                equipment_type: 'alarme'
+              });
+            });
+          }
+        }
+        
+        console.log('📊 Total équipements chargés:', equipment.length);
+        return equipment;
+      } catch (error) {
+        console.error('❌ Erreur chargement équipements:', error);
+        return [];
+      }
+    }
+    
+    // Fonction pour charger des données de test
+    function loadTestData() {
+      console.log('🧪 Chargement données de test...');
+      
+      // Créer une intervention de test
+      currentIntervention = {
+        id_intervention: 'TEST-001',
+        numero_intervention: 'INT-TEST',
+        site_name: 'Site de test',
+        technicien: 'Technicien Test',
+        date_debut: new Date().toISOString(),
+        etat_intervention: 'En cours'
+      };
+      
+      // Créer des équipements de test
+      equipmentList = [
+        {
+          id: 'ext-001',
+          type: 'Extincteur',
+          type_detail: 'CO2 5kg',
+          localisation: 'Bureau principal',
+          marque: 'Test Brand',
+          modele: 'Test Model',
+          last_verification: null,
+          equipment_type: 'extincteur'
+        },
+        {
+          id: 'ecl-001',
+          type: 'Éclairage',
+          type_detail: 'Bloc de secours',
+          localisation: 'Couloir',
+          marque: 'Test Brand',
+          modele: 'Test Model',
+          last_verification: null,
+          equipment_type: 'eclairage'
+        },
+        {
+          id: 'al-001',
+          type: 'Alarme',
+          type_detail: 'Détecteur fumée',
+          localisation: 'Système central',
+          marque: 'Test Brand',
+          modele: 'Test Model',
+          last_verification: null,
+          equipment_type: 'alarme'
+        }
+      ];
+      
+      // Afficher les informations
+      displayInterventionInfo();
+      displayEquipment();
+      updateProgress();
+      
+      console.log('✅ Données de test chargées');
+    }
+    
+    // Fonction pour charger les vraies données
+    async function loadRealData() {
+      try {
+        console.log('🔍 Chargement vraies données...');
+        
+        // Récupérer les paramètres de l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const siteId = urlParams.get('site');
+        
+        if (!siteId) {
+          alert('ID du site manquant');
+          return;
+        }
+        
+        // Récupérer les informations du site depuis la base de données
+        console.log('🔍 Récupération informations site...');
+        const siteInfo = await getSiteInfo(siteId);
+        const finalSiteName = siteInfo?.nom_site || 'Site inconnu';
+        
+        // Créer une nouvelle intervention
+        console.log('📝 Création intervention...');
+        currentIntervention = await createIntervention(siteId, finalSiteName);
+        currentIntervention.site_name = finalSiteName;
+        
+        // Charger les équipements du site
+        console.log('🔍 Chargement équipements...');
+        equipmentList = await loadEquipment(siteId);
+        
+        // Afficher les informations
+        displayInterventionInfo();
+        displayEquipment();
+        updateProgress();
+        
+        // Debug des variables
+        debugVariables();
+        
+        console.log('✅ Intervention créée:', currentIntervention);
+        console.log('✅ Équipements chargés:', equipmentList.length);
+        
+        // Afficher un message si aucun équipement
+        if (equipmentList.length === 0) {
+          const progressText = document.getElementById('progressText');
+          if (progressText) {
+            progressText.textContent = 'Aucun équipement trouvé sur ce site';
+          }
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur chargement vraies données:', error);
+        alert('Erreur lors du chargement des vraies données: ' + error.message);
+      }
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      window.location.href = 'verification.html';
+    }
+    
+    // Fonction pour créer une vérification
+    async function createVerification(equipmentId, equipmentType, observations = '') {
+      if (!currentIntervention) {
+        alert('Aucune intervention en cours');
+        return;
+      }
+      
+      try {
+        const verificationData = {
+          id_intervention: currentIntervention.id_intervention,
+          date_verification: new Date().toISOString(),
+          type_equipement: equipmentType,
+          id_equipement: equipmentId,
+          etat_verification: 'OK',
+          observations: observations,
+          created_at: new Date().toISOString()
+        };
+        
+        const { data, error } = await supabase
+          .from('verifications')
+          .insert([verificationData])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        // Ajouter à la liste des équipements vérifiés
+        verifiedEquipment.push(equipmentId);
+        updateProgress();
+        updateEquipmentCard(equipmentId);
+        
+        console.log('✅ Vérification créée:', data);
+        alert('✅ Équipement vérifié avec succès !');
+        
+        return data;
+      } catch (error) {
+        console.error('Erreur création vérification:', error);
+        alert('Erreur lors de la création de la vérification');
+      }
+    }
+    
+    // Fonction pour afficher les équipements
+    function displayEquipment() {
+      const grid = document.getElementById('equipmentGrid');
+      grid.innerHTML = '';
+      
+      if (equipmentList.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; color: #6b7280; padding: 2rem;">Aucun équipement trouvé</div>';
+        return;
+      }
+      
+      equipmentList.forEach(equipment => {
+        const isVerified = verifiedEquipment.includes(equipment.id);
+        const card = document.createElement('div');
+        card.className = `equipment-card ${isVerified ? 'verified' : ''}`;
+        card.id = `equipment-${equipment.id}`;
+        
+        const lastVerif = equipment.last_verification ? 
+          new Date(equipment.last_verification).toLocaleDateString('fr-FR') : 
+          'Jamais vérifié';
+        
+        card.innerHTML = `
+          <div class="equipment-header">
+            <div class="equipment-type">${equipment.type}</div>
+            <div class="verification-status ${isVerified ? 'status-verified' : 'status-pending'}">
+              ${isVerified ? 'Vérifié' : 'En attente'}
+            </div>
+          </div>
+          <div class="equipment-details">
+            <div class="equipment-detail">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">${equipment.type_detail}</span>
+            </div>
+            <div class="equipment-detail">
+              <span class="detail-label">Localisation:</span>
+              <span class="detail-value">${equipment.localisation}</span>
+            </div>
+            <div class="equipment-detail">
+              <span class="detail-label">Marque:</span>
+              <span class="detail-value">${equipment.marque || 'N/A'}</span>
+            </div>
+            <div class="equipment-detail">
+              <span class="detail-label">Modèle:</span>
+              <span class="detail-value">${equipment.modele || 'N/A'}</span>
+            </div>
+            <div class="equipment-detail">
+              <span class="detail-label">Dernière vérification:</span>
+              <span class="detail-value">${lastVerif}</span>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button class="action-button btn-verify" 
+                    onclick="verifyEquipment('${equipment.id}', '${equipment.equipment_type}')"
+                    ${isVerified ? 'disabled' : ''}>
+              ${isVerified ? '✓ Vérifié' : 'Vérifier'}
+            </button>
+            <button class="action-button btn-detail" 
+                    onclick="viewEquipmentDetail('${equipment.id}', '${equipment.equipment_type}')">
+              Détails
+            </button>
+          </div>
+        `;
+        
+        grid.appendChild(card);
+      });
+    }
+    
+    // Fonction pour vérifier un équipement
+    async function verifyEquipment(equipmentId, equipmentType) {
+      try {
+        await createVerification(equipmentId, equipmentType);
+      } catch (error) {
+        console.error('Erreur vérification:', error);
+      }
+    }
+    
+    // Fonction pour voir les détails d'un équipement
+    function viewEquipmentDetail(equipmentId, equipmentType) {
+      // Rediriger vers la page de détail appropriée
+      switch (equipmentType) {
+        case 'extincteur':
+          window.location.href = `extDetail.html?id=${equipmentId}`;
+          break;
+        case 'eclairage':
+          window.location.href = `eclairageDetail.html?id=${equipmentId}`;
+          break;
+        case 'alarme':
+          window.location.href = `alarmeDetail.html?id=${equipmentId}`;
+          break;
+        default:
+          alert('Page de détail non disponible');
+      }
+    }
+    
+    // Fonction pour mettre à jour la progression
+    function updateProgress() {
+      const total = equipmentList.length;
+      const verified = verifiedEquipment.length;
+      const percentage = total > 0 ? Math.round((verified / total) * 100) : 0;
+      
+      console.log('📊 Mise à jour progression:', { total, verified, percentage });
+      
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+      
+      if (progressFill) {
+        progressFill.style.width = `${percentage}%`;
+      }
+      
+      if (progressText) {
+        progressText.textContent = `${verified}/${total} équipements vérifiés (${percentage}%)`;
+      }
+      
+      // Afficher un message si aucun équipement
+      if (total === 0) {
+        if (progressText) {
+          progressText.textContent = 'Aucun équipement trouvé sur ce site';
+        }
+      }
+    }
+    
+    // Fonction pour mettre à jour une carte d'équipement
+    function updateEquipmentCard(equipmentId) {
+      const card = document.getElementById(`equipment-${equipmentId}`);
+      if (card) {
+        card.classList.add('verified');
+        const status = card.querySelector('.verification-status');
+        const button = card.querySelector('.btn-verify');
+        
+        if (status) {
+          status.className = 'verification-status status-verified';
+          status.textContent = 'Vérifié';
+        }
+        
+        if (button) {
+          button.disabled = true;
+          button.textContent = '✓ Vérifié';
+        }
+      }
+    }
+    
+    // Fonction pour afficher les informations de l'intervention
+    function displayInterventionInfo() {
+      const infoDiv = document.getElementById('interventionInfo');
+      if (currentIntervention) {
+        infoDiv.innerHTML = `
+          <div class="intervention-header">
+            <div class="intervention-title">
+              Intervention ${currentIntervention.numero_intervention}
+            </div>
+            <div class="intervention-status status-en-cours">
+              ${currentIntervention.etat_intervention}
+            </div>
+          </div>
+          <div class="equipment-detail">
+            <span class="detail-label">Site:</span>
+            <span class="detail-value">${currentIntervention.site_name || 'N/A'}</span>
+          </div>
+          <div class="equipment-detail">
+            <span class="detail-label">Technicien:</span>
+            <span class="detail-value">${currentIntervention.technicien}</span>
+          </div>
+          <div class="equipment-detail">
+            <span class="detail-label">Date de début:</span>
+            <span class="detail-value">${new Date(currentIntervention.date_debut).toLocaleDateString('fr-FR')}</span>
+          </div>
+        `;
+      }
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de ongoingVerification.html...');
+      
+      // Récupérer les paramètres de l'URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const siteId = urlParams.get('site');
+      
+      console.log('🔍 Paramètres URL:', { siteId });
+      
+      // Charger les données de test par défaut
+      loadTestData();
+      
+      console.log('✅ Page initialisée');
+    });
+  </script>
+</body>
+</html> 

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requête Directe - Schéma Supabase</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 20px;
+        }
+        .query-section {
+            margin-bottom: 40px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .query-title {
+            background: #333;
+            padding: 10px;
+            font-weight: bold;
+            border-bottom: 1px solid #555;
+        }
+        .query-result {
+            padding: 15px;
+            background: #000;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #222;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background: #0a0a0a;
+        }
+        .loading {
+            color: #ffff00;
+            font-style: italic;
+        }
+        .error {
+            color: #ff0000;
+            background: #330000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #00ff00;
+            background: #003300;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #222;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ff00;
+        }
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 REQUÊTE DIRECTE - SCHÉMA SUPABASE JPSI</h1>
+            <p>Connexion en cours...</p>
+        </div>
+
+        <div id="connection-status"></div>
+        
+        <div id="stats" class="stats" style="display: none;"></div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Configuration Supabase
+        const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+
+        // Initialiser Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function createTable(data, title) {
+            if (!data || data.length === 0) {
+                return `<div class="query-section">
+                    <div class="query-title">${title}</div>
+                    <div class="query-result">
+                        <div class="loading">Aucune donnée trouvée</div>
+                    </div>
+                </div>`;
+            }
+
+            const columns = Object.keys(data[0]);
+            let tableHTML = `
+                <div class="query-section">
+                    <div class="query-title">${title}</div>
+                    <div class="query-result">
+                        <table>
+                            <thead>
+                                <tr>
+            `;
+            
+            columns.forEach(col => {
+                tableHTML += `<th>${col}</th>`;
+            });
+            
+            tableHTML += `
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            data.forEach(row => {
+                tableHTML += '<tr>';
+                columns.forEach(col => {
+                    const value = row[col] === null ? 'NULL' : row[col];
+                    tableHTML += `<td>${value}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            
+            tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            return tableHTML;
+        }
+
+        async function executeQueries() {
+            try {
+                showStatus('🔌 Connexion à Supabase...', 'loading');
+
+                // Test de connexion avec une table existante
+                const { data: testData, error: testError } = await supabase
+                    .from('clients')
+                    .select('id_client')
+                    .limit(1);
+
+                if (testError) {
+                    throw new Error(`Erreur de connexion: ${testError.message}`);
+                }
+
+                showStatus('✅ Connexion établie - Récupération du schéma...', 'success');
+
+                // Utiliser une requête SQL directe via RPC pour récupérer le schéma
+                const { data: schemaData, error: schemaError } = await supabase
+                    .rpc('get_database_schema');
+
+                if (schemaError) {
+                    // Si la fonction RPC n'existe pas, utiliser une approche alternative
+                    showStatus('⚠️ Fonction RPC non disponible, utilisation d\'une approche alternative...', 'loading');
+                    
+                    // Récupérer les tables en interrogeant pg_tables
+                    const { data: tables, error: tablesError } = await supabase
+                        .rpc('execute_sql', {
+                            sql_query: `
+                                SELECT tablename as table_name, schemaname as table_schema
+                                FROM pg_tables 
+                                WHERE schemaname = 'public'
+                                ORDER BY tablename;
+                            `
+                        });
+
+                    if (tablesError) {
+                        // Dernière tentative : récupérer les tables connues du projet
+                        const knownTables = [
+                            'clients', 'sites', 'alarmes', 'peripheriques', 'eclairages', 
+                            'desenfumages', 'extincteurs', 'agentextincteur', 
+                            'fire_extinguisher_certification_registry', 'verifications',
+                            'eclairage_catalogue', 'prospects', 'audits', 'audit_equipements'
+                        ];
+                        
+                        const tables = knownTables.map(name => ({ table_name: name, table_schema: 'public' }));
+                        const columns = [];
+                        const primaryKeys = [];
+                        const foreignKeys = [];
+                        
+                        // Utiliser les données du fichier DB.MD pour simuler les colonnes
+                        const schemaFromMD = {
+                            'clients': ['id_client', 'code_client', 'nom_client', 'adr_client', 'tel_client', 'mail_client', 'siren_client', 'resp_client', 'mailresp_client', 'telresp_client', 'ville_client', 'cp_client'],
+                            'sites': ['id_site', 'id_client', 'adr_site', 'ville_site', 'cp_site', 'resp_site', 'telresp_site', 'mailresp_site', 'num_site', 'nom_site', 'famille_erp', 'typeerp_site', 'caterp_site', 'lastcomm_site'],
+                            'extincteurs': ['id_ext', 'id_site', 'num_ext', 'niv_ext', 'loc_ext', 'marque_ext', 'modele_ext', 'agent_ext', 'mes_ext', 'rcm_ext', 'maa_ext', 'eie_ext', 'pcf_ext', 'papp_ext', 'cert_ext', 'capa_ext', 'obs_ext', 'last_ext']
+                        };
+                        
+                        Object.entries(schemaFromMD).forEach(([tableName, columnNames]) => {
+                            columnNames.forEach((colName, index) => {
+                                columns.push({
+                                    table_name: tableName,
+                                    column_name: colName,
+                                    data_type: 'varchar',
+                                    ordinal_position: index + 1,
+                                    is_nullable: 'YES'
+                                });
+                            });
+                        });
+                        
+                        return { tables, columns, primaryKeys, foreignKeys };
+                    }
+
+                    // Récupérer les colonnes pour chaque table
+                    const columns = [];
+                    const primaryKeys = [];
+                    const foreignKeys = [];
+                    
+                    for (const table of tables) {
+                        const { data: tableColumns, error: colsError } = await supabase
+                            .rpc('execute_sql', {
+                                sql_query: `
+                                    SELECT 
+                                        column_name,
+                                        data_type,
+                                        is_nullable,
+                                        column_default,
+                                        ordinal_position
+                                    FROM information_schema.columns 
+                                    WHERE table_schema = 'public' 
+                                        AND table_name = '${table.table_name}'
+                                    ORDER BY ordinal_position;
+                                `
+                            });
+                        
+                        if (!colsError && tableColumns) {
+                            tableColumns.forEach(col => {
+                                columns.push({
+                                    table_name: table.table_name,
+                                    ...col
+                                });
+                            });
+                        }
+                    }
+                    
+                    return { tables, columns, primaryKeys, foreignKeys };
+                }
+
+                // Si la fonction RPC existe, utiliser ses données
+                return schemaData;
+
+                // Récupérer les données du schéma
+                const { tables, columns, primaryKeys, foreignKeys } = schemaData;
+
+                // Afficher les statistiques
+                const statsEl = document.getElementById('stats');
+                statsEl.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${tables.length}</div>
+                        <div class="stat-label">Tables</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${columns.length}</div>
+                        <div class="stat-label">Colonnes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${primaryKeys.length}</div>
+                        <div class="stat-label">Clés Primaires</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${foreignKeys.length}</div>
+                        <div class="stat-label">Clés Étrangères</div>
+                    </div>
+                `;
+                statsEl.style.display = 'grid';
+
+                // Afficher les résultats
+                const resultsEl = document.getElementById('results');
+                let resultsHTML = '';
+
+                // Tables
+                resultsHTML += createTable(tables, '📋 TABLES DU SCHÉMA PUBLIC');
+
+                // Colonnes (limitées pour la lisibilité)
+                const columnsSample = columns.slice(0, 50); // Afficher seulement les 50 premières
+                resultsHTML += createTable(columnsSample, `📊 COLONNES (${columns.length} totales, affichage des 50 premières)`);
+
+                // Clés primaires
+                resultsHTML += createTable(primaryKeys, '🔑 CLÉS PRIMAIRES');
+
+                // Clés étrangères
+                resultsHTML += createTable(foreignKeys, '🔗 CLÉS ÉTRANGÈRES');
+
+                // Détail par table
+                for (const table of tables.slice(0, 5)) { // Limiter à 5 tables pour la lisibilité
+                    const tableColumns = columns.filter(col => col.table_name === table.table_name);
+                    resultsHTML += createTable(tableColumns, `🏷️ DÉTAIL TABLE: ${table.table_name}`);
+                }
+
+                resultsEl.innerHTML = resultsHTML;
+                showStatus('✅ Schéma récupéré avec succès !', 'success');
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showStatus(`❌ Erreur: ${error.message}`, 'error');
+            }
+        }
+
+        // Exécuter les requêtes au chargement
+        document.addEventListener('DOMContentLoaded', executeQueries);
+    </script>
+</body>
+</html> 

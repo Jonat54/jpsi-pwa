@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éclairage de Sécurité - JPSI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+            font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .header-card {
+            background: #f6f7f9;
+            border: 3.5px solid #0F8558;
+            border-radius: 38px;
+            box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .back-button {
+            background: #0F8558;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .back-button:hover {
+            background: #0c6b41;
+        }
+        
+        .header-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #23272b;
+            margin: 0;
+        }
+        
+        .add-button {
+            background: #32CD32;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+        
+        .add-button:hover {
+            background: #228B22;
+            transform: translateY(-1px);
+        }
+        
+        .content-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .eclairages-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .eclairages-table th {
+            background: #f9fafb;
+            padding: 1.25rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            font-size: 0.95rem;
+        }
+        
+        .eclairages-table td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+            font-size: 0.95rem;
+        }
+        
+        .eclairages-table tr:hover {
+            background: #f9fafb;
+            transition: background 0.2s;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+
+        
+        .status-ok {
+            background: #10b981;
+        }
+        
+        .status-warning {
+            background: #f59e0b;
+        }
+        
+        .status-error {
+            background: #ef4444;
+        }
+        
+        .status-gray {
+            background: #6b7280;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.6;
+        }
+        
+        .empty-state-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+        }
+        
+        .empty-state-description {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+        
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            border: 2px solid #e5e7eb;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f3f4f6;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: #f3f4f6;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.95rem;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            background: #f9fafb;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #0F8558;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(15, 133, 88, 0.1);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid #f3f4f6;
+        }
+        
+        .modal-button {
+            padding: 0.875rem 1.75rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .modal-button.primary {
+            background: #0F8558;
+            color: white;
+        }
+        
+        .modal-button.primary:hover {
+            background: #0c6b41;
+            transform: translateY(-1px);
+        }
+        
+        .modal-button.secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .modal-button.secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        /* Styles pour le switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #6b7280;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #0F8558;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .header-card {
+                border-radius: 18px;
+                padding: 1.5rem;
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .content-card {
+                border-radius: 18px;
+            }
+            
+            .header-title {
+                font-size: 1.8rem;
+            }
+            
+            .add-button {
+                margin-left: 0;
+                margin-top: 1rem;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .duplicate-btn {
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+            transition: color 0.2s;
+            vertical-align: middle;
+        }
+        .duplicate-btn:hover {
+            color: #0F8558;
+        }
+        .modal-content.modal-card {
+          max-width: 700px;
+        }
+        .form-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        .form-grid-3 {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 1rem;
+        }
+        .form-group {
+          min-width: 0;
+          margin-bottom: 0.5rem;
+        }
+        .num-input, .niv-group input, .lcie-input {
+          max-width: 120px;
+        }
+        .loc-group input {
+          max-width: 100%;
+        }
+        .led-btn {
+          min-width: 36px;
+          width: 36px;
+          height: 36px;
+          padding: 0;
+          margin-left: 0.3rem;
+          font-size: 1.1rem;
+          border-radius: 50%;
+          border: none;
+          background: #f3f4f6;
+          color: #0F8558;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .led-btn:hover {
+          background: #e5e7eb;
+        }
+        .switch-flex {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .switch-label {
+            font-size: 0.95rem;
+            color: #374151;
+        }
+        .switch-label-yes {
+            color: #0F8558;
+        }
+        .form-separator {
+            margin: 1.2rem 0;
+        }
+        @media (max-width: 900px) {
+            .modal-content.modal-card {
+                max-width: 98vw;
+            }
+            .form-grid, .form-grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+        .num-input {
+          max-width: 120px;
+        }
+        .switch-flex {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .switch-label {
+            font-size: 0.95rem;
+            color: #374151;
+        }
+        .switch-label-yes {
+            color: #0F8558;
+        }
+        .num-input, .niv-group input, .lcie-input, #marque_es, #modele_es, #ip_es, #ampveille_es, #ampsecours_es {
+          max-width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Card -->
+        <div class="header-card">
+            <button class="back-button" onclick="goBack()" title="Retour">
+                ←
+            </button>
+            <div style="flex: 1;">
+                <h1 class="header-title" id="mainTitle">Éclairage de Sécurité</h1>
+                <div style="color: #6b7280; font-size: 1rem; margin-top: 0.25rem;" id="subTitle">Chargement...</div>
+            </div>
+            <button class="add-button" onclick="addEclairage()">+ Ajouter</button>
+        </div>
+        
+        <!-- Content -->
+        <div class="content-card">
+            <div id="content">
+                <div style="text-align: center; padding: 3rem; color: #6b7280;">
+                    Chargement...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Supabase
+        const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+        
+        // Initialisation de Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Variables globales
+        let currentSite = null;
+        let currentClient = null;
+        let currentIntervention = null;
+        let eclairages = [];
+        let verifications = []; // Vérifications de l'intervention
+        
+        // Fonction pour récupérer l'ID du site et de l'intervention depuis l'URL
+        function getSiteIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const siteId = urlParams.get('site');
+            const interventionId = urlParams.get('intervention');
+            
+            if (!siteId) {
+                console.error('❌ Aucun ID de site fourni dans l\'URL');
+                return null;
+            }
+            
+            if (!interventionId) {
+                console.error('❌ Aucun ID d\'intervention fourni dans l\'URL');
+                return null;
+            }
+            
+            console.log(`🔍 ID du site récupéré: ${siteId}`);
+            console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
+            return { siteId: decodeURIComponent(siteId), interventionId: decodeURIComponent(interventionId) };
+        }
+        
+        // Fonction pour charger les données du site et de l'intervention
+        async function loadSiteData(params) {
+            try {
+                console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
+                console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
+                
+                // Charger l'intervention
+                const { data: intervention, error: interventionError } = await supabase
+                    .from('interventions')
+                    .select(`
+                        *,
+                        sites!inner(
+                            *,
+                            clients!inner(*)
+                        )
+                    `)
+                    .eq('id_intervention', params.interventionId)
+                    .single();
+                
+                if (interventionError) {
+                    console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+                    showError('Erreur lors du chargement de l\'intervention');
+                    return;
+                }
+                
+                currentIntervention = intervention;
+                currentSite = intervention.sites;
+                currentClient = intervention.sites.clients;
+                
+                console.log('✅ Intervention chargée:', currentIntervention);
+                console.log('✅ Données du site chargées:', currentSite);
+                console.log('✅ Données du client chargées:', currentClient);
+                
+                // Charger les éclairages
+                await loadEclairages(params.siteId);
+                
+                // Charger les vérifications de l'intervention
+                await loadVerifications(params.interventionId);
+                
+                // Mettre à jour l'affichage
+                updateDisplay();
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des données:', error);
+                showError('Erreur lors du chargement des données');
+            }
+        }
+        
+        // Fonction pour charger les éclairages
+        async function loadEclairages(siteId) {
+            try {
+                console.log(`📥 Chargement des éclairages pour le site: ${siteId}`);
+                
+                const { data, error } = await supabase
+                    .from('eclairages')
+                    .select('*')
+                    .eq('id_site', siteId)
+                    .order('num_ecl', { ascending: true });
+                
+                if (error) {
+                    console.error('❌ Erreur lors du chargement des éclairages:', error);
+                    return;
+                }
+                
+                // Trier les éclairages par numéro de manière numérique
+                const sortedData = (data || []).sort((a, b) => {
+                    const numA = parseInt(a.num_ecl) || 0;
+                    const numB = parseInt(b.num_ecl) || 0;
+                    return numA - numB;
+                });
+                
+                eclairages = sortedData;
+                console.log(`✅ ${eclairages.length} éclairages chargés et triés:`, eclairages);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des éclairages:', error);
+            }
+        }
+        
+        // Fonction pour mettre à jour l'affichage
+        function updateDisplay() {
+            if (!currentSite || !currentClient || !currentIntervention) {
+                console.log('⏳ Attente du chargement des données...');
+                return;
+            }
+            
+            // Mettre à jour le titre avec le format demandé
+            const mainTitle = `${currentClient.nom_client} - ${currentSite.nom_site}`;
+            const subTitle = `Intervention ${currentIntervention.numero_intervention}`;
+            
+            document.getElementById('mainTitle').textContent = mainTitle;
+            document.getElementById('subTitle').textContent = subTitle;
+            
+            // Créer le contenu
+            const contentContainer = document.getElementById('content');
+            
+            if (eclairages.length === 0) {
+                contentContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💡</div>
+                        <div class="empty-state-title">Aucun éclairage</div>
+                        <div class="empty-state-description">Aucun éclairage de sécurité n'a été enregistré pour ce site.</div>
+                        <button class="add-button" onclick="addEclairage()">
+                            + Ajouter le premier éclairage
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            const eclairagesRows = eclairages.map(ecl => {
+                const statusClass = getStatusClass(ecl);
+                
+                return `
+                    <tr onclick="editEclairage('${ecl.id_ecl}')" style="cursor: pointer;">
+                        <td style="width: 60px;">
+                            <span class="status-indicator ${statusClass}"></span>
+                            ${ecl.num_ecl || 'N/A'}
+                        </td>
+                        <td style="width: 60px;">${ecl.niv_ecl || 'N/A'}</td>
+                        <td style="width: 300px;">${ecl.loc_ecl || 'N/A'}</td>
+                        <td style="width: 120px;">${ecl.family_ecl || 'N/A'}</td>
+                        <td style="width: 120px;">${ecl.marque_ecl || 'N/A'}</td>
+                        <td style="width: 120px;">${ecl.modele_ecl || 'N/A'}</td>
+                        <td style="width: 40px; text-align: right;">
+                            <button class="duplicate-btn" title="Dupliquer cet éclairage" onclick="event.stopPropagation(); duplicateEclairage('${ecl.id_ecl}')">⧉</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            contentContainer.innerHTML = `
+                <div class="table-container">
+                    <table class="eclairages-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">Numéro</th>
+                                <th style="width: 60px;">Niveau</th>
+                                <th style="width: 300px;">Localisation</th>
+                                <th style="width: 120px;">Famille</th>
+                                <th style="width: 120px;">Marque</th>
+                                <th style="width: 120px;">Modèle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${eclairagesRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        // Fonction pour charger les vérifications de l'intervention
+        async function loadVerifications(interventionId) {
+            try {
+                console.log(`📥 Chargement des vérifications pour l'intervention: ${interventionId}`);
+                
+                const { data, error } = await supabase
+                    .from('verifications')
+                    .select('*')
+                    .eq('id_intervention', interventionId)
+                    .eq('type_equipement', 'eclairages');
+                
+                if (error) {
+                    console.error('❌ Erreur lors du chargement des vérifications:', error);
+                    return;
+                }
+                
+                verifications = data || [];
+                console.log(`✅ ${verifications.length} vérifications chargées:`, verifications);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des vérifications:', error);
+            }
+        }
+        
+        // Fonction pour obtenir la classe CSS du statut selon les vérifications de l'intervention
+        function getStatusClass(eclairage) {
+            // Chercher la vérification pour cet éclairage dans cette intervention
+            const verification = verifications.find(v => 
+                v.id_equipement === eclairage.id_ecl && 
+                v.type_equipement === 'eclairages'
+            );
+            
+            if (!verification) {
+                // Pas de vérification → gris
+                return 'status-gray';
+            }
+            
+            // Vérification trouvée, regarder l'état et les observations
+            if (verification.etat_verification === 'OK') {
+                // Vérifier s'il y a des observations de défauts majeurs
+                const hasMajorDefects = verification.observations && (
+                    verification.observations.includes('Batterie HS') ||
+                    verification.observations.includes('Bloc HS')
+                );
+                
+                // Vérifier s'il y a des observations de défauts mineurs
+                const hasMinorDefects = verification.observations && (
+                    verification.observations.includes('Défaut mineur') ||
+                    verification.observations.includes('Légère dégradation')
+                );
+                
+                if (hasMajorDefects) {
+                    return 'status-error';
+                } else if (hasMinorDefects) {
+                    return 'status-warning';
+                } else {
+                    return 'status-ok';
+                }
+            } else if (verification.etat_verification === 'Défaut') {
+                return 'status-error';
+            }
+            
+            // Statut inconnu → gris
+            return 'status-gray';
+        }
+        
+        // Fonction pour ajouter un éclairage
+        function addEclairage() {
+            if (!currentSite) {
+                alert('⚠️ Site non chargé');
+                return;
+            }
+            
+            console.log('➕ Ouverture de la modal d\'ajout d\'éclairage');
+            openAddEclairageModal();
+        }
+        
+        // Fonction pour ouvrir la modal d'ajout d'éclairage
+        function openAddEclairageModal() {
+            const modalHTML = `
+                <div class="modal-overlay" id="addEclairageModal">
+                    <div class="modal-content modal-card">
+                        <div class="modal-header">
+                            <h3 class="modal-title"><span style='vertical-align:middle;'>💡</span> Ajouter un éclairage de sécurité</h3>
+                            <button class="modal-close" onclick="closeAddEclairageModal()">×</button>
+                        </div>
+                        <form id="addEclairageForm" autocomplete="off">
+                            <div class="form-grid">
+                                    <div class="form-group num-group">
+                                        <label class="form-label">Numéro *</label>
+                                        <input type="text" class="form-input num-input" id="num_ecl" maxlength="5" required>
+                                    </div>
+                                <div class="form-group niv-group">
+                                    <label class="form-label">Niveau</label>
+                                    <input type="text" class="form-input" id="niv_ecl" maxlength="20">
+                                </div>
+                            </div>
+                            <div class="form-group loc-group">
+                                    <label class="form-label">Localisation <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="loc_ecl" required placeholder="ex: Couloir principal, Escalier A">
+                                    <div class="form-error" id="error-loc_ecl"></div>
+                            </div>
+                            <hr class="form-separator">
+                                <div class="form-grid">
+                                <div class="form-group lcie-group">
+                                    <label class="form-label">LCIE</label>
+                                    <input type="text" class="form-input lcie-input" id="lcie_es" maxlength="8" placeholder="ex: T02001" onblur="searchLCIECatalogue()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Famille *</label>
+                                        <select class="form-select" id="famille_es" required>
+                                            <option value="">Sélectionner la famille</option>
+                                            <option value="BAES">BAES</option>
+                                            <option value="BAEH">BAEH</option>
+                                            <option value="BAES+BAEH">BAES+BAEH</option>
+                                            <option value="Ambiant Permanent">Ambiant Permanent</option>
+                                            <option value="Ambiant NP">Ambiant NP</option>
+                                            <option value="Bloc Phares">Bloc Phares</option>
+                                        </select>
+                                    </div>
+                            </div>
+                            <div class="form-grid">
+                                    <div class="form-group">
+                                    <label class="form-label">Marque</label>
+                                    <input type="text" class="form-input" id="marque_es" placeholder="ex: Philips, Schneider">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Modèle</label>
+                                    <input type="text" class="form-input" id="modele_es" placeholder="ex: LED Emergency">
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Indice de protection</label>
+                                    <input type="text" class="form-input" id="ip_es" placeholder="ex: IP44, IP65, IP20...">
+                                </div>
+                                    <div class="form-group" style="display: flex; align-items: end; gap: 0.3rem;">
+                                        <div style="flex:1;">
+                                            <label class="form-label">Ampoule veille</label>
+                                            <input type="text" class="form-input" id="ampveille_es" placeholder="ex: 12, 24, etc.">
+                                        </div>
+                                        <button type="button" class="led-btn" onclick="document.getElementById('ampveille_es').value='LED'" title="LED">💡</button>
+                                    </div>
+                            </div>
+                            <div class="form-grid">
+                                    <div class="form-group" style="display: flex; align-items: end; gap: 0.3rem;">
+                                        <div style="flex:1;">
+                                            <label class="form-label">Ampoule secours</label>
+                                            <input type="text" class="form-input" id="ampsecours_es" placeholder="ex: 18, 36, etc.">
+                                        </div>
+                                        <button type="button" class="led-btn" onclick="document.getElementById('ampsecours_es').value='LED'" title="LED">💡</button>
+                                    </div>
+                                <div class="form-group"></div>
+                            </div>
+                            <hr class="form-separator">
+                            <div class="form-grid">
+                                    <div class="form-group switch-item">
+                                        <label class="form-label">SATI</label>
+                                        <div class="switch-flex">
+                                            <span class="switch-label">Non</span>
+                                            <label class="switch">
+                                                <input type="checkbox" id="sati_ecl" onchange="updateSaturation()">
+                                                <span class="slider"></span>
+                                            </label>
+                                            <span class="switch-label switch-label-yes">Oui</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group switch-item">
+                                        <label class="form-label">Télécommande</label>
+                                        <div class="switch-flex">
+                                            <span class="switch-label">Non</span>
+                                            <label class="switch">
+                                                <input type="checkbox" id="telecommande_ecl" onchange="updateTelecommande()">
+                                                <span class="slider"></span>
+                                            </label>
+                                            <span class="switch-label switch-label-yes">Oui</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group switch-item">
+                                        <label class="form-label">État batterie</label>
+                                        <div class="switch-flex">
+                                        <span class="switch-label">HS</span>
+                                            <label class="switch">
+                                            <input type="checkbox" id="etat_batterie_ecl" checked>
+                                                <span class="slider"></span>
+                                            </label>
+                                            <span class="switch-label switch-label-yes">OK</span>
+                                        </div>
+                                </div>
+                            </div>
+                            <div class="modal-buttons">
+                                <button type="button" class="modal-button secondary" onclick="closeAddEclairageModal()">Annuler</button>
+                                <button type="submit" class="modal-button primary">Ajouter</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.getElementById('addEclairageForm').addEventListener('submit', handleAddEclairage);
+            setTimeout(async () => {
+                await suggestNextEclairageNumber();
+                setCurrentYear();
+                document.getElementById('num_ecl').focus();
+            }, 100);
+        }
+        
+        // Fonction pour fermer la modal
+        function closeAddEclairageModal() {
+            const modal = document.getElementById('addEclairageModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Fonction pour suggérer le prochain numéro d'éclairage
+        async function suggestNextEclairageNumber() {
+            if (!currentSite || !currentSite.id_site) {
+                console.log('⚠️ Site non chargé, impossible de suggérer le numéro');
+                return;
+            }
+            
+            try {
+                console.log('🔍 Recherche du dernier numéro d\'éclairage...');
+                
+                const { data, error } = await supabase
+                    .from('eclairages')
+                    .select('num_ecl')
+                    .eq('id_site', currentSite.id_site);
+                
+                if (error) {
+                    console.error('❌ Erreur lors de la recherche du dernier numéro:', error);
+                    return;
+                }
+                
+                let nextNumber = 1;
+                
+                if (data && data.length > 0) {
+                    // Trier les numéros de manière numérique pour trouver le plus grand
+                    const sortedNumbers = data
+                        .map(item => parseInt(item.num_ecl) || 0)
+                        .sort((a, b) => a - b);
+                    
+                    const lastNumber = sortedNumbers[sortedNumbers.length - 1];
+                    console.log('📊 Dernier numéro trouvé:', lastNumber);
+                    
+                    if (lastNumber > 0) {
+                        nextNumber = lastNumber + 1;
+                    }
+                }
+                
+                console.log('✅ Numéro suggéré:', nextNumber);
+                document.getElementById('num_ecl').value = nextNumber;
+                
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+            }
+        }
+        
+        // Fonction pour mettre à jour la SATI
+        function updateSaturation() {
+            const checkbox = document.getElementById('sati_ecl');
+            checkbox.value = checkbox.checked;
+            console.log(checkbox.checked ? '✅ SATI: Oui' : '❌ SATI: Non');
+        }
+        
+        // Fonction pour mettre à jour la télécommande
+        function updateTelecommande() {
+            const checkbox = document.getElementById('telecommande_ecl');
+            checkbox.value = checkbox.checked;
+            console.log(checkbox.checked ? '✅ Télécommande: Oui' : '❌ Télécommande: Non');
+        }
+        
+        // Fonction pour mettre à jour l'état de la batterie
+        function updateBatterie() {
+            const checkbox = document.getElementById('etat_batterie_ecl');
+            checkbox.value = checkbox.checked;
+            console.log(checkbox.checked ? '✅ Batterie: OK' : '❌ Batterie: Défaut');
+        }
+        
+        // Fonction pour définir l'année courante
+        function setCurrentYear() {
+            const currentYear = new Date().getFullYear();
+            document.getElementById('mes_ecl').value = currentYear;
+            console.log(`✅ Année courante définie: ${currentYear}`);
+        }
+        
+        // Fonction pour valider une année
+        function validateYear(input) {
+            const value = input.value.trim();
+            if (value && !/^\d{4}$/.test(value)) {
+                alert('⚠️ Veuillez entrer une année valide (format: AAAA)');
+                input.focus();
+                return false;
+            }
+            return true;
+        }
+        
+        // Fonction pour valider une date
+        function validateDate(input) {
+            const value = input.value;
+            if (value) {
+                const selectedDate = new Date(value);
+                const currentDate = new Date();
+                
+                if (selectedDate > currentDate) {
+                    alert('⚠️ La date du contrôle ne peut pas être dans le futur');
+                    input.value = '';
+                    input.focus();
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        // Fonction pour gérer l'ajout d'éclairage
+        async function handleAddEclairage(event) {
+            event.preventDefault();
+            
+            if (!currentSite) {
+                alert('⚠️ Site non chargé');
+                return;
+            }
+            
+            // Vérifier que tous les éléments du formulaire existent
+            const numEcl = document.getElementById('num_ecl');
+            const nivEcl = document.getElementById('niv_ecl');
+            const locEcl = document.getElementById('loc_ecl');
+            const marqueEcl = document.getElementById('marque_es'); // Changed to marque_es
+            const modeleEcl = document.getElementById('modele_es'); // Changed to modele_es
+            const familyEcl = document.getElementById('famille_es'); // Changed to famille_es
+            const mesEcl = document.getElementById('mes_ecl');
+            const ipEcl = document.getElementById('ip_es'); // Changed to ip_es
+            const satiEcl = document.getElementById('sati_ecl');
+            const telecommandeEcl = document.getElementById('telecommande_ecl');
+            const etatBatterieEcl = document.getElementById('etat_batterie_ecl');
+            const orientationEcl = document.getElementById('orientation_ecl'); // This field is removed from modal, so it's not in formData
+            const obsEcl = document.getElementById('obs_ecl');
+            const lcieEcl = document.getElementById('lcie_es'); // New field
+
+            // Check if LCIE is filled and not found in catalogue
+            if (lcieEcl.value.trim() !== '' && !marqueEcl.value.trim() && !modeleEcl.value.trim() && !familyEcl.value.trim()) {
+                alert('⚠️ Le LCIE renseigné n\'a pas été trouvé dans le catalogue. Veuillez saisir les détails manuellement.');
+                return;
+            }
+
+            // Traitement des dates
+            const mesYear = document.getElementById('mes_ecl')?.value;
+            let mes_ecl = null;
+            if (mesYear && mesYear.trim() !== '') {
+                if (!validateYear(document.getElementById('mes_ecl'))) {
+                    return;
+                }
+                mes_ecl = `${mesYear}-01-01`;
+            }
+            
+            const lastEclDate = document.getElementById('last_ecl')?.value;
+            let last_ecl = null;
+            if (lastEclDate && lastEclDate.trim() !== '') {
+                if (!validateDate(document.getElementById('last_ecl'))) {
+                    return;
+                }
+                last_ecl = lastEclDate;
+            }
+            
+            const formData = {
+                num_ecl: numEcl.value.trim(),
+                niv_ecl: nivEcl ? nivEcl.value.trim() || null : null,
+                loc_ecl: locEcl.value.trim(),
+                marque_ecl: marqueEcl ? marqueEcl.value.trim() || null : null,
+                modele_ecl: modeleEcl ? modeleEcl.value.trim() || null : null,
+                family_ecl: familyEcl ? familyEcl.value || null : null,
+                mes_ecl: mes_ecl,
+                ip_ecl: ipEcl ? ipEcl.value || null : null,
+                sati_ecl: satiEcl ? satiEcl.checked || false : false,
+                telecommande_ecl: telecommandeEcl ? telecommandeEcl.checked || false : false,
+                etat_batterie_ecl: etatBatterieEcl ? etatBatterieEcl.checked || false : false,
+                orientation_ecl: null, // Removed as per modal
+                last_ecl: last_ecl,
+                obs_ecl: obsEcl ? obsEcl.value.trim() || null : null,
+                lcie_ecl: lcieEcl ? lcieEcl.value.trim() || null : null, // Added lcie_ecl
+                id_site: currentSite.id_site
+            };
+            
+            // Validation
+            if (!formData.num_ecl || !formData.loc_ecl) {
+                alert('⚠️ Le numéro et la localisation sont obligatoires');
+                return;
+            }
+            
+            // Vérifier que l'ID du site est valide
+            if (!formData.id_site || isNaN(formData.id_site)) {
+                alert('⚠️ ID du site invalide');
+                return;
+            }
+            
+            try {
+                console.log('📥 Ajout de l\'éclairage:', formData);
+                console.log('🔍 Site ID:', currentSite.id_site);
+                
+                // Test avec des données minimales d'abord
+                const testData = {
+                    num_ecl: formData.num_ecl,
+                    loc_ecl: formData.loc_ecl,
+                    id_site: formData.id_site
+                };
+                
+                console.log('🧪 Test avec données minimales:', testData);
+                
+                const { data, error } = await supabase
+                    .from('eclairages')
+                    .insert([formData])
+                    .select();
+                
+                if (error) {
+                    console.error('❌ Erreur lors de l\'ajout:', error);
+                    console.error('❌ Détails de l\'erreur:', error.message, error.details);
+                    console.error('❌ Code d\'erreur:', error.code);
+                    alert(`Erreur lors de l'ajout de l'éclairage: ${error.message}`);
+                    return;
+                }
+                
+                console.log('✅ Éclairage ajouté avec succès:', data);
+                
+                // Fermer la modal
+                closeAddEclairageModal();
+                
+                // Ajout au catalogue si besoin
+                if (formData.lcie_ecl) {
+                    const ampveilleVal = document.getElementById('ampveille_es')?.value || '';
+                    const ampsecoursVal = document.getElementById('ampsecours_es')?.value || '';
+                    // On vérifie si le LCIE existe déjà dans le catalogue
+                    const { data: catData, error: catError } = await supabase
+                        .from('eclairage_catalogue')
+                        .select('id_catalogue_es')
+                        .eq('lcie_es', formData.lcie_ecl)
+                        .maybeSingle();
+                    if (!catData) {
+                        // On ajoute dans le catalogue
+                        const catInsert = {
+                            lcie_es: formData.lcie_ecl,
+                            marque_es: formData.marque_ecl || '',
+                            modele_es: formData.modele_es || '',
+                            famille_es: formData.family_ecl || '',
+                            ampveille_es: ampveilleVal,
+                            ampsecours_es: ampsecoursVal,
+                            ip_es: formData.ip_ecl || '',
+                            sati_es: formData.sati_ecl || false
+                        };
+                        const { error: insertError } = await supabase
+                            .from('eclairage_catalogue')
+                            .insert([catInsert]);
+                        if (insertError) {
+                            console.error('❌ Erreur lors de l\'ajout au catalogue:', insertError);
+                        } else {
+                            console.log('✅ Modèle ajouté au catalogue !');
+                            alert('✅ Nouveau modèle ajouté au catalogue !');
+                        }
+                    }
+                }
+                
+                // Recharger les éclairages
+                await loadEclairages(currentSite.id_site);
+                updateDisplay();
+                
+                // Vérifier que la modal est bien fermée
+                const modal = document.getElementById('addEclairageModal');
+                if (modal) {
+                    modal.remove();
+                }
+                
+                // Feedback utilisateur amélioré
+                const successMessage = `✅ Éclairage ${formData.num_ecl} ajouté avec succès !`;
+                showSuccessMessage(successMessage);
+                
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+                alert('Erreur de connexion à la base de données');
+            }
+        }
+        
+        // Fonction pour ouvrir la fiche détaillée d'un éclairage
+        function editEclairage(eclairageId) {
+            console.log(`📋 Ouverture de la fiche éclairage: ${eclairageId}`);
+            
+            if (!currentSite || !currentSite.id_site) {
+                console.error('❌ Site non chargé');
+                alert('⚠️ Impossible d\'ouvrir la fiche : site non chargé');
+                return;
+            }
+            
+            // Rediriger vers la page de fiche détaillée
+            const params = new URLSearchParams({
+                eclairage: eclairageId,
+                site: currentSite.id_site,
+                intervention: currentIntervention.id_intervention
+            });
+            
+            window.location.href = `eclairageDetail.html?${params.toString()}`;
+        }
+        
+                // Fonction pour retourner à la page précédente
+        function goBack() {
+          // Retourner vers verifSite.html avec l'ID du site et de l'intervention
+          if (currentSite && currentSite.id_site && currentIntervention && currentIntervention.id_intervention) {
+            window.location.href = `verifSite.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+          } else {
+            // Fallback si pas de données chargées
+            window.location.href = 'verifSite.html';
+          }
+        }
+        
+        // Fonction pour afficher une erreur
+        function showError(message) {
+            document.getElementById('content').innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #ef4444; font-size: 1.1rem;">
+                    ${message}
+                </div>
+            `;
+        }
+        
+        // Fonction pour afficher un message de succès
+        function showSuccessMessage(message) {
+            // Créer un toast de succès
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #10b981;
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                z-index: 10000;
+                font-weight: 600;
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            
+            // Ajouter l'animation CSS
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(toast);
+            
+            // Supprimer après 3 secondes
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Initialisation de la page Éclairage Site...');
+            
+            // Test de connexion à Supabase
+            try {
+                const { data, error } = await supabase
+                    .from('eclairages')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    console.error('❌ Erreur de connexion à Supabase:', error);
+                    showError('Erreur de connexion à la base de données');
+                    return;
+                }
+                
+                console.log('✅ Connexion à Supabase réussie');
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+                showError('Erreur de connexion à la base de données');
+                return;
+            }
+            
+            // Récupérer l'ID du site et de l'intervention depuis l'URL
+            const params = getSiteIdFromURL();
+            
+            if (!params) {
+                showError('ID du site ou de l\'intervention manquant dans l\'URL');
+                return;
+            }
+            
+            // Charger les données du site et de l'intervention
+            await loadSiteData(params);
+        });
+
+        // Fonction de recherche LCIE dans le catalogue
+        async function searchLCIECatalogue() {
+            const lcieInput = document.getElementById('lcie_es');
+            const lcieValue = lcieInput.value.trim();
+            if (!lcieValue) {
+                enableManualFields(true);
+                return;
+            }
+            try {
+                const { data, error } = await supabase
+                    .from('eclairage_catalogue')
+                    .select('*')
+                    .eq('lcie_es', lcieValue)
+                    .maybeSingle();
+                if (error || !data) {
+                    enableManualFields(true);
+                    return;
+                }
+                // Auto-remplir et désactiver les champs
+                document.getElementById('marque_es').value = data.marque_es || '';
+                document.getElementById('modele_es').value = data.modele_es || '';
+                document.getElementById('famille_es').value = data.famille_es || '';
+                document.getElementById('ip_es').value = data.ip_es || '';
+                document.getElementById('ampveille_es').value = data.ampveille_es || '';
+                document.getElementById('ampsecours_es').value = data.ampsecours_es || '';
+                document.getElementById('sati_ecl').checked = !!data.sati_es;
+                enableManualFields(false);
+            } catch (e) {
+                enableManualFields(true);
+            }
+        }
+
+        // Fonction pour activer/désactiver les champs manuels
+        function enableManualFields(enable) {
+            document.getElementById('marque_es').disabled = !enable;
+            document.getElementById('modele_es').disabled = !enable;
+            document.getElementById('famille_es').disabled = !enable;
+            document.getElementById('ip_es').disabled = !enable;
+            document.getElementById('ampveille_es').disabled = !enable;
+            document.getElementById('ampsecours_es').disabled = !enable;
+        }
+
+        // Prépare la fonction duplicateEclairage (squelette, à compléter ensuite)
+        async function duplicateEclairage(id) {
+            // Récupérer l'équipement à dupliquer
+            const { data: ecl, error } = await supabase
+                .from('eclairages')
+                .select('*')
+                .eq('id_ecl', id)
+                .single();
+            if (error || !ecl) {
+                alert('Erreur lors de la récupération de l\'éclairage à dupliquer');
+                return;
+            }
+            // Suggérer le prochain numéro
+            let nextNumber = 1;
+            try {
+                const { data: nums, error: numError } = await supabase
+                    .from('eclairages')
+                    .select('num_ecl')
+                    .eq('id_site', currentSite.id_site);
+                if (!numError && nums && nums.length > 0) {
+                    const sortedNumbers = nums.map(item => parseInt(item.num_ecl) || 0).sort((a, b) => a - b);
+                    const lastNumber = sortedNumbers[sortedNumbers.length - 1];
+                    if (lastNumber > 0) nextNumber = lastNumber + 1;
+                }
+            } catch {}
+            // Ouvre la modale d'ajout rapide
+            let ampveille = ecl.ampveille_es;
+            let ampsecours = ecl.ampsecours_es;
+            if ((!ampveille || !ampveille.trim() || !ampsecours || !ampsecours.trim()) && ecl.lcie_ecl) {
+              const { data: cat, error: catError } = await supabase
+                .from('eclairage_catalogue')
+                .select('ampveille_es, ampsecours_es')
+                .eq('lcie_es', ecl.lcie_ecl)
+                .maybeSingle();
+              if (!catError && cat) {
+                if (!ampveille || !ampveille.trim()) ampveille = cat.ampveille_es || '';
+                if (!ampsecours || !ampsecours.trim()) ampsecours = cat.ampsecours_es || '';
+              }
+            }
+            const modalHTML = `
+                <div class="modal-overlay" id="duplicateEclairageModal">
+                    <div class="modal-content modal-card">
+                        <div class="modal-header">
+                            <h3 class="modal-title">⧉ Dupliquer un éclairage</h3>
+                            <button class="modal-close" onclick="closeDuplicateEclairageModal()">×</button>
+                        </div>
+                        <form id="duplicateEclairageForm" autocomplete="off">
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Numéro *</label>
+                                        <input type="text" class="form-input" id="num_ecl_dup" value="${nextNumber}" readonly>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Niveau *</label>
+                                        <input type="text" class="form-input" id="niv_ecl_dup" value="">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Localisation *</label>
+                                    <input type="text" class="form-input" id="loc_ecl_dup" value="">
+                                </div>
+                            </div>
+                            <hr class="form-separator">
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Marque</label>
+                                        <input type="text" class="form-input" id="marque_es_dup" value="${ecl.marque_ecl || ''}" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Modèle</label>
+                                        <input type="text" class="form-input" id="modele_es_dup" value="${ecl.modele_ecl || ''}" disabled>
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Famille</label>
+                                        <input type="text" class="form-input" id="famille_es_dup" value="${ecl.family_ecl || ''}" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">LCIE</label>
+                                        <input type="text" class="form-input" id="lcie_es_dup" value="${ecl.lcie_ecl || ''}" disabled>
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Indice de protection</label>
+                                        <input type="text" class="form-input" id="ip_es_dup" value="${ecl.ip_ecl || ''}" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Ampoule veille</label>
+                                        <input type="text" class="form-input" id="ampveille_es_dup" value="${typeof ampveille !== 'undefined' && ampveille !== null ? ampveille : ''}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Ampoule secours</label>
+                                        <input type="text" class="form-input" id="ampsecours_es_dup" value="${typeof ampsecours !== 'undefined' && ampsecours !== null ? ampsecours : ''}">
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">SATI</label>
+                                        <input type="checkbox" id="sati_ecl_dup" ${ecl.sati_ecl ? 'checked' : ''} disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Télécommande</label>
+                                        <input type="checkbox" id="telecommande_ecl_dup" ${ecl.telecommande_ecl ? 'checked' : ''} disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">État batterie</label>
+                                        <input type="checkbox" id="etat_batterie_ecl_dup" ${ecl.etat_batterie_ecl ? 'checked' : ''} disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-buttons">
+                                <button type="button" class="modal-button secondary" onclick="closeDuplicateEclairageModal()">Annuler</button>
+                                <button type="submit" class="modal-button primary">Dupliquer</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.getElementById('duplicateEclairageForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const num_ecl = document.getElementById('num_ecl_dup').value.trim();
+                const niv_ecl = document.getElementById('niv_ecl_dup').value.trim();
+                const loc_ecl = document.getElementById('loc_ecl_dup').value.trim();
+                const marque_ecl = document.getElementById('marque_es_dup').value.trim();
+                const modele_ecl = document.getElementById('modele_es_dup').value.trim();
+                const family_ecl = document.getElementById('famille_es_dup').value.trim();
+                const lcie_ecl = document.getElementById('lcie_es_dup').value.trim();
+                const ip_ecl = document.getElementById('ip_es_dup').value.trim();
+                const ampveille_es = document.getElementById('ampveille_es_dup').value;
+                const ampsecours_es = document.getElementById('ampsecours_es_dup').value;
+                // Les cases à cocher sont copiées de ecl (non éditables)
+                // Prépare les données à insérer
+                const formData = {
+                    num_ecl,
+                    niv_ecl,
+                    loc_ecl,
+                    marque_ecl,
+                    modele_ecl,
+                    family_ecl,
+                    lcie_ecl,
+                    ip_ecl,
+                    ampveille_es,
+                    ampsecours_es,
+                    sati_ecl: typeof ecl.sati_ecl === 'boolean' ? ecl.sati_ecl : false,
+                    telecommande_ecl: typeof ecl.telecommande_ecl === 'boolean' ? ecl.telecommande_ecl : false,
+                    etat_batterie_ecl: typeof ecl.etat_batterie_ecl === 'boolean' ? ecl.etat_batterie_ecl : true,
+                    id_site: currentSite.id_site
+                };
+                // Ajoute à la base
+                const { error: insertError } = await supabase
+                    .from('eclairages')
+                    .insert([formData]);
+                if (insertError) {
+                    alert('Erreur lors de la duplication');
+                    return;
+                }
+                closeDuplicateEclairageModal();
+                await loadEclairages(currentSite.id_site);
+                updateDisplay();
+                showSuccessMessage('⧉ Éclairage dupliqué avec succès !');
+            });
+        }
+        function closeDuplicateEclairageModal() {
+            const modal = document.getElementById('duplicateEclairageModal');
+            if (modal) modal.remove();
+        }
+    </script>
+</body>
+</html> 

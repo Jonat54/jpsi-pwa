@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Fiche Extincteur</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .edit-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-left: auto;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
+    }
+    
+    .edit-button:hover {
+      background: #7a1d1c;
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(155, 36, 35, 0.4);
+    }
+    
+
+    
+
+    
+    .info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .info-section {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 1.5rem 2rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .info-section h3 {
+      margin: 0 0 1.2rem 0;
+      color: #374151;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border-bottom: 2px solid #f3f4f6;
+      padding-bottom: 0.5rem;
+    }
+    
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .info-table th {
+      background: #f3f4f6;
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+    
+    .info-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #f9fafb;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+    
+    /* Styles spécifiques pour le tableau Emplacement */
+    .info-table th:nth-child(1),
+    .info-table td:nth-child(1) {
+      width: 15%;
+    }
+    
+    .info-table th:nth-child(2),
+    .info-table td:nth-child(2) {
+      width: 15%;
+    }
+    
+    .info-table th:nth-child(3),
+    .info-table td:nth-child(3) {
+      width: 70%;
+    }
+    
+    /* Styles spécifiques pour le tableau Historique */
+    .info-section:nth-child(3) .info-table th,
+    .info-section:nth-child(3) .info-table td {
+      width: 33.33%;
+    }
+    
+    /* Styles spécifiques pour le tableau Caractéristiques */
+    .info-section:nth-child(2) .info-table th:nth-child(1), /* Marque */
+    .info-section:nth-child(2) .info-table td:nth-child(1) {
+      width: 16%;
+    }
+    .info-section:nth-child(2) .info-table th:nth-child(2), /* Modèle */
+    .info-section:nth-child(2) .info-table td:nth-child(2) {
+      width: 16%;
+    }
+    .info-section:nth-child(2) .info-table th:nth-child(3), /* Certification */
+    .info-section:nth-child(2) .info-table td:nth-child(3) {
+      width: 22%;
+    }
+    .info-section:nth-child(2) .info-table th:nth-child(4), /* Mise en service */
+    .info-section:nth-child(2) .info-table td:nth-child(4) {
+      width: 18%;
+    }
+    /* Deuxième ligne : Agent, Capacité, Pression, Panneau */
+    .info-section:nth-child(2) .info-table th:nth-child(1), /* Agent */
+    .info-section:nth-child(2) .info-table td:nth-child(1) {
+      width: 46%;
+      min-width: 180px;
+      max-width: 350px;
+    }
+    .info-section:nth-child(2) .info-table th:nth-child(2), /* Capacité */
+    .info-section:nth-child(2) .info-table td:nth-child(2) {
+      width: 14%;
+      min-width: 60px;
+      max-width: 90px;
+    }
+    .info-section:nth-child(2) .info-table th:nth-child(3), /* Pression */
+    .info-section:nth-child(2) .info-table td:nth-child(3) {
+      width: 14%;
+      min-width: 60px;
+      max-width: 90px;
+    }
+    .info-section:nth-child(2) .info-table th:nth-child(4), /* Panneau */
+    .info-section:nth-child(2) .info-table td:nth-child(4) {
+      width: 14%;
+      min-width: 60px;
+      max-width: 90px;
+    }
+    
+    /* Style pour le curseur Panneau */
+    .panneau-status {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      border: 1px solid #d1d5db;
+    }
+    
+    .panneau-present {
+      background-color: #10b981;
+      border-color: #059669;
+    }
+    
+    .panneau-missing {
+      background-color: #ef4444;
+      border-color: #dc2626;
+    }
+    
+    .panneau-unknown {
+      background-color: #6b7280;
+      border-color: #4b5563;
+    }
+    
+    /* Styles pour la modal d'édition d'extincteur */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .dates-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #10b981;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    .modal-button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-button.add-green {
+      background: #10b981;
+      color: white;
+    }
+    
+    .modal-button.add-green:hover {
+      background: #059669;
+    }
+    
+    /* Styles pour la modal de saisie d'observation */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      overflow: hidden;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #374151;
+      margin: 0;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    
+    .modal-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    
+    .modal-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: flex-end;
+    }
+    
+    .modal-button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-button.primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .modal-button.primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .modal-button.secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .modal-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    .info-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .info-label {
+      font-size: 0.9rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    
+    .info-value {
+      font-size: 0.95rem;
+      color: #374151;
+      font-weight: 600;
+    }
+    
+    .buttons-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .action-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    
+    .action-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-1px);
+    }
+    
+    .action-button.secondary {
+      background: #6b7280;
+    }
+    
+    .action-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #374151;
+    }
+    
+    .empty-state-description {
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .header-subtitle {
+        font-size: 0.8rem;
+      }
+      
+      .edit-button {
+        margin-left: 0;
+        margin-top: 1rem;
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+      }
+      
+      .info-grid {
+        gap: 1rem;
+      }
+      
+      .info-section {
+        border-radius: 18px;
+        padding: 1rem 1.5rem;
+      }
+      
+      .info-section h3 {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ←
+      </button>
+      <h1 class="header-title" id="pageTitle">
+        <span id="mainTitle">Chargement...</span>
+        <span class="header-subtitle" id="subTitle"></span>
+      </h1>
+      <button class="edit-button" onclick="editExtincteur()" title="Modifier l'extincteur">
+        ✏️
+      </button>
+    </div>
+    
+    <!-- Content -->
+    <div id="content">
+      <div class="loading">Chargement de la fiche extincteur...</div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentExtincteur = null;
+    let currentSite = null;
+    let currentClient = null;
+    let currentIntervention = null;
+    
+    // Fonction pour récupérer les paramètres depuis l'URL
+    function getParamsFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const extincteurId = urlParams.get('extincteur');
+      const siteId = urlParams.get('site');
+      const interventionId = urlParams.get('intervention');
+      
+      if (!extincteurId || !siteId || !interventionId) {
+        console.error('❌ Paramètres manquants dans l\'URL');
+        return { extincteurId: null, siteId: null, interventionId: null };
+      }
+      
+      console.log(`🔍 Paramètres récupérés: extincteur=${extincteurId}, site=${siteId}, intervention=${interventionId}`);
+      return {
+        extincteurId: decodeURIComponent(extincteurId),
+        siteId: decodeURIComponent(siteId),
+        interventionId: decodeURIComponent(interventionId)
+      };
+    }
+    
+    // Fonction pour charger les données
+    async function loadData(extincteurId, siteId, interventionId) {
+      try {
+        console.log(`📥 Chargement des données pour l'extincteur: ${extincteurId}`);
+        console.log(`📥 Chargement de l'intervention: ${interventionId}`);
+        
+        // Charger l'extincteur
+        const { data: extincteur, error: extError } = await supabase
+          .from('extincteurs')
+          .select('*')
+          .eq('id_ext', extincteurId)
+          .single();
+        
+        if (extError) {
+          console.error('❌ Erreur lors du chargement de l\'extincteur:', extError);
+          showError('Erreur lors du chargement de l\'extincteur');
+          return;
+        }
+        
+        if (!extincteur) {
+          console.error('❌ Extincteur non trouvé');
+          showError('Extincteur non trouvé');
+          return;
+        }
+        
+        console.log('✅ Données de l\'extincteur chargées:', extincteur);
+        currentExtincteur = extincteur;
+        
+        // Charger les données de l'intervention (incluant site et client)
+        await loadInterventionData(interventionId);
+        
+        // Charger le nom de l'agent AVANT d'afficher la fiche
+        await loadAgentName();
+        
+        // Mettre à jour l'interface (après avoir agent_long)
+        updateDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour charger les données de l'intervention
+    async function loadInterventionData(interventionId) {
+      try {
+        console.log(`📥 Chargement de l'intervention: ${interventionId}`);
+        
+        const { data: intervention, error } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            sites!inner(
+              *,
+              clients!inner(*)
+            )
+          `)
+          .eq('id_intervention', interventionId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement de l\'intervention:', error);
+          showError('Erreur lors du chargement de l\'intervention');
+          return;
+        }
+        
+        currentIntervention = intervention;
+        currentSite = intervention.sites;
+        currentClient = intervention.sites.clients;
+        
+        console.log('✅ Intervention chargée:', currentIntervention);
+        console.log('✅ Données du site chargées:', currentSite);
+        console.log('✅ Données du client chargées:', currentClient);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement de l\'intervention:', error);
+      }
+    }
+    
+    // Fonction pour charger les informations du client (maintenant géré par loadInterventionData)
+    async function loadClientInfo(clientId) {
+      // Cette fonction n'est plus nécessaire car les données client sont chargées via l'intervention
+      console.log('ℹ️ loadClientInfo n\'est plus nécessaire');
+    }
+    
+    // Fonction pour charger le nom de l'agent
+    async function loadAgentName() {
+      if (!currentExtincteur || !currentExtincteur.agent_ext) {
+        const agentElement = document.getElementById('agent_long_name');
+        if (agentElement) {
+          agentElement.textContent = 'N/A';
+        }
+        return;
+      }
+      
+      try {
+        console.log('🔄 Chargement du nom de l\'agent:', currentExtincteur.agent_ext);
+        
+        const { data, error } = await supabase
+          .from('AgentExtincteur')
+          .select('long_agt')
+          .eq('id_agt', currentExtincteur.agent_ext)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du nom de l\'agent:', error);
+          const agentElement = document.getElementById('agent_long_name');
+          if (agentElement) {
+            agentElement.textContent = 'Erreur';
+          }
+          return;
+        }
+        
+        if (data) {
+          const agentElement = document.getElementById('agent_long_name');
+          if (agentElement) {
+            agentElement.textContent = data.long_agt || 'N/A';
+            currentExtincteur.agent_long = data.long_agt || '';
+            console.log('✅ Nom de l\'agent chargé:', data.long_agt);
+          }
+        } else {
+          const agentElement = document.getElementById('agent_long_name');
+          if (agentElement) {
+            agentElement.textContent = 'N/A';
+            currentExtincteur.agent_long = '';
+          }
+          console.log('⚠️ Agent non trouvé');
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur JavaScript lors du chargement du nom de l\'agent:', error);
+        const agentElement = document.getElementById('agent_long_name');
+        if (agentElement) {
+          agentElement.textContent = 'Erreur';
+        }
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage
+    async function updateDisplay(force) {
+      if (!currentExtincteur) return;
+      // Debug : afficher la valeur de l'agent long dans la console
+      console.log('DEBUG agent_long:', currentExtincteur.agent_long);
+      console.log('DEBUG papp_ext:', currentExtincteur.papp_ext, 'type:', typeof currentExtincteur.papp_ext);
+      console.log('DEBUG pcf_ext:', currentExtincteur.pcf_ext, 'type:', typeof currentExtincteur.pcf_ext);
+      // Si agent_long est manquant, on recharge l'agent et on rappelle updateDisplay (une seule fois)
+      if (!currentExtincteur.agent_long && !force) {
+        loadAgentName().then(() => updateDisplay(true));
+        return;
+      }
+      
+      // Mettre à jour le titre avec le format demandé
+      const mainTitle = `${currentClient ? currentClient.nom_client : 'Client inconnu'} - ${currentSite ? currentSite.nom_site : 'Site inconnu'}`;
+      const subTitle = `Intervention ${currentIntervention ? currentIntervention.numero_intervention : 'N/A'}`;
+      
+      document.getElementById('mainTitle').textContent = mainTitle;
+      document.getElementById('subTitle').textContent = subTitle;
+      
+      // Vérifier si l'équipement a déjà été vérifié dans cette intervention
+      let existingVerification = null;
+      if (currentIntervention) {
+        existingVerification = await checkExistingVerification();
+      }
+      
+      // Créer le contenu détaillé
+      const contentContainer = document.getElementById('content');
+      
+      // Avant l'affichage des observations, injecter la logique d'ajout automatique
+      if (currentExtincteur.agent_ext == 5 && currentExtincteur.mes_ext) {
+        const year = new Date(currentExtincteur.mes_ext).getFullYear();
+        const now = new Date().getFullYear();
+        if (now - year >= 10) {
+          if (!currentExtincteur.obs_ext || !currentExtincteur.obs_ext.includes('Devis Échange Standard')) {
+            if (currentExtincteur.obs_ext && currentExtincteur.obs_ext.trim() !== '') {
+              currentExtincteur.obs_ext += '\nDevis Échange Standard';
+            } else {
+              currentExtincteur.obs_ext = 'Devis Échange Standard';
+            }
+          }
+        }
+      }
+      
+      contentContainer.innerHTML = `
+        <div class="info-grid">
+          <div class="info-section">
+            <h3>Emplacement</h3>
+            <table class="info-table">
+              <tr>
+                <th>Numéro</th>
+                <th>Niveau</th>
+                <th>Localisation</th>
+              </tr>
+              <tr>
+                <td>${currentExtincteur.num_ext || 'N/A'}</td>
+                <td>${currentExtincteur.niv_ext || 'N/A'}</td>
+                <td>${currentExtincteur.loc_ext || 'N/A'}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="info-section">
+            <h3>Caractéristiques</h3>
+            <table class="info-table">
+              <tr>
+                <th>Marque</th>
+                <th>Modèle</th>
+                <th>Certification</th>
+                <th>Mise en service</th>
+              </tr>
+              <tr>
+                <td>${currentExtincteur.marque_ext || 'N/A'}</td>
+                <td>${currentExtincteur.modele_ext || 'N/A'}</td>
+                <td>${currentExtincteur.cert_ext || 'N/A'}</td>
+                <td>
+                  ${(function() {
+                    if (currentExtincteur.agent_ext == 5 && currentExtincteur.mes_ext) {
+                      const year = new Date(currentExtincteur.mes_ext).getFullYear();
+                      const now = new Date().getFullYear();
+                      if (now - year >= 10) {
+                        return `<span style="color:#ef4444; font-weight:700;">${year}</span>`;
+                      } else {
+                        return year;
+                      }
+                    } else if (currentExtincteur.mes_ext) {
+                      return new Date(currentExtincteur.mes_ext).getFullYear();
+                    } else {
+                      return 'N/A';
+                    }
+                  })()}
+                </td>
+              </tr>
+              <tr>
+                <th>Agent</th>
+                <th>Capacité</th>
+                <th>Pression</th>
+                <th>Panneau</th>
+              </tr>
+              <tr>
+                <td id="agent_long_name">Chargement...</td>
+                <td>${currentExtincteur.capa_ext || 'N/A'}</td>
+                <td>
+                  <span class="panneau-status ${currentExtincteur.papp_ext === true ? 'panneau-present' : 'panneau-missing'}" title="papp_ext: ${currentExtincteur.papp_ext}"></span>
+                  ${currentExtincteur.papp_ext === true ? 'PA' : 'PP'}
+                </td>
+                <td>
+                  <span class="panneau-status ${currentExtincteur.pcf_ext === true ? 'panneau-present' : currentExtincteur.pcf_ext === false ? 'panneau-missing' : 'panneau-unknown'}" title="pcf_ext: ${currentExtincteur.pcf_ext}"></span>
+                  ${currentExtincteur.pcf_ext === true ? 'Présent' : currentExtincteur.pcf_ext === false ? 'Manquant' : 'Non vérifié'}
+                </td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="info-section">
+            <h3>Historique</h3>
+            <table class="info-table">
+              <tr>
+                <th>Recharge / Charge de Maintenance</th>
+                <th>Maintenance Additionnelle Approfondie</th>
+                <th>Révision décennale</th>
+              </tr>
+              <tr>
+                <td>
+                  <div>${formatDate(currentExtincteur.rcm_ext) || 'N/A'}</div>
+                  <div class="buttons-row" style="margin-top: 0.5rem;">
+                    <button class="action-button" style="background: #f97316; font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="addDevisRCM()">Devis</button>
+                    <button class="action-button" style="background: #10b981; font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="markRCMDone()">Fait</button>
+                  </div>
+                </td>
+                <td>
+                  <div>${formatDate(currentExtincteur.maa_ext) || 'N/A'}</div>
+                  <div class="buttons-row" style="margin-top: 0.5rem;">
+                    <button class="action-button" style="background: ${currentExtincteur.agent_ext == 5 ? '#9ca3af' : '#f97316'}; font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="${currentExtincteur.agent_ext == 5 ? 'return false;' : 'addDevisMAA()'}" ${currentExtincteur.agent_ext == 5 ? 'disabled' : ''}>Devis</button>
+                    <button class="action-button" style="background: ${currentExtincteur.agent_ext == 5 ? '#9ca3af' : '#10b981'}; font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="${currentExtincteur.agent_ext == 5 ? 'return false;' : 'markMAADone()'}" ${currentExtincteur.agent_ext == 5 ? 'disabled' : ''}>Fait</button>
+                  </div>
+                </td>
+                <td>
+                  <div>${formatDate(currentExtincteur.eie_ext) || 'N/A'}</div>
+                  <div class="buttons-row" style="margin-top: 0.5rem;">
+                    <button class="action-button" style="background: ${currentExtincteur.agent_ext == 5 ? '#9ca3af' : '#f97316'}; font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="${currentExtincteur.agent_ext == 5 ? 'return false;' : 'addDevisEIE()'}" ${currentExtincteur.agent_ext == 5 ? 'disabled' : ''}>Devis</button>
+                    <button class="action-button" style="background: ${currentExtincteur.agent_ext == 5 ? '#9ca3af' : '#10b981'}; font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="${currentExtincteur.agent_ext == 5 ? 'return false;' : 'markEIEDone()'}" ${currentExtincteur.agent_ext == 5 ? 'disabled' : ''}>Fait</button>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="info-section">
+            <h3>Observations rapides</h3>
+            <div class="buttons-row">
+              ${currentExtincteur.agent_ext == 5 ? `
+                <button class="action-button" style="background: #ef4444;" onclick="addObservation('Devis Échange Standard')">🔄 Échange Standard</button>
+                <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Sérigraphie')">🎨 Sérigraphie</button>
+                <button class="action-button" style="background: #f97316;">❌ Inadapté</button>
+              ` : `
+                <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Corrosion Intérieur')">🔴 Corrosion Intérieur</button>
+                <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Corrosion Extérieur')">🔴 Corrosion Extérieur</button>
+                <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Choc Cuve')">💥 Choc Cuve</button>
+                <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Sérigraphie')">🎨 Sérigraphie</button>
+                <button class="action-button" style="background: #f97316;">❌ Inadapté</button>
+                <button class="action-button" style="background: #f97316;">⚠️ Début corrosion</button>
+                <button class="action-button" id="flammeGazBtn" style="background: #fbbf24; color: #23272b; font-weight:700;" onclick="addFlammeGazObservation()">🔥 Flamme Gaz</button>
+              `}
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <h3>Observations</h3>
+            <table class="info-table">
+              <tr>
+                <th style="cursor: pointer; color: #3b82f6;" onclick="openNoteModal()" title="Cliquer pour modifier les notes">📝 Notes</th>
+              </tr>
+              <tr>
+                <td>${existingVerification ? (existingVerification.observations || '') : (currentExtincteur.obs_ext || '')}</td>
+              </tr>
+            </table>
+            <div class="buttons-row">
+              ${existingVerification ? `
+                <button class="action-button" style="background: #9ca3af; cursor: not-allowed;" disabled title="Déjà vérifié dans cette intervention">✅ Vérifié</button>
+              ` : `
+                <button class="action-button" style="background: #10b981;" onclick="saveAndReturn()">✅ Vérifié</button>
+              `}
+              <button class="action-button" style="background: #ef4444;" onclick="deleteExtincteur()">🗑️</button>
+              <button class="action-button" style="background: #6b7280;" onclick="goBack()">❌</button>
+              <button class="action-button" style="background: #6b7280;" onclick="saveWithoutReturn()">💾</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+
+    
+    // Fonction pour formater une date
+    function formatDate(dateString) {
+      if (!dateString) return null;
+      
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      } catch (error) {
+        return dateString;
+      }
+    }
+    
+    // Fonction pour éditer l'extincteur
+    function editExtincteur() {
+      if (!currentExtincteur) {
+        alert('⚠️ Extincteur non chargé');
+        return;
+      }
+      
+      console.log(`✏️ Ouverture de la modal d'édition pour l'extincteur: ${currentExtincteur.id_ext}`);
+      openEditModal();
+    }
+    
+    // Fonction pour ouvrir la modal d'édition
+    function openEditModal() {
+      const modalHTML = `
+        <div class="modal-overlay" id="editModal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 class="modal-title">Modifier l'extincteur ${currentExtincteur.num_ext}</h3>
+              <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <form id="editExtincteurForm">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Numéro *</label>
+                  <input type="text" class="form-input" id="edit_num_ext" value="${currentExtincteur.num_ext || ''}" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Niveau</label>
+                  <input type="text" class="form-input" id="edit_niv_ext" value="${currentExtincteur.niv_ext || ''}">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Localisation *</label>
+                <input type="text" class="form-input" id="edit_loc_ext" value="${currentExtincteur.loc_ext || ''}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Certification</label>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <input type="text" class="form-input" id="edit_cert_ext" value="${currentExtincteur.cert_ext || ''}" onblur="searchEditCertification()" style="flex: 1;">
+                  <button type="button" class="modal-button" style="padding: 0.75rem; background: #9B2423; color: white; border-radius: 8px; border: none; cursor: pointer;" onclick="searchEditCertification()" title="Rechercher la certification">
+                    🔍
+                  </button>
+                </div>
+              </div>
+              <div class="form-grid" style="grid-template-columns: 140px 180px 1fr; align-items: center; gap: 16px; margin-bottom: 1.2rem;">
+                <div class="form-group" style="width: 140px;">
+                  <label class="form-label" style="margin-bottom: 0.5rem;">Marque</label>
+                  <input type="text" class="form-input" id="edit_marque_ext" value="${currentExtincteur.marque_ext || ''}" style="width: 100%;">
+                </div>
+                <div class="form-group" style="width: 180px;">
+                  <label class="form-label" style="margin-bottom: 0.5rem;">Modèle</label>
+                  <input type="text" class="form-input" id="edit_modele_ext" value="${currentExtincteur.modele_ext || ''}" style="width: 100%;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                  <label class="form-label" style="margin-bottom: 0.5rem;">PAPP</label>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: center;">
+                    <span style="font-size: 0.9rem; color: #6b7280;">PA</span>
+                    <label class="switch" style="vertical-align: middle;">
+                      <input type="checkbox" id="edit_papp_ext" ${currentExtincteur.papp_ext === true ? 'checked' : ''}>
+                      <span class="slider"></span>
+                    </label>
+                    <span style="font-size: 0.9rem; color: #10b981;">PP</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: flex-end; margin-bottom: 1.5rem;">
+                <div style="flex: 1 1 0; min-width: 0;">
+                  <label class="form-label">Agent</label>
+                  <select class="form-input" id="edit_agent_ext">
+                    <option value="">Sélectionner un agent</option>
+                  </select>
+                </div>
+                <div style="width: 120px;">
+                  <label class="form-label">Capacité</label>
+                  <select class="form-input" id="edit_capa_ext">
+                    <option value="">Sélectionner</option>
+                  </select>
+                </div>
+                <div style="width: 110px;">
+                  <label class="form-label">Année MES</label>
+                  <input type="text" class="form-input" id="edit_mes_ext" value="${currentExtincteur.mes_ext ? new Date(currentExtincteur.mes_ext).getFullYear() : ''}" placeholder="AAAA">
+                </div>
+              </div>
+              <div class="dates-row">
+                <div class="form-group">
+                  <label class="form-label">RCM</label>
+                  <input type="text" class="form-input" id="edit_rcm_ext" value="${currentExtincteur.rcm_ext ? new Date(currentExtincteur.rcm_ext).getFullYear() : ''}" placeholder="AAAA">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">MAA</label>
+                  <input type="text" class="form-input" id="edit_maa_ext" value="${currentExtincteur.maa_ext ? new Date(currentExtincteur.maa_ext).getFullYear() : ''}" placeholder="AAAA">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">EIE</label>
+                  <input type="text" class="form-input" id="edit_eie_ext" value="${currentExtincteur.eie_ext ? new Date(currentExtincteur.eie_ext).getFullYear() : ''}" placeholder="AAAA">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Panneau</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.9rem; color: #6b7280;">Non</span>
+                  <label class="switch">
+                    <input type="checkbox" id="edit_pcf_ext" ${currentExtincteur.pcf_ext === true ? 'checked' : ''} onchange="updateEditPanneau()">
+                    <span class="slider"></span>
+                  </label>
+                  <span style="font-size: 0.9rem; color: #10b981;">Oui</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Observations</label>
+                <textarea class="form-input" id="edit_obs_ext" rows="4" placeholder="Observations...">${currentExtincteur.obs_ext || ''}</textarea>
+              </div>
+              <div class="modal-buttons" style="justify-content: flex-end;">
+                <button type="submit" class="modal-button add-green">Enregistrer</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      
+      // Insérer la modale dans le DOM
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      console.log('🟢 Modale insérée dans le DOM');
+      
+      // Empêcher le scroll de la page
+      document.body.style.overflow = 'hidden';
+
+      // Charger les agents une fois la modale insérée
+      setTimeout(async () => {
+        await loadEditAgents();
+        console.log('🟢 Agents chargés après insertion de la modale');
+        const agentSelect = document.getElementById('edit_agent_ext');
+        if (agentSelect) {
+          agentSelect.addEventListener('change', updateEditCapaOptions);
+        } else {
+          console.error('❌ Impossible d\'ajouter l\'écouteur : edit_agent_ext non trouvé');
+        }
+        document.getElementById('edit_num_ext').focus();
+      }, 0);
+
+      // Gérer la soumission du formulaire
+      document.getElementById('editExtincteurForm').addEventListener('submit', handleEditExtincteur);
+
+      // Désactiver maa/eie selon l'agent sélectionné
+      const agentSelect = document.getElementById('edit_agent_ext');
+      function updateEditMaaEieDisabled() {
+        const selectedOption = agentSelect.options[agentSelect.selectedIndex];
+        const agentText = selectedOption ? selectedOption.textContent.toLowerCase() : '';
+        const disable = agentText.includes('co2') || agentText.includes('dioxyde');
+        document.getElementById('edit_maa_ext').disabled = disable;
+        document.getElementById('edit_eie_ext').disabled = disable;
+        
+        if (disable) {
+          console.log('⚠️ MAA et EIE désactivés pour l\'agent CO2');
+        }
+      }
+      agentSelect.addEventListener('change', updateEditMaaEieDisabled);
+      updateEditMaaEieDisabled();
+    }
+    
+    // Fonction pour fermer la modal d'édition
+    function closeEditModal() {
+      const modal = document.getElementById('editModal');
+      if (modal) {
+        modal.remove();
+      }
+      // Restaurer le scroll de la page
+      document.body.style.overflow = '';
+    }
+    
+    // Chargement dynamique des agents pour l'édition
+    async function loadEditAgents() {
+      console.log('🔄 Chargement des agents pour édition...');
+
+      const select = document.getElementById('edit_agent_ext');
+
+      // Vérifier si l'élément existe
+      if (!select) {
+        console.error('❌ Élément edit_agent_ext non trouvé dans le DOM (loadEditAgents)');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('AgentExtincteur')
+          .select('*')
+          .order('long_agt');
+
+        if (error) {
+          console.error('❌ Erreur lors du chargement des agents:', error);
+          select.innerHTML = '<option value="">Erreur chargement</option>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          console.log('⚠️ Aucun agent trouvé dans la base de données');
+          select.innerHTML = '<option value="">Aucun agent disponible</option>';
+          return;
+        }
+
+        console.log(`✅ ${data.length} agents chargés pour édition:`, data.map(a => a.court_agt || a.long_agt));
+
+        select.innerHTML = '<option value="">Sélectionner un agent</option>' +
+          data.map(agent => {
+            const displayText = agent.long_agt;
+            return `<option value="${agent.id_agt}" data-agent="${agent.long_agt.toLowerCase()}" data-agent-court="${agent.court_agt ? agent.court_agt.toLowerCase() : ''}">${displayText}</option>`;
+          }).join('');
+
+        // Sélectionner l'agent actuel de l'extincteur
+        if (currentExtincteur && currentExtincteur.agent_ext) {
+          select.value = currentExtincteur.agent_ext;
+          updateEditCapaOptions();
+        }
+
+      } catch (error) {
+        console.error('❌ Erreur JavaScript lors du chargement des agents:', error);
+        if (select) {
+          select.innerHTML = '<option value="">Erreur JavaScript</option>';
+        }
+      }
+    }
+    
+    // Capacité selon famille pour l'édition
+    const optionsPoudre = ['1kg','2kg','3kg','4kg','6kg','9kg','25kg','50kg','100kg','150kg'];
+    const optionsCO2 = ['2kg','5kg','10kg','20kg'];
+    const optionsEau = ['2Lt','6Lt','9Lt','45Lt','50Lt','100Lt','150Lt'];
+    
+    function updateEditCapaOptions() {
+      const agentSelect = document.getElementById('edit_agent_ext');
+      const capaSelect = document.getElementById('edit_capa_ext');
+      const selectedOption = agentSelect.options[agentSelect.selectedIndex];
+      
+      if (!selectedOption || !selectedOption.value) {
+        capaSelect.innerHTML = '<option value="">Sélectionner</option>';
+        return;
+      }
+      
+      let agentText = selectedOption.textContent.toLowerCase();
+      let opts = [];
+      
+      // Déterminer les capacités selon l'agent sélectionné
+      if (agentText.includes('poudre')) {
+        opts = optionsPoudre;
+        console.log('📦 Capacités Poudre chargées pour édition');
+      } else if (agentText.includes('dioxyde') || agentText.includes('co2')) {
+        opts = optionsCO2;
+        console.log('💨 Capacités CO2 chargées pour édition');
+      } else if (agentText.includes('eau')) {
+        opts = optionsEau;
+        console.log('💧 Capacités Eau chargées pour édition');
+      } else {
+        console.log('⚠️ Agent non reconnu pour les capacités:', agentText);
+      }
+      
+      capaSelect.innerHTML = '<option value="">Sélectionner</option>' + opts.map(v => `<option value="${v}">${v}</option>`).join('');
+      
+      // Sélectionner la capacité actuelle de l'extincteur
+      if (currentExtincteur && currentExtincteur.capa_ext) {
+        capaSelect.value = currentExtincteur.capa_ext;
+      }
+    }
+    
+    // Fonction pour mettre à jour le statut du panneau via le switch (édition)
+    function updateEditPanneau() {
+      const checkbox = document.getElementById('edit_pcf_ext');
+      checkbox.value = checkbox.checked;
+      console.log(checkbox.checked ? '✅ Panneau: Oui' : '❌ Panneau: Non');
+    }
+    
+
+    
+    // Fonction pour rechercher une certification (édition)
+    async function searchEditCertification() {
+      const certValue = document.getElementById('edit_cert_ext').value.trim();
+      
+      if (!certValue) return;
+      
+      try {
+        console.log(`🔍 Recherche de certification: ${certValue}`);
+        
+        const { data, error } = await supabase
+          .from('fire_extinguisher_certification_registry')
+          .select('*')
+          .eq('certification', certValue)
+          .single();
+        
+        console.log('Résultat brut de la recherche certification :', { data, error, certValue });
+        
+        if (error) {
+          console.error('❌ Erreur lors de la recherche:', error);
+          return;
+        }
+        
+        if (data) {
+          // Certification trouvée, remplir automatiquement les champs
+          document.getElementById('edit_marque_ext').value = data.marque || '';
+          document.getElementById('edit_modele_ext').value = data.modele || '';
+          
+          // Sélection directe de l'agent par id_agent
+          if (data.id_agent) {
+            const agentSelect = document.getElementById('edit_agent_ext');
+            agentSelect.value = data.id_agent;
+            console.log('✅ Agent défini depuis la certification (id):', data.id_agent);
+            updateEditCapaOptions();
+          } else {
+            console.log('⚠️ id_agent non trouvé dans la certification');
+          }
+          
+          // Correspondance capacité améliorée
+          if (data.capacit) {
+            const capaSelect = document.getElementById('edit_capa_ext');
+            const capaOptions = Array.from(capaSelect.options);
+            const capacitValue = data.capacit.toString();
+            const matchingCapa = capaOptions.find(option => {
+              const optionValue = option.value;
+              // Correspondance exacte
+              if (optionValue === capacitValue) return true;
+              // Correspondance numérique au début (ex : 6 → 6kg ou 6Lt)
+              if (optionValue.startsWith(capacitValue)) return true;
+              return false;
+            });
+            if (matchingCapa) {
+              capaSelect.value = matchingCapa.value;
+              console.log('✅ Capacité définie depuis la certification:', data.capacit, '→', matchingCapa.value);
+            } else {
+              console.log('⚠️ Capacité non trouvée dans la liste:', data.capacit);
+            }
+          }
+          
+          console.log('✅ Certification trouvée, champs remplis automatiquement:', {
+            marque: data.marque,
+            modele: data.modele,
+            agent: data.agent,
+            capacit: data.capacit
+          });
+        } else {
+          // Certification non trouvée
+          alert('Non répertorié');
+          console.log('❌ Certification non trouvée');
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+      }
+    }
+    
+    // Fonction pour gérer l'édition d'extincteur
+    async function handleEditExtincteur(event) {
+      event.preventDefault();
+      
+      if (!currentExtincteur) {
+        alert('⚠️ Extincteur non chargé');
+        return;
+      }
+      
+      // Récupération FIABLE des champs
+      function getVal(id) {
+        const el = document.getElementById(id);
+        if (!el) {
+          alert(`Champ manquant dans le formulaire : ${id}`);
+          throw new Error(`Champ manquant : ${id}`);
+        }
+        return el.value.trim();
+      }
+      function getSelectVal(id) {
+        const el = document.getElementById(id);
+        if (!el) {
+          alert(`Champ manquant dans le formulaire : ${id}`);
+          throw new Error(`Champ manquant : ${id}`);
+        }
+        return el.value;
+      }
+      function getChecked(id) {
+        const el = document.getElementById(id);
+        if (!el) {
+          alert(`Champ manquant dans le formulaire : ${id}`);
+          throw new Error(`Champ manquant : ${id}`);
+        }
+        return el.checked;
+      }
+      // Utilisation sécurisée
+      const marque = getVal('edit_marque_ext');
+      const modele = getVal('edit_modele_ext');
+      const certif = getVal('edit_cert_ext');
+      const capa = getSelectVal('edit_capa_ext');
+      const agent = parseInt(getSelectVal('edit_agent_ext'), 10);
+      console.log('Valeur agent_ext envoyée à la base :', agent);
+      const num_ext = getVal('edit_num_ext');
+      const niv_ext = getVal('edit_niv_ext');
+      const loc_ext = getVal('edit_loc_ext');
+      const mesYear = getVal('edit_mes_ext');
+      const rcm_ext = getVal('edit_rcm_ext');
+      const maa_ext = getVal('edit_maa_ext');
+      const eie_ext = getVal('edit_eie_ext');
+      const obs_ext = getVal('edit_obs_ext');
+      const pcf_ext = getChecked('edit_pcf_ext');
+      const papp_ext = getChecked('edit_papp_ext');
+      
+      let mes_ext = null;
+      
+      // Convertir l'année en date au 01/01 si une année est saisie
+      if (mesYear && mesYear.trim() !== '') {
+        mes_ext = `${mesYear}-01-01`;
+      }
+      
+      // Conversion des années en date
+      let rcm_ext_date = (/^\d{4}$/.test(rcm_ext)) ? `${rcm_ext}-01-01` : null;
+      let maa_ext_date = (/^\d{4}$/.test(maa_ext)) ? `${maa_ext}-01-01` : null;
+      let eie_ext_date = (/^\d{4}$/.test(eie_ext)) ? `${eie_ext}-01-01` : null;
+      
+      const formData = {
+        num_ext: num_ext,
+        niv_ext: niv_ext,
+        loc_ext: loc_ext,
+        marque_ext: marque,
+        modele_ext: modele,
+        agent_ext: agent,
+        capa_ext: capa,
+        mes_ext: mes_ext,
+        cert_ext: certif,
+        pcf_ext: pcf_ext,
+        papp_ext: papp_ext,
+        rcm_ext: rcm_ext_date,
+        maa_ext: maa_ext_date,
+        eie_ext: eie_ext_date,
+        obs_ext: obs_ext || null
+      };
+      
+      // Validation
+      if (!formData.num_ext || !formData.loc_ext) {
+        alert('⚠️ Le numéro et la localisation sont obligatoires');
+        return;
+      }
+      
+      try {
+        console.log('📥 Sauvegarde de l\'extincteur:', formData);
+        
+        // Vérifier si la certification existe déjà
+        const certValue = formData.cert_ext;
+        let certExists = false;
+        if (certValue) {
+          const { data: certData, error: certError } = await supabase
+            .from('fire_extinguisher_certification_registry')
+            .select('id')
+            .eq('certification', certValue)
+            .maybeSingle();
+          if (certError) {
+            console.error('❌ Erreur lors de la vérification de la certification:', certError);
+          }
+          certExists = !!certData;
+        }
+        
+        // Si la certification n'existe pas, l'ajouter
+        if (certValue && !certExists) {
+          const newCert = {
+            marque: formData.marque_ext,
+            modele: formData.modele_ext,
+            id_agent: formData.agent_ext ? parseInt(formData.agent_ext) : null,
+            capacit: formData.capa_ext ? (parseInt(formData.capa_ext) || formData.capa_ext) : null,
+            certification: certValue
+          };
+          const { error: insertCertError } = await supabase
+            .from('fire_extinguisher_certification_registry')
+            .insert([newCert]);
+          if (insertCertError) {
+            console.error('❌ Erreur lors de l\'ajout de la certification:', insertCertError);
+          } else {
+            console.log('✅ Nouvelle certification ajoutée au référentiel:', newCert);
+          }
+        }
+        
+        // Mettre à jour l'extincteur dans la base de données
+        const { error } = await supabase
+          .from('extincteurs')
+          .update(formData)
+          .eq('id_ext', currentExtincteur.id_ext);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          alert('Erreur lors de la sauvegarde de l\'extincteur');
+          return;
+        }
+        
+        console.log('✅ Extincteur sauvegardé avec succès');
+        
+        // Ajout/MAJ dans la table de certification
+        const marqueElem = document.getElementById('edit_marque_ext');
+        const modeleElem = document.getElementById('edit_modele_ext');
+        const certifElem = document.getElementById('edit_cert_ext');
+        const capaElem = document.getElementById('edit_capa_ext');
+        const agentElem = document.getElementById('edit_agent_ext');
+
+        if (!marqueElem || !modeleElem || !certifElem || !capaElem || !agentElem) {
+          console.error("Un ou plusieurs champs du formulaire d'édition d'extincteur sont introuvables dans le DOM :", {
+            marqueElem, modeleElem, certifElem, capaElem, agentElem
+          });
+        } else {
+          const marque = marqueElem.value.trim();
+          const modele = modeleElem.value.trim();
+          const certif = certifElem.value.trim();
+          const capa = capaElem.value;
+          const agent = agentElem.value;
+          if (marque && modele && certif && capa && agent) {
+            const { data: certifExist, error: certifError } = await supabase
+              .from('fire_extinguisher_certification_registry')
+              .select('*')
+              .eq('marque', marque)
+              .eq('modele', modele)
+              .eq('certification', certif)
+              .eq('capacit', capa)
+              .eq('agent', agent)
+              .maybeSingle();
+            if (!certifExist && !certifError) {
+              await supabase.from('fire_extinguisher_certification_registry').insert({
+                marque,
+                modele,
+                certification: certif,
+                capacit: capa,
+                agent
+              });
+            }
+          }
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('Erreur de connexion à la base de données');
+      }
+      
+      // Fermer la modal
+      closeEditModal();
+      
+      // Recharger les données et rafraîchir l'affichage
+              await loadData(currentExtincteur.id_ext, currentSite.id_site, currentIntervention.id_intervention);
+      
+      alert('✅ Extincteur modifié avec succès !');
+      
+    }
+    
+    // Fonction pour sauvegarder complètement l'extincteur (tous les champs)
+    async function saveCompleteExtincteur() {
+      if (!currentExtincteur) return;
+      
+      try {
+        // Préparer toutes les données de l'extincteur
+        const updateData = {
+          num_ext: currentExtincteur.num_ext,
+          niv_ext: currentExtincteur.niv_ext,
+          loc_ext: currentExtincteur.loc_ext,
+          marque_ext: currentExtincteur.marque_ext,
+          modele_ext: currentExtincteur.modele_ext,
+          family_ext: currentExtincteur.family_ext,
+          mes_ext: currentExtincteur.mes_ext,
+          cert_ext: currentExtincteur.cert_ext,
+          pcf_ext: currentExtincteur.pcf_ext,
+          papp_ext: currentExtincteur.papp_ext,
+          rcm_ext: currentExtincteur.rcm_ext,
+          maa_ext: currentExtincteur.maa_ext,
+          eie_ext: currentExtincteur.eie_ext,
+          obs_ext: currentExtincteur.obs_ext || null
+        };
+        
+        console.log('📥 Sauvegarde complète de l\'extincteur:', updateData);
+        
+        // Mettre à jour l'extincteur dans la base de données
+        const { error } = await supabase
+          .from('extincteurs')
+          .update(updateData)
+          .eq('id_ext', currentExtincteur.id_ext);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde complète:', error);
+          alert('Erreur lors de la sauvegarde');
+          return;
+        }
+        
+        console.log('✅ Extincteur sauvegardé complètement');
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      // Retourner vers extSite.html avec l'ID du site et de l'intervention
+      if (currentSite && currentSite.id_site && currentIntervention && currentIntervention.id_intervention) {
+        window.location.href = `extSite.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+      } else {
+        // Fallback si pas de site ou intervention chargé
+        window.location.href = 'extSite.html';
+      }
+    }
+    
+    // Fonction pour ajouter/supprimer "Devis RCM" aux observations
+    function addDevisRCM() {
+      if (!currentExtincteur) return;
+      
+      const currentObs = currentExtincteur.obs_ext || '';
+      
+      // Vérifier si "Devis RCM" existe déjà
+      if (currentObs.includes('Devis RCM')) {
+        // Si elle existe, la supprimer
+        const newObs = currentObs.replace(new RegExp(`\\n?Devis RCM\\n?`, 'g'), '').trim();
+        currentExtincteur.obs_ext = newObs || null;
+        console.log('❌ Devis RCM supprimé des observations');
+      } else {
+        // Si elle n'existe pas, l'ajouter
+        const newObs = currentObs ? `${currentObs}\nDevis RCM` : 'Devis RCM';
+        currentExtincteur.obs_ext = newObs;
+        console.log('✅ Devis RCM ajouté aux observations');
+      }
+      
+      // Mettre à jour l'affichage
+      updateDisplay();
+    }
+    
+    // Fonction pour marquer RCM comme fait
+    function markRCMDone() {
+      if (!currentExtincteur) return;
+      
+      const currentDate = new Date();
+      const formattedDate = currentDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+      
+      // Mettre à jour l'affichage localement
+      currentExtincteur.rcm_ext = formattedDate;
+      updateDisplay();
+      
+      console.log(`✅ RCM marqué comme fait: ${formattedDate}`);
+    }
+    
+    // Fonction pour ajouter/supprimer "Devis MAA" aux observations
+    function addDevisMAA() {
+      if (!currentExtincteur) return;
+      
+      const currentObs = currentExtincteur.obs_ext || '';
+      
+      // Vérifier si "Devis MAA" existe déjà
+      if (currentObs.includes('Devis MAA')) {
+        // Si elle existe, la supprimer
+        const newObs = currentObs.replace(new RegExp(`\\n?Devis MAA\\n?`, 'g'), '').trim();
+        currentExtincteur.obs_ext = newObs || null;
+        console.log('❌ Devis MAA supprimé des observations');
+      } else {
+        // Si elle n'existe pas, l'ajouter
+        const newObs = currentObs ? `${currentObs}\nDevis MAA` : 'Devis MAA';
+        currentExtincteur.obs_ext = newObs;
+        console.log('✅ Devis MAA ajouté aux observations');
+      }
+      
+      // Mettre à jour l'affichage
+      updateDisplay();
+    }
+    
+    // Fonction pour marquer MAA comme fait
+    function markMAADone() {
+      if (!currentExtincteur) return;
+      
+      const currentDate = new Date();
+      const formattedDate = currentDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+      
+      // Mettre à jour l'affichage localement
+      currentExtincteur.maa_ext = formattedDate;
+      updateDisplay();
+      
+      console.log(`✅ MAA marqué comme fait: ${formattedDate}`);
+    }
+    
+    // Fonction pour ajouter/supprimer "Devis EIE" aux observations
+    function addDevisEIE() {
+      if (!currentExtincteur) return;
+      
+      const currentObs = currentExtincteur.obs_ext || '';
+      
+      // Vérifier si "Devis EIE" existe déjà
+      if (currentObs.includes('Devis EIE')) {
+        // Si elle existe, la supprimer
+        const newObs = currentObs.replace(new RegExp(`\\n?Devis EIE\\n?`, 'g'), '').trim();
+        currentExtincteur.obs_ext = newObs || null;
+        console.log('❌ Devis EIE supprimé des observations');
+      } else {
+        // Si elle n'existe pas, l'ajouter
+        const newObs = currentObs ? `${currentObs}\nDevis EIE` : 'Devis EIE';
+        currentExtincteur.obs_ext = newObs;
+        console.log('✅ Devis EIE ajouté aux observations');
+      }
+      
+      // Mettre à jour l'affichage
+      updateDisplay();
+    }
+    
+    // Fonction pour marquer EIE comme fait
+    function markEIEDone() {
+      if (!currentExtincteur) return;
+      
+      const currentDate = new Date();
+      const formattedDate = currentDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+      
+      // Mettre à jour l'affichage localement
+      currentExtincteur.eie_ext = formattedDate;
+      updateDisplay();
+      
+      console.log(`✅ EIE marqué comme fait: ${formattedDate}`);
+    }
+    
+    // Fonction pour ajouter/supprimer une observation
+    async function addObservation(observation) {
+      if (!currentExtincteur) return;
+      
+      const currentObs = currentExtincteur.obs_ext || '';
+      
+      // Vérifier si l'observation existe déjà
+      let newObs;
+      if (currentObs.includes(observation)) {
+        // Si elle existe, la supprimer
+        newObs = currentObs.replace(new RegExp(`\\n?${observation}\\n?`, 'g'), '').trim();
+        newObs = newObs || null;
+        console.log(`❌ Observation supprimée: ${observation}`);
+      } else {
+        // Si elle n'existe pas, l'ajouter
+        newObs = currentObs ? `${currentObs}\n${observation}` : observation;
+        console.log(`✅ Observation ajoutée: ${observation}`);
+      }
+      
+      // Mettre à jour l'affichage localement
+      currentExtincteur.obs_ext = newObs;
+      
+      updateDisplay();
+    }
+    
+
+    
+    // Fonction pour sauvegarder et retourner à la liste
+    async function saveAndReturn() {
+      if (!currentExtincteur) return;
+      
+      try {
+        const currentDate = new Date().toISOString().split('T')[0];
+        
+        // Préparer les données avec validation des dates (sans obs_ext)
+        const updateData = {
+          last_ext: currentDate
+        };
+        
+        // Valider et formater les dates
+        if (currentExtincteur.rcm_ext) {
+          try {
+            const rcmDate = new Date(currentExtincteur.rcm_ext);
+            if (!isNaN(rcmDate.getTime())) {
+              updateData.rcm_ext = rcmDate.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            console.warn('⚠️ Date RCM invalide:', currentExtincteur.rcm_ext);
+          }
+        }
+        
+        if (currentExtincteur.maa_ext) {
+          try {
+            const maaDate = new Date(currentExtincteur.maa_ext);
+            if (!isNaN(maaDate.getTime())) {
+              updateData.maa_ext = maaDate.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            console.warn('⚠️ Date MAA invalide:', currentExtincteur.maa_ext);
+          }
+        }
+        
+        if (currentExtincteur.eie_ext) {
+          try {
+            const eieDate = new Date(currentExtincteur.eie_ext);
+            if (!isNaN(eieDate.getTime())) {
+              updateData.eie_ext = eieDate.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            console.warn('⚠️ Date EIE invalide:', currentExtincteur.eie_ext);
+          }
+        }
+        
+        console.log('📥 Données à sauvegarder:', updateData);
+        
+        // Mettre à jour l'extincteur avec les nouvelles données (sans obs_ext)
+        const { error } = await supabase
+          .from('extincteurs')
+          .update(updateData)
+          .eq('id_ext', currentExtincteur.id_ext);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          alert('Erreur lors de la sauvegarde');
+          return;
+        }
+        
+        console.log('✅ Données sauvegardées');
+        
+        // Créer ou mettre à jour la vérification avec les observations
+        await createOrUpdateVerification(currentExtincteur.obs_ext);
+        
+        goBack();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour vérifier si l'équipement a déjà été vérifié dans cette intervention
+    async function checkExistingVerification() {
+      try {
+        if (!currentIntervention || !currentExtincteur) {
+          return null;
+        }
+        
+        const { data, error } = await supabase
+          .from('verifications')
+          .select('*')
+          .eq('id_intervention', currentIntervention.id_intervention)
+          .eq('type_equipement', 'extincteurs')
+          .eq('id_equipement', currentExtincteur.id_ext)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('❌ Erreur lors de la vérification:', error);
+          return null;
+        }
+        
+        return data || null;
+      } catch (error) {
+        console.error('❌ Erreur lors de la vérification:', error);
+        return null;
+      }
+    }
+    
+    // Fonction pour créer ou mettre à jour une vérification
+    async function createOrUpdateVerification(observations = null) {
+      try {
+        if (!currentIntervention) {
+          console.log('ℹ️ Aucune intervention en cours');
+          return;
+        }
+        
+        // Vérifier s'il existe déjà une vérification
+        const existingVerification = await checkExistingVerification();
+        
+        const verificationData = {
+          id_intervention: currentIntervention.id_intervention,
+          date_verification: new Date().toISOString(),
+          type_equipement: 'extincteurs',
+          id_equipement: currentExtincteur.id_ext,
+          etat_verification: 'OK',
+          observations: observations || ''
+        };
+        
+        let result;
+        if (existingVerification) {
+          // Mettre à jour la vérification existante
+          const { data, error } = await supabase
+            .from('verifications')
+            .update(verificationData)
+            .eq('id_verification', existingVerification.id_verification)
+            .select()
+            .single();
+          
+          if (error) {
+            console.error('❌ Erreur mise à jour vérification:', error);
+          } else {
+            console.log('✅ Vérification mise à jour:', data);
+            result = data;
+          }
+        } else {
+          // Créer une nouvelle vérification
+          const { data, error } = await supabase
+            .from('verifications')
+            .insert([verificationData])
+            .select()
+            .single();
+          
+          if (error) {
+            console.error('❌ Erreur création vérification:', error);
+          } else {
+            console.log('✅ Vérification créée:', data);
+            result = data;
+          }
+        }
+        
+        return result;
+      } catch (error) {
+        console.error('❌ Erreur lors de la création/mise à jour de la vérification:', error);
+        return null;
+      }
+    }
+    
+    // Fonction pour supprimer l'extincteur
+    async function deleteExtincteur() {
+      if (!currentExtincteur) return;
+      
+      const confirmed = confirm('Êtes-vous sûr de vouloir supprimer cet extincteur ?');
+      if (!confirmed) return;
+      
+      try {
+        const { error } = await supabase
+          .from('extincteurs')
+          .delete()
+          .eq('id_ext', currentExtincteur.id_ext);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la suppression:', error);
+          alert('Erreur lors de la suppression');
+          return;
+        }
+        
+        console.log('✅ Extincteur supprimé');
+        goBack();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour sauvegarder sans last_ext et retourner à la liste
+    async function saveWithoutReturn() {
+      if (!currentExtincteur) return;
+      
+      try {
+        // Préparer les données avec validation des dates (sans obs_ext)
+        const updateData = {
+          papp_ext: currentExtincteur.papp_ext || null
+        };
+        
+        // Valider et formater les dates
+        if (currentExtincteur.rcm_ext) {
+          try {
+            const rcmDate = new Date(currentExtincteur.rcm_ext);
+            if (!isNaN(rcmDate.getTime())) {
+              updateData.rcm_ext = rcmDate.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            console.warn('⚠️ Date RCM invalide:', currentExtincteur.rcm_ext);
+          }
+        }
+        
+        if (currentExtincteur.maa_ext) {
+          try {
+            const maaDate = new Date(currentExtincteur.maa_ext);
+            if (!isNaN(maaDate.getTime())) {
+              updateData.maa_ext = maaDate.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            console.warn('⚠️ Date MAA invalide:', currentExtincteur.maa_ext);
+          }
+        }
+        
+        if (currentExtincteur.eie_ext) {
+          try {
+            const eieDate = new Date(currentExtincteur.eie_ext);
+            if (!isNaN(eieDate.getTime())) {
+              updateData.eie_ext = eieDate.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            console.warn('⚠️ Date EIE invalide:', currentExtincteur.eie_ext);
+          }
+        }
+        
+        console.log('📥 Données à sauvegarder:', updateData);
+        
+        // Mettre à jour l'extincteur avec les nouvelles données (sans last_ext et obs_ext)
+        const { error } = await supabase
+          .from('extincteurs')
+          .update(updateData)
+          .eq('id_ext', currentExtincteur.id_ext);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          alert('Erreur lors de la sauvegarde');
+          return;
+        }
+        
+        console.log('✅ Données sauvegardées');
+        
+        // Créer ou mettre à jour la vérification avec les observations
+        await createOrUpdateVerification(currentExtincteur.obs_ext);
+        
+        goBack();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour ouvrir la modal de saisie d'observation
+    function openNoteModal() {
+      const modalHTML = `
+        <div class="modal-overlay" id="noteModal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 class="modal-title">Ajouter une observation</h3>
+              <button class="modal-close" onclick="closeNoteModal()">×</button>
+            </div>
+            <textarea class="modal-textarea" id="noteTextarea" placeholder="Saisissez votre observation...">${existingVerification ? (existingVerification.observations || '') : (currentExtincteur.obs_ext || '')}</textarea>
+            <div class="modal-buttons">
+              <button class="modal-button secondary" onclick="closeNoteModal()">Annuler</button>
+              <button class="modal-button primary" onclick="saveNote()">Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      
+      // Focus sur le textarea
+      setTimeout(() => {
+        const textarea = document.getElementById('noteTextarea');
+        if (textarea) {
+          textarea.focus();
+          textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+      }, 100);
+    }
+    
+    // Fonction pour fermer la modal
+    function closeNoteModal() {
+      const modal = document.getElementById('noteModal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+    
+    // Fonction pour sauvegarder la note
+    async function saveNote() {
+      const textarea = document.getElementById('noteTextarea');
+      if (!textarea || !currentExtincteur) return;
+      
+      const newObservation = textarea.value.trim();
+      currentExtincteur.obs_ext = newObservation || null;
+      
+      // Créer ou mettre à jour la vérification avec les nouvelles observations
+      if (currentIntervention) {
+        await createOrUpdateVerification(newObservation);
+      }
+      
+      // Mettre à jour l'affichage
+      updateDisplay();
+      
+      console.log('✅ Observation sauvegardée dans la vérification');
+      closeNoteModal();
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('content').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">❌</div>
+          <div class="empty-state-title">Erreur</div>
+          <div class="empty-state-description">${message}</div>
+        </div>
+      `;
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Fiche Extincteur...');
+      
+      // Récupérer les paramètres depuis l'URL
+      const { extincteurId, siteId, interventionId } = getParamsFromURL();
+      
+      if (!extincteurId || !siteId || !interventionId) {
+        showError('Paramètres manquants dans l\'URL');
+        return;
+      }
+      
+      // Charger les données
+      await loadData(extincteurId, siteId, interventionId);
+
+      // Charger le nom long de l'agent
+      (async function setAgentLongName() {
+        if (!currentExtincteur || !currentExtincteur.agent_ext) return;
+        const { data: agent, error } = await supabase
+          .from('AgentExtincteur')
+          .select('long_agt')
+          .eq('id_agt', currentExtincteur.agent_ext)
+          .single();
+        document.getElementById('agent_long_name').textContent = agent && agent.long_agt ? agent.long_agt : 'N/A';
+      })();
+    });
+
+    // Ajout de la fonction addFlammeGazObservation()
+    async function addFlammeGazObservation() {
+      if (!currentExtincteur) return;
+      const obsText = 'Prévoir panneau "Ne pas utiliser sur flamme gaz" ( art.20 - Arr.23/06/1978 )';
+      const currentObs = currentExtincteur.obs_ext || '';
+      if (currentObs.includes(obsText)) {
+        // Supprimer l'observation
+        const newObs = currentObs.replace(new RegExp(`\n?${obsText}\n?`, 'g'), '').trim();
+        currentExtincteur.obs_ext = newObs || null;
+        console.log('❌ Flamme Gaz supprimé des observations');
+      } else {
+        // Ajouter l'observation
+        const newObs = currentObs ? `${currentObs}\n${obsText}` : obsText;
+        currentExtincteur.obs_ext = newObs;
+        console.log('✅ Flamme Gaz ajouté aux observations');
+      }
+      
+      updateDisplay();
+    }
+  </script>
+</body>
+</html> 

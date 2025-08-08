@@ -1,0 +1,3928 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Résumé Vérification - JPSI</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    // Désactiver les avertissements XMLHttpRequest synchrones
+    const originalWarn = console.warn;
+    console.warn = function(...args) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('XMLHttpRequest')) {
+        return; // Ignorer les avertissements XMLHttpRequest
+      }
+      originalWarn.apply(console, args);
+    };
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .edit-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-left: auto;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
+    }
+    
+    .edit-button:hover {
+      background: #7a1d1c;
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(155, 36, 35, 0.4);
+    }
+    
+    .info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .info-section {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 1.5rem 2rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .info-section h3 {
+      margin: 0 0 1.2rem 0;
+      color: #374151;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border-bottom: 2px solid #f3f4f6;
+      padding-bottom: 0.5rem;
+    }
+    
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .info-table th {
+      background: #f3f4f6;
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+    
+    .info-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #f9fafb;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+    
+    /* Mise en page simple et propre pour les informations */
+    .info-simple-layout {
+      display: flex;
+      gap: 3rem;
+      margin-top: 0.5rem;
+    }
+    
+    .info-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .info-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .info-line {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.15rem 0;
+    }
+    
+    .info-code {
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+    
+    .info-separator {
+      color: #9B2423;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .info-name {
+      font-weight: 700;
+      color: #374151;
+      font-size: 1rem;
+    }
+    
+    .info-address {
+      font-weight: 500;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .info-city {
+      font-weight: 500;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 0.9rem;
+      min-width: 140px;
+    }
+    
+    .info-date {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    /* Styles pour les observations */
+    .observations-content {
+      margin-top: 1rem;
+    }
+    
+    .loading-text {
+      color: #6b7280;
+      font-style: italic;
+    }
+    
+    .observation-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 12px;
+      border-left: 4px solid #9B2423;
+      transition: all 0.2s ease;
+    }
+    
+    .observation-item:hover {
+      background: #f3f4f6;
+      transform: translateX(4px);
+    }
+    
+    .observation-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .observation-icon {
+      font-size: 1.2rem;
+      margin-top: 0.1rem;
+      flex-shrink: 0;
+    }
+    
+    .observation-text {
+      flex: 1;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      color: #374151;
+    }
+    
+    .observation-header {
+      background: #9B2423;
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(155, 36, 35, 0.3);
+    }
+    
+    .observation-type-header {
+      background: #f3f4f6;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      margin: 1rem 0 0.5rem 0;
+      font-weight: 600;
+      color: #374151;
+      border-left: 3px solid #6b7280;
+      font-size: 0.9rem;
+    }
+    
+    .observation-editor-section {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+    }
+    
+    .observation-editor-header {
+      margin-bottom: 1rem;
+    }
+    
+    .observation-editor-header h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .observation-editor-header p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+    
+    .observation-editor-textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: #374151;
+      background: white;
+      resize: vertical;
+      transition: all 0.2s;
+    }
+    
+    .observation-editor-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+      box-shadow: 0 0 0 3px rgba(155, 36, 35, 0.1);
+    }
+    
+    .observation-editor-textarea:hover {
+      border-color: #9B2423;
+    }
+    
+    /* Styles pour la prochaine vérification */
+    .next-verification-content {
+      margin-top: 1rem;
+    }
+    
+    .verification-line {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+    }
+    
+    .verification-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      min-width: 150px;
+    }
+    
+    .verification-date {
+      font-weight: 600;
+      color: #9B2423;
+      font-size: 1rem;
+    }
+    
+    /* Styles pour le bon de vérification */
+    .bon-content {
+      margin-top: 1rem;
+    }
+    
+    .bon-line {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      margin-bottom: 1rem;
+    }
+    
+    .bon-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      min-width: 150px;
+    }
+    
+    .bon-number {
+      font-weight: 700;
+      color: #9B2423;
+      font-size: 1.1rem;
+      background: #f3f4f6;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+    }
+    
+    .registre-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+    }
+    
+    .registre-checkbox input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #9B2423;
+    }
+    
+    .registre-checkbox label {
+      font-size: 0.95rem;
+      color: #374151;
+      font-weight: 500;
+    }
+    
+    .equipment-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    
+    .equipment-table th {
+      background: #f3f4f6;
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+    
+    .equipment-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #f9fafb;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+    
+    .equipment-count {
+      text-align: center;
+      font-weight: 600;
+      color: #9B2423;
+    }
+    
+    .observation-field {
+      margin-bottom: 1.5rem;
+    }
+    
+    .observation-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .observation-textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    
+    .observation-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .next-verification-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .next-verification-icon {
+      font-size: 1.5rem;
+    }
+    
+    .next-verification-details h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.25rem;
+    }
+    
+    .next-verification-date {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #9B2423;
+    }
+    
+    /* Styles optimisés pour iPad - Signatures */
+    .signatures-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+    
+    .signature-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .signature-card:hover {
+      border-color: #9B2423;
+      box-shadow: 0 4px 16px rgba(155, 36, 35, 0.1);
+    }
+    
+    .signature-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .signature-icon {
+      font-size: 1.5rem;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #9B2423 0%, #c53030 100%);
+      color: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(155, 36, 35, 0.2);
+    }
+    
+    .signature-header h4 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #374151;
+    }
+    
+    .signature-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .signature-checkbox {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 12px;
+      border: 2px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+    
+    .signature-checkbox:hover {
+      border-color: #9B2423;
+      background: #f3f4f6;
+    }
+    
+    .signature-checkbox input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      accent-color: #9B2423;
+      margin-top: 0.25rem;
+      flex-shrink: 0;
+    }
+    
+    .signature-checkbox label {
+      font-size: 0.95rem;
+      color: #374151;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+    
+    .signature-area {
+      position: relative;
+      border: 3px solid #e5e7eb;
+      border-radius: 12px;
+      background: white;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .signature-area:hover {
+      border-color: #9B2423;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.1);
+    }
+    
+    .signature-canvas {
+      width: 100%;
+      height: 200px;
+      cursor: crosshair;
+      display: block;
+      background: white;
+    }
+    
+    .signature-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      cursor: pointer;
+      z-index: 10;
+    }
+    
+    .signature-placeholder {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #9ca3af;
+      font-style: italic;
+      font-size: 1rem;
+      text-align: center;
+      pointer-events: none;
+      z-index: 5;
+    }
+    
+    .signature-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 0.5rem;
+    }
+    
+    .signature-button {
+      padding: 0.75rem 1.5rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      background: white;
+      color: #374151;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      min-width: 100px;
+    }
+    
+    .signature-button:hover {
+      background: #f3f4f6;
+      border-color: #9B2423;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .signature-button:active {
+      transform: translateY(0);
+    }
+    
+    .signature-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    /* Styles pour les champs de nom */
+    .signature-name-field {
+      margin: 1rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .signature-name-field label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+    
+    .signature-name-input {
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #374151;
+      background: white;
+      transition: all 0.2s ease;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .signature-name-input:focus {
+      outline: none;
+      border-color: #9B2423;
+      box-shadow: 0 0 0 3px rgba(155, 36, 35, 0.1);
+    }
+    
+    .signature-name-input:read-only {
+      background: #f9fafb;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
+    
+    .actions-section {
+      padding: 2rem;
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      text-align: center;
+    }
+    
+    .generate-button {
+      background: linear-gradient(135deg, #9B2423 0%, #c53030 100%);
+      color: white;
+      border: none;
+      padding: 1.25rem 2.5rem;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(155, 36, 35, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .generate-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .generate-button:hover::before {
+      left: 100%;
+    }
+    
+    .generate-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(155, 36, 35, 0.4);
+      background: linear-gradient(135deg, #c53030 0%, #dc2626 100%);
+    }
+    
+    .generate-button:disabled {
+      background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .generate-button:disabled:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .generate-button.loading {
+      opacity: 0.7;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .generate-button.secondary {
+      background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+      box-shadow: 0 4px 20px rgba(55, 65, 81, 0.3);
+    }
+    
+    .generate-button.secondary:hover {
+      background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+      box-shadow: 0 8px 30px rgba(55, 65, 81, 0.4);
+    }
+    
+    /* Modale de signature */
+    .signature-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+    }
+    
+    .signature-modal-content {
+      background-color: #fff;
+      margin: 5% auto;
+      padding: 0;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: modalSlideIn 0.3s ease-out;
+    }
+    
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .signature-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px 16px 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .signature-modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+    
+    .signature-modal-close {
+      font-size: 24px;
+      font-weight: 300;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    
+    .signature-modal-close:hover {
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+    
+    .signature-modal-body {
+      padding: 24px;
+    }
+    
+    .signature-modal-body canvas {
+      width: 100%;
+      height: 200px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+      cursor: crosshair;
+    }
+    
+    .signature-modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+    
+    .signature-canvas-container {
+      position: relative;
+    }
+    
+    .signature-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      cursor: pointer;
+      z-index: 10;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
+      
+      .info-section {
+        padding: 1rem;
+      }
+      
+      .back-button {
+        align-self: center;
+      }
+      
+      .info-simple-layout {
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      
+      .info-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+      
+      .info-label {
+        min-width: auto;
+      }
+      
+      .observation-item {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      
+      .verification-line,
+      .bon-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      
+      .verification-label,
+      .bon-label {
+        min-width: auto;
+      }
+      
+      .registre-checkbox {
+        padding: 0.5rem;
+      }
+      
+      .signatures-container {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      
+      .signature-card {
+        padding: 1rem;
+      }
+      
+      .signature-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+      }
+      
+      .signature-header h4 {
+        font-size: 1.1rem;
+      }
+      
+      .signature-checkbox {
+        padding: 0.75rem;
+      }
+      
+      .signature-checkbox input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+      }
+      
+      .signature-canvas {
+        height: 150px;
+      }
+      
+      .signature-button {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+        min-width: 80px;
+      }
+      
+      .equipment-table {
+        font-size: 0.8rem;
+      }
+      
+      .equipment-table th,
+      .equipment-table td {
+        padding: 0.5rem;
+      }
+      
+      .signature-canvas {
+        width: 100%;
+        height: 120px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- En-tête principal -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <div class="header-title">
+        <span id="clientName">Résumé Vérification</span>
+        <span class="header-subtitle" id="siteName">Chargement...</span>
+      </div>
+    </div>
+
+    <!-- Sections d'information -->
+    <div class="info-grid">
+      <!-- Section Informations -->
+      <div class="info-section">
+        <h3>📋 Informations générales</h3>
+        <div class="info-simple-layout">
+          <!-- Partie gauche -->
+          <div class="info-left">
+            <div class="info-line">
+              <span class="info-code" id="clientCode">--</span>
+              <span class="info-separator">-</span>
+              <span class="info-name" id="clientNameDetail">--</span>
+            </div>
+            <div class="info-line">
+              <span class="info-code" id="siteNumber">--</span>
+              <span class="info-separator">-</span>
+              <span class="info-name" id="siteNameDetail">--</span>
+            </div>
+            <div class="info-line">
+              <span class="info-address" id="siteAddress">--</span>
+            </div>
+            <div class="info-line">
+              <span class="info-city" id="siteCity">--</span>
+            </div>
+          </div>
+          
+          <!-- Partie droite -->
+          <div class="info-right">
+            <div class="info-line">
+              <span class="info-label">Début vérification :</span>
+              <span class="info-date" id="startDate">--</span>
+            </div>
+            <div class="info-line">
+              <span class="info-label">Fin vérification :</span>
+              <span class="info-date" id="endDate">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Équipements vérifiés -->
+      <div class="info-section">
+        <h3>Équipements vérifiés</h3>
+        <table class="equipment-table" id="equipmentRecapTable">
+          <thead>
+            <tr>
+              <th>Type d'équipement</th>
+              <th>Quantité</th>
+            </tr>
+          </thead>
+          <tbody id="equipmentRecapTableBody">
+            <tr>
+              <td colspan="2" style="text-align: center; color: #999; font-style: italic;">Chargement des équipements...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section Observations -->
+      <div class="info-section">
+        <h3>📊 Observations</h3>
+        <div class="observations-content" id="observationsContent">
+          <div class="loading-text">Analyse en cours...</div>
+        </div>
+      </div>
+
+      <!-- Section Prochaine vérification -->
+      <div class="info-section">
+        <h3>📅 Prochaine vérification</h3>
+        <div class="next-verification-content">
+          <div class="verification-line">
+            <span class="verification-label">Vérification annuelle :</span>
+            <span class="verification-date" id="nextVerificationDate">Chargement...</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Section Bon de vérification -->
+      <div class="info-section">
+        <h3>📋 Bon de vérification</h3>
+        <div class="bon-content">
+          <div class="bon-line">
+            <span class="bon-label">Numéro du bon :</span>
+            <span class="bon-number" id="bonNumber">Génération en cours...</span>
+          </div>
+          <div class="registre-checkbox">
+            <input type="checkbox" id="registreCheckbox">
+            <label for="registreCheckbox">Registre de sécurité émargé</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Signatures -->
+      <div class="info-section">
+        <h3>✍️ Signatures</h3>
+        <div class="signatures-container">
+          <!-- Signature client -->
+          <div class="signature-card">
+            <div class="signature-header">
+              <div class="signature-icon">👤</div>
+              <h4>Signature client</h4>
+            </div>
+            <div class="signature-content">
+              <div class="signature-checkbox">
+                <input type="checkbox" id="clientCheckbox">
+                <label for="clientCheckbox">Je reconnais l'exactitude des quantitatifs indiqués, des travaux réalisés, et prend connaissance des travaux à réaliser.</label>
+              </div>
+              <div class="signature-name-field">
+                <label for="clientNameInput">Nom du client :</label>
+                <input type="text" id="clientNameInput" placeholder="Nom du client" class="signature-name-input">
+              </div>
+              <div class="signature-area">
+                <canvas id="clientSignature" class="signature-canvas" width="400" height="200"></canvas>
+                <div class="signature-overlay" id="clientSignatureOverlay"></div>
+                <div class="signature-placeholder" id="clientPlaceholder">Cochez d'abord la case ci-dessus pour pouvoir signer</div>
+              </div>
+              <div class="signature-actions">
+                <button class="signature-button" onclick="clearClientSignature()" disabled>Effacer</button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Signature technicien -->
+          <div class="signature-card">
+            <div class="signature-header">
+              <div class="signature-icon">🔧</div>
+              <h4>Signature technicien</h4>
+            </div>
+            <div class="signature-content">
+              <div class="signature-checkbox">
+                <input type="checkbox" id="technicianCheckbox">
+                <label for="technicianCheckbox">Je reconnais avoir informé le client des opérations de maintenance faites ou à effectuer, ainsi que des travaux à réaliser.</label>
+              </div>
+              <div class="signature-name-field">
+                <label for="technicianNameInput">Nom du technicien :</label>
+                <input type="text" id="technicianNameInput" value="Jonathan PRUD'HOMME" class="signature-name-input" readonly>
+              </div>
+              <div class="signature-area">
+                <canvas id="technicianSignature" class="signature-canvas" width="400" height="200"></canvas>
+                <div class="signature-overlay" id="technicianSignatureOverlay"></div>
+                <div class="signature-placeholder" id="technicianPlaceholder">Cliquez pour signer</div>
+              </div>
+              <div class="signature-actions">
+                <button class="signature-button" onclick="clearTechnicianSignature()">Effacer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-section">
+      <div class="button-group">
+        <button class="generate-button secondary" id="generateBtn2" onclick="generatePDF2()" disabled>
+          📋 Générer le PDF détaillé
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale de signature -->
+  <div id="signatureModal" class="signature-modal">
+    <div class="signature-modal-content">
+      <div class="signature-modal-header">
+        <div class="signature-modal-title" id="signatureModalTitle">Signature du client</div>
+        <span class="signature-modal-close" onclick="closeSignatureModal()">&times;</span>
+      </div>
+      <div class="signature-modal-body">
+        <canvas id="signatureCanvas" width="400" height="200"></canvas>
+        <div class="signature-modal-actions">
+          <button class="signature-button" onclick="clearSignature()">Effacer</button>
+          <button class="signature-button primary" onclick="saveSignature()">Valider</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Variables globales
+    let verificationData = null;
+    let clientData = null;
+    let siteData = null;
+    let equipmentData = {
+      extincteurs: [],
+      eclairages: [],
+      alarmes: [],
+      desenfumages: [],
+      rias: [],
+      plans_evacuation: []
+    };
+    let currentCanvas = null;
+    let currentContext = null;
+    let hasClientSignature = false;
+    let hasTechnicianSignature = false;
+    let clientCheckboxChecked = false;
+    let technicianCheckboxChecked = false;
+    let registreCheckboxChecked = false;
+    let numeroDeBon = null;
+    
+    // Récupération des paramètres URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const siteId = urlParams.get('site');
+    const clientId = urlParams.get('client');
+    const siteName = urlParams.get('siteName');
+    const clientName = urlParams.get('clientName');
+    
+    console.log('🔍 Paramètres URL récupérés:', { siteId, clientId, siteName, clientName });
+    
+    // Fonction pour générer un numéro de bon depuis la table BV
+    async function generateBonNumber() {
+      try {
+        console.log('🔢 Génération du numéro de bon...');
+        
+        // Récupérer le dernier num_bv de la table BV directement
+        const { data: lastBV, error } = await supabase
+          .from('BV')
+          .select('num_bv')
+          .order('num_bv', { ascending: false })
+          .limit(1);
+
+        if (error) {
+          console.error('❌ Erreur lors de la récupération du dernier BV:', error);
+          // Fallback avec timestamp
+          const currentYear = new Date().getFullYear();
+          numeroDeBon = `${currentYear}-0001`;
+          console.log('🔢 Numéro de fallback généré:', numeroDeBon);
+          return;
+        }
+
+        let nextNumber = 1;
+        if (lastBV && lastBV.length > 0 && lastBV[0].num_bv) {
+          nextNumber = parseInt(lastBV[0].num_bv) + 1;
+          console.log('🔢 Dernier numéro trouvé:', lastBV[0].num_bv);
+          console.log('🔢 Prochain numéro:', nextNumber);
+        } else {
+          console.log('⚠️ Aucun BV trouvé, début avec 0001');
+        }
+
+        // Formater le numéro au format année-numéro sur 4 chiffres
+        const currentYear = new Date().getFullYear();
+        numeroDeBon = `${currentYear}-${nextNumber.toString().padStart(4, '0')}`;
+        console.log('🔢 Numéro de bon généré:', numeroDeBon);
+        
+        // Vérifier que ce numéro n'existe pas déjà
+        const { data: existingBV, error: checkError } = await supabase
+          .from('BV')
+          .select('num_bv')
+          .eq('num_bv', nextNumber);
+        
+        if (checkError) {
+          console.error('❌ Erreur lors de la vérification du numéro:', checkError);
+        } else if (existingBV && existingBV.length > 0) {
+          console.warn('⚠️ Numéro déjà existant, génération d\'un nouveau...');
+          // Incrémenter et réessayer
+          nextNumber++;
+          numeroDeBon = `${currentYear}-${nextNumber.toString().padStart(4, '0')}`;
+          console.log('🔢 Nouveau numéro de bon généré:', numeroDeBon);
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la génération du numéro de bon:', error);
+        // Fallback avec timestamp
+        const currentYear = new Date().getFullYear();
+        numeroDeBon = `${currentYear}-0001`;
+        console.log('🔢 Numéro de fallback généré:', numeroDeBon);
+      }
+    }
+    
+    // Fonction pour nettoyer les noms pour le nom de fichier
+    function cleanFileName(name) {
+      if (!name) return 'Inconnu';
+      return name
+        .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Supprimer les caractères spéciaux
+        .replace(/\s+/g, ' ') // Remplacer les espaces multiples par un seul
+        .trim();
+    }
+    
+        // Initialisation des canvas de signature optimisés pour iPad
+    function initSignatureCanvas() {
+      const clientCanvas = document.getElementById('clientSignature');
+      const technicianCanvas = document.getElementById('technicianSignature');
+      const clientOverlay = document.getElementById('clientSignatureOverlay');
+      const technicianOverlay = document.getElementById('technicianSignatureOverlay');
+      
+      if (!clientCanvas || !technicianCanvas || !clientOverlay || !technicianOverlay) {
+        console.error('❌ Canvas ou overlays de signature non trouvés');
+        return;
+      }
+      
+      // Configuration des canvas optimisés pour iPad
+      [clientCanvas, technicianCanvas].forEach(canvas => {
+        // Dimensions adaptatives
+        canvas.width = 400;
+        canvas.height = 200;
+        canvas.style.width = '100%';
+        canvas.style.height = '200px';
+        
+        // Styles optimisés pour tactile
+        canvas.style.touchAction = 'none';
+        canvas.style.userSelect = 'none';
+        canvas.style.webkitUserSelect = 'none';
+      });
+      
+      // Configuration des overlays pour iPad
+      [clientOverlay, technicianOverlay].forEach(overlay => {
+        const isClient = overlay.id === 'clientSignatureOverlay';
+        
+        // Événements tactiles optimisés
+        overlay.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('🎯 Click détecté sur overlay:', this.id);
+          if (isClient && !clientCheckboxChecked) {
+            alert('Veuillez d\'abord cocher la case ci-dessus');
+            return;
+          }
+          openSignatureModal(isClient ? 'client' : 'technician');
+        });
+        
+        // Support tactile avancé pour iPad
+        overlay.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('📱 Touch détecté sur overlay:', this.id);
+          if (isClient && !clientCheckboxChecked) {
+            alert('Veuillez d\'abord cocher la case ci-dessus');
+            return;
+          }
+          openSignatureModal(isClient ? 'client' : 'technician');
+        }, { passive: false });
+        
+        overlay.addEventListener('touchmove', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }, { passive: false });
+        
+        overlay.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }, { passive: false });
+      });
+      
+      console.log('✅ Canvas et overlays de signature optimisés pour iPad initialisés');
+    }
+    
+    // Variables pour la modale de signature
+    let signatureCanvas = null;
+    let signatureContext = null;
+    let currentSignatureType = null;
+    let isDrawing = false;
+    
+    // Ouvrir la modale de signature
+    function openSignatureModal(signatureType) {
+      currentSignatureType = signatureType;
+      const modalTitle = signatureType === 'client' ? 'Signature du client' : 'Signature du technicien';
+      
+      document.getElementById('signatureModalTitle').textContent = modalTitle;
+      document.getElementById('signatureModal').style.display = 'block';
+      
+      signatureCanvas = document.getElementById('signatureCanvas');
+      signatureContext = signatureCanvas.getContext('2d');
+      
+      // Configurer le canvas de signature
+      signatureContext.strokeStyle = '#000';
+      signatureContext.lineWidth = 3;
+      signatureContext.lineCap = 'round';
+      
+      // Effacer le canvas
+      signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+      
+      // Ajouter les événements de dessin
+      signatureCanvas.addEventListener('mousedown', startDrawing);
+      signatureCanvas.addEventListener('mousemove', draw);
+      signatureCanvas.addEventListener('mouseup', stopDrawing);
+      signatureCanvas.addEventListener('mouseout', stopDrawing);
+      
+      // Support tactile
+      signatureCanvas.addEventListener('touchstart', startDrawingTouch);
+      signatureCanvas.addEventListener('touchmove', drawTouch);
+      signatureCanvas.addEventListener('touchend', stopDrawing);
+      
+      console.log('✅ Modale de signature ouverte pour:', signatureType);
+    }
+    
+    // Fermer la modale de signature
+    function closeSignatureModal() {
+      console.log('🔒 Tentative de fermeture de la modale de signature');
+      const modal = document.getElementById('signatureModal');
+      if (modal) {
+        modal.style.display = 'none';
+        console.log('✅ Modale fermée avec succès');
+      } else {
+        console.error('❌ Élément signatureModal non trouvé');
+      }
+      
+      // Retirer les événements
+      if (signatureCanvas) {
+        signatureCanvas.removeEventListener('mousedown', startDrawing);
+        signatureCanvas.removeEventListener('mousemove', draw);
+        signatureCanvas.removeEventListener('mouseup', stopDrawing);
+        signatureCanvas.removeEventListener('mouseout', stopDrawing);
+        signatureCanvas.removeEventListener('touchstart', startDrawingTouch);
+        signatureCanvas.removeEventListener('touchmove', drawTouch);
+        signatureCanvas.removeEventListener('touchend', stopDrawing);
+        console.log('✅ Événements de signature supprimés');
+      }
+    }
+    
+    // Gestion des signatures dans la modale
+    function startDrawing(event) {
+      isDrawing = true;
+      draw(event);
+    }
+    
+    function draw(event) {
+      if (!isDrawing) return;
+      
+      const rect = signatureCanvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      signatureContext.lineTo(x, y);
+      signatureContext.stroke();
+      signatureContext.beginPath();
+      signatureContext.moveTo(x, y);
+    }
+    
+    function startDrawingTouch(event) {
+      event.preventDefault();
+      isDrawing = true;
+      drawTouch(event);
+    }
+    
+    function drawTouch(event) {
+      if (!isDrawing) return;
+      event.preventDefault();
+      
+      const rect = signatureCanvas.getBoundingClientRect();
+      const touch = event.touches[0];
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      signatureContext.lineTo(x, y);
+      signatureContext.stroke();
+      signatureContext.beginPath();
+      signatureContext.moveTo(x, y);
+    }
+    
+    function stopDrawing() {
+      isDrawing = false;
+      signatureContext.beginPath();
+    }
+    
+    // Effacer la signature dans la modale
+    function clearSignature() {
+      signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    }
+    
+    // Sauvegarder la signature
+    function saveSignature() {
+      console.log('💾 FONCTION SAVESIGNATURE APPELÉE !');
+      console.log('💾 Sauvegarde de la signature pour:', currentSignatureType);
+      
+      if (currentSignatureType === 'client') {
+        const clientCanvas = document.getElementById('clientSignature');
+        const ctx = clientCanvas.getContext('2d');
+        ctx.clearRect(0, 0, clientCanvas.width, clientCanvas.height);
+        ctx.drawImage(signatureCanvas, 0, 0, clientCanvas.width, clientCanvas.height);
+        hasClientSignature = true;
+        document.getElementById('clientPlaceholder').style.display = 'none';
+        console.log('✅ Signature client sauvegardée');
+      } else {
+        const technicianCanvas = document.getElementById('technicianSignature');
+        const ctx = technicianCanvas.getContext('2d');
+        ctx.clearRect(0, 0, technicianCanvas.width, technicianCanvas.height);
+        ctx.drawImage(signatureCanvas, 0, 0, technicianCanvas.width, technicianCanvas.height);
+        hasTechnicianSignature = true;
+        document.getElementById('technicianPlaceholder').style.display = 'none';
+        console.log('✅ Signature technicien sauvegardée');
+      }
+      
+      checkCanGenerate();
+      console.log('🔒 Fermeture de la modale de signature');
+      closeSignatureModal();
+    }
+    
+    // Fonction pour gérer l'arrêt du dessin sur les canvas principaux
+    function stopDrawingMain() {
+      isDrawing = false;
+      if (currentCanvas && currentCanvas.id === 'clientSignature') {
+        hasClientSignature = true;
+        document.getElementById('clientPlaceholder').style.display = 'none';
+      } else if (currentCanvas && currentCanvas.id === 'technicianSignature') {
+        hasTechnicianSignature = true;
+        document.getElementById('technicianPlaceholder').style.display = 'none';
+      }
+      checkCanGenerate();
+    }
+    
+    function clearClientSignature() {
+      const canvas = document.getElementById('clientSignature');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasClientSignature = false;
+      document.getElementById('clientPlaceholder').style.display = 'block';
+      checkCanGenerate();
+    }
+    
+    function clearTechnicianSignature() {
+      const canvas = document.getElementById('technicianSignature');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasTechnicianSignature = false;
+      document.getElementById('technicianPlaceholder').style.display = 'block';
+      checkCanGenerate();
+    }
+    
+    // Gestion des checkboxes
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('clientCheckbox').addEventListener('change', function() {
+        clientCheckboxChecked = this.checked;
+        toggleClientSignatureAccess(this.checked);
+        checkCanGenerate();
+      });
+      
+      document.getElementById('technicianCheckbox').addEventListener('change', function() {
+        technicianCheckboxChecked = this.checked;
+        checkCanGenerate();
+      });
+      
+      document.getElementById('registreCheckbox').addEventListener('change', function() {
+        registreCheckboxChecked = this.checked;
+        checkCanGenerate();
+      });
+    });
+    
+    // Fonction pour activer/désactiver la signature client
+    function toggleClientSignatureAccess(enabled) {
+      const clientCanvas = document.getElementById('clientSignature');
+      const clientOverlay = document.getElementById('clientSignatureOverlay');
+      const clientPlaceholder = document.getElementById('clientPlaceholder');
+      const clearButton = document.querySelector('.signature-box:first-of-type .signature-actions .signature-button');
+      
+      if (enabled) {
+        // Activer la signature
+        clientCanvas.style.opacity = '1';
+        clientOverlay.style.display = 'block';
+        clientPlaceholder.textContent = 'Cliquez pour signer';
+        clientPlaceholder.style.color = '#999';
+        if (clearButton) {
+          clearButton.disabled = false;
+        }
+      } else {
+        // Désactiver la signature
+        clientCanvas.style.opacity = '0.5';
+        clientOverlay.style.display = 'none';
+        clientPlaceholder.textContent = 'Cochez d\'abord la case ci-dessus pour pouvoir signer';
+        clientPlaceholder.style.color = '#dc2626';
+        if (clearButton) {
+          clearButton.disabled = true;
+        }
+        
+        // Effacer la signature si elle existait
+        if (hasClientSignature) {
+          clearClientSignature();
+        }
+      }
+    }
+    
+    function checkCanGenerate() {
+      const generateBtn = document.getElementById('generateBtn');
+      const generateBtn2 = document.getElementById('generateBtn2');
+      const canGenerate = hasClientSignature && hasTechnicianSignature && clientCheckboxChecked && technicianCheckboxChecked && registreCheckboxChecked;
+      
+      // Vérifier si les boutons existent avant d'essayer de les modifier
+      if (generateBtn) {
+        generateBtn.disabled = !canGenerate;
+      }
+      
+      // Pour les tests, le bouton 2 est toujours activé
+      if (generateBtn2) {
+        generateBtn2.disabled = false;
+      }
+    }
+    
+    // Chargement des données
+    async function loadVerificationData() {
+      try {
+        console.log('🔍 Chargement des données de vérification...');
+        
+        // Utiliser les données passées en paramètres
+        if (siteId && clientName && siteName) {
+          verificationData = {
+            id: siteId,
+            type_equipement: 'vérification complète',
+            type: 'Site complet',
+            emplacement: decodeURIComponent(siteName),
+            marque: 'Divers',
+            date_derniere_verif: new Date().toISOString().split('T')[0],
+            site_id: siteId
+          };
+          
+          // Charger les données complètes du site depuis Supabase
+          const { data: siteDataFromDB, error: siteError } = await supabase
+            .from('sites')
+            .select('*')
+            .eq('id_site', siteId)
+            .single();
+
+          if (siteError) {
+            console.error('Erreur lors du chargement du site:', siteError);
+          siteData = { 
+            nom: decodeURIComponent(siteName), 
+            id_client: clientId 
+          };
+          } else {
+            siteData = siteDataFromDB;
+          }
+
+          // Charger les données complètes du client depuis Supabase
+          const { data: clientDataFromDB, error: clientError } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('id_client', clientId)
+            .single();
+
+          if (clientError) {
+            console.error('Erreur lors du chargement du client:', clientError);
+          clientData = { 
+            nom_client: decodeURIComponent(clientName) 
+          };
+          } else {
+            clientData = clientDataFromDB;
+          }
+          
+                  // Mettre à jour l'interface
+        updateInterface();
+        
+        // Charger les équipements du site
+        await loadEquipmentData();
+        
+        // Charger les dates de vérification
+        await loadVerificationDates();
+        
+        // Générer et afficher le numéro du bon
+        await generateBonNumber();
+        document.getElementById('bonNumber').textContent = numeroDeBon || 'Erreur de génération';
+        } else {
+          // Pas de données disponibles
+          console.error('❌ Données manquantes pour le résumé');
+          alert('Impossible de charger les données du site. Vérifiez que le site existe.');
+          return;
+        }
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement:', error);
+        alert('Erreur lors du chargement des données');
+      }
+    }
+    
+    // Fonction pour charger les dates de vérification
+    async function loadVerificationDates() {
+      try {
+        // Récupérer l'ID de l'intervention depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const interventionId = urlParams.get('intervention');
+        
+        if (!interventionId) {
+          console.error('❌ ID d\'intervention manquant dans l\'URL');
+          document.getElementById('startDate').textContent = 'Non définie';
+          document.getElementById('endDate').textContent = 'Non définie';
+          return;
+        }
+        
+        console.log('🔍 Chargement des dates de vérification pour l\'intervention:', interventionId);
+        
+        // Récupérer toutes les vérifications de cette intervention
+        const { data: verifications, error } = await supabase
+          .from('verifications')
+          .select('date_verification')
+          .eq('id_intervention', interventionId)
+          .not('date_verification', 'is', null);
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des vérifications:', error);
+          document.getElementById('startDate').textContent = 'Erreur';
+          document.getElementById('endDate').textContent = 'Erreur';
+          return;
+        }
+        
+        console.log('🔍 Vérifications trouvées:', verifications);
+        
+        let earliestDate = null;
+        let latestDate = null;
+        
+        // Calculer les dates de début et fin basées sur les dates de vérification
+        verifications.forEach(verification => {
+          if (verification.date_verification) {
+            const date = new Date(verification.date_verification);
+            if (!earliestDate || date < earliestDate) earliestDate = date;
+            if (!latestDate || date > latestDate) latestDate = date;
+          }
+        });
+        
+        // Mettre à jour l'affichage
+        if (earliestDate) {
+          document.getElementById('startDate').textContent = earliestDate.toLocaleDateString('fr-FR');
+        } else {
+          document.getElementById('startDate').textContent = 'Non définie';
+        }
+        
+        if (latestDate) {
+          document.getElementById('endDate').textContent = latestDate.toLocaleDateString('fr-FR');
+        } else {
+          document.getElementById('endDate').textContent = 'Non définie';
+        }
+        
+        console.log('📅 Dates de vérification:', {
+          début: earliestDate ? earliestDate.toLocaleDateString('fr-FR') : 'Non définie',
+          fin: latestDate ? latestDate.toLocaleDateString('fr-FR') : 'Non définie'
+        });
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des dates:', error);
+        document.getElementById('startDate').textContent = 'Erreur';
+        document.getElementById('endDate').textContent = 'Erreur';
+      }
+    }
+    
+    // Fonction pour charger les équipements du site
+    async function loadEquipmentData() {
+      try {
+        console.log('🔍 Chargement des équipements pour le site:', siteId);
+        
+        // Charger les extincteurs
+        const { data: extincteurs, error: extError } = await supabase
+          .from('extincteurs')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        console.log('🔍 Extincteurs chargés:', extincteurs);
+        console.log('🔍 Erreur extincteurs:', extError);
+        
+        if (!extError && extincteurs) {
+          equipmentData.extincteurs = extincteurs;
+          console.log('✅ Extincteurs ajoutés:', equipmentData.extincteurs.length);
+          
+          // Charger les agents pour chaque extincteur
+          for (let ext of equipmentData.extincteurs) {
+            if (ext.agent_ext) {
+              const { data: agent, error: agentError } = await supabase
+                .from('AgentExtincteur')
+                .select('long_agt')
+                .eq('id_agt', ext.agent_ext)
+                .single();
+              
+              if (!agentError && agent) {
+                ext.agent_long_name = agent.long_agt;
+              }
+            }
+          }
+        } else {
+          console.log('❌ Erreur ou pas d\'extincteurs trouvés');
+          equipmentData.extincteurs = [];
+        }
+        
+        // Charger les éclairages
+        const { data: eclairages, error: eclError } = await supabase
+          .from('eclairages')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (!eclError && eclairages) {
+          equipmentData.eclairages = eclairages;
+        }
+        
+        // Charger les alarmes
+        const { data: alarmes, error: alarmError } = await supabase
+          .from('alarmes')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (!alarmError && alarmes) {
+          equipmentData.alarmes = alarmes;
+        }
+        
+        // Charger les désenfumages
+        const { data: desenfumages, error: desError } = await supabase
+          .from('desenfumages')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (!desError && desenfumages) {
+          equipmentData.desenfumages = desenfumages;
+          console.log('✅ Désenfumages chargés:', desenfumages.length);
+        } else {
+          console.log('❌ Erreur ou pas de désenfumages trouvés:', desError);
+          equipmentData.desenfumages = [];
+        }
+        
+        // Charger les RIAS
+        const { data: rias, error: riaError } = await supabase
+          .from('rias')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (!riaError && rias) {
+          equipmentData.rias = rias;
+        }
+        
+        // Charger les plans d'évacuation
+        const { data: plans_evacuation, error: planError } = await supabase
+          .from('plans_evacuation')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (!planError && plans_evacuation) {
+          equipmentData.plans_evacuation = plans_evacuation;
+        }
+        
+
+        
+        console.log('✅ Équipements chargés:', equipmentData);
+        
+        // Mettre à jour le tableau
+        await updateEquipmentTable();
+        
+        // Générer le résumé des observations
+        await generateObservationsSummary();
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des équipements:', error);
+        // En cas d'erreur, on affiche un message et on arrête
+        alert('Erreur lors du chargement des équipements. Vérifiez votre connexion.');
+        return;
+      }
+    }
+    
+    // Fonction pour générer le résumé des observations
+    async function generateObservationsSummary() {
+      console.log('🔍 Génération du résumé des observations...');
+      
+      const observationsContent = await generateObservationsContent();
+      document.getElementById('observationsContent').innerHTML = observationsContent;
+    }
+    
+    // Fonction pour générer tout le contenu des observations
+    async function generateObservationsContent() {
+      const observations = [];
+      
+      try {
+        // Récupérer l'ID de l'intervention depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const interventionId = urlParams.get('intervention');
+        
+        if (!interventionId) {
+          console.error('❌ ID d\'intervention manquant dans l\'URL');
+          return '<div class="observation-item"><span class="observation-icon">❌</span><span class="observation-text">Erreur: Intervention non trouvée</span></div>';
+        }
+        
+        console.log('🔍 Récupération des observations pour l\'intervention:', interventionId);
+        
+        // Récupérer toutes les vérifications avec observations de cette intervention
+        const { data: verifications, error } = await supabase
+          .from('verifications')
+          .select('type_equipement, id_equipement, observations')
+          .eq('id_intervention', interventionId)
+          .not('observations', 'is', null)
+          .neq('observations', '');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des observations:', error);
+          return '<div class="observation-item"><span class="observation-icon">❌</span><span class="observation-text">Erreur lors du chargement des observations</span></div>';
+        }
+        
+        console.log('🔍 Vérifications avec observations trouvées:', verifications);
+        
+        // Récupérer les détails des équipements pour avoir leurs numéros
+        for (const verification of verifications) {
+          const { type_equipement, id_equipement, observations: observationText } = verification;
+          
+          if (!observationText || observationText.trim() === '') continue;
+          
+          // Récupérer le numéro de l'équipement selon son type
+          let numero = 'N/A';
+          let typeLabel = type_equipement;
+          
+          try {
+            switch (type_equipement) {
+              case 'extincteurs':
+                const { data: ext } = await supabase
+                  .from('extincteurs')
+                  .select('num_ext')
+                  .eq('id_ext', id_equipement)
+                  .single();
+                if (ext) numero = ext.num_ext || 'N/A';
+                typeLabel = 'Extincteur';
+                break;
+                
+              case 'eclairages':
+                const { data: ecl } = await supabase
+                  .from('eclairages')
+                  .select('num_ecl')
+                  .eq('id_ecl', id_equipement)
+                  .single();
+                if (ecl) numero = ecl.num_ecl || 'N/A';
+                typeLabel = 'Éclairage';
+                break;
+                
+              case 'alarmes':
+                const { data: alarm } = await supabase
+                  .from('alarmes')
+                  .select('num_alarme')
+                  .eq('id_alarme', id_equipement)
+                  .single();
+                if (alarm) numero = alarm.num_alarme || 'N/A';
+                typeLabel = 'Alarme';
+                break;
+                
+              case 'desenfumages':
+                const { data: des } = await supabase
+                  .from('desenfumages')
+                  .select('id_desenfumage')
+                  .eq('id_des', id_equipement)
+                  .single();
+                if (des) numero = des.id_desenfumage || 'N/A';
+                typeLabel = 'Désenfumage';
+                break;
+                
+              case 'rias':
+                const { data: ria } = await supabase
+                  .from('rias')
+                  .select('num_ria')
+                  .eq('id_ria', id_equipement)
+                  .single();
+                if (ria) numero = ria.num_ria || 'N/A';
+                typeLabel = 'RIA';
+                break;
+                
+              case 'plans_evacuation':
+                const { data: plan } = await supabase
+                  .from('plans_evacuation')
+                  .select('num_plan')
+                  .eq('id_plan', id_equipement)
+                  .single();
+                if (plan) numero = plan.num_plan || 'N/A';
+                typeLabel = 'Plan d\'évacuation';
+                break;
+            }
+          } catch (equipmentError) {
+            console.error('❌ Erreur lors de la récupération du numéro d\'équipement:', equipmentError);
+          }
+          
+          observations.push({
+            type: typeLabel,
+            numero: numero,
+            observation: observationText.trim()
+          });
+        }
+        
+        console.log('✅ Observations récupérées:', observations);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la récupération des observations:', error);
+        return '<div class="observation-item"><span class="observation-icon">❌</span><span class="observation-text">Erreur lors de la récupération des observations</span></div>';
+      }
+      
+              if (observations.length === 0) {
+          return '<div class="observation-item"><span class="observation-icon">✅</span><span class="observation-text">Aucune observation</span></div>';
+        }
+        
+        // Regrouper les observations par type d'observation
+        const groupedObservations = {};
+        
+        observations.forEach(obs => {
+          // Normaliser l'observation pour le regroupement
+          const normalizedObs = obs.observation.toLowerCase().trim();
+          
+          if (!groupedObservations[normalizedObs]) {
+            groupedObservations[normalizedObs] = {
+              originalText: obs.observation,
+              equipments: []
+            };
+          }
+          
+          groupedObservations[normalizedObs].equipments.push({
+            type: obs.type,
+            numero: obs.numero
+          });
+        });
+        
+        let html = '';
+        
+        // Ajouter un en-tête avec le nombre total d'observations
+        html = `<div class="observation-header">📊 <strong>${observations.length} observation(s) au total</strong></div>`;
+        
+        // Générer la liste groupée par type d'observation
+        Object.entries(groupedObservations).forEach(([normalizedObs, data]) => {
+          // Trier les équipements par type puis par numéro
+          const sortedEquipments = data.equipments.sort((a, b) => {
+            if (a.type !== b.type) {
+              return a.type.localeCompare(b.type);
+            }
+            // Trier numériquement si possible
+            const numA = parseInt(a.numero);
+            const numB = parseInt(b.numero);
+            if (!isNaN(numA) && !isNaN(numB)) {
+              return numA - numB;
+            }
+            return a.numero.localeCompare(b.numero);
+          });
+          
+          // Regrouper les équipements par type
+          const equipmentsByType = {};
+          sortedEquipments.forEach(equipment => {
+            if (!equipmentsByType[equipment.type]) {
+              equipmentsByType[equipment.type] = [];
+            }
+            equipmentsByType[equipment.type].push(equipment.numero);
+          });
+          
+          // En-tête du type d'observation
+          html += `<div class="observation-type-header">🔍 <strong>${data.originalText}</strong> (${sortedEquipments.length} équipement(s))</div>`;
+          
+          // Liste des équipements groupés par type
+          Object.entries(equipmentsByType).forEach(([type, numeros]) => {
+            const numerosList = numeros.join(', ');
+            html += `
+              <div class="observation-item">
+                <span class="observation-icon">📝</span>
+                <span class="observation-text"><strong>${type}</strong> ${numerosList}</span>
+              </div>
+            `;
+          });
+          
+                  // Espace entre les types d'observation
+        html += '<div style="margin-bottom: 1rem;"></div>';
+      });
+      
+      // Ajouter le champ de saisie pour les observations finales
+      html += `
+        <div class="observation-editor-section">
+          <div class="observation-editor-header">
+            <h4>📝 Observations finales</h4>
+            <p>Modifiez le texte des observations selon vos besoins</p>
+          </div>
+          <textarea 
+            id="finalObservationsText" 
+            class="observation-editor-textarea" 
+            rows="8" 
+            placeholder="Observations finales de la vérification..."
+          >${generateFinalObservationsText(groupedObservations)}</textarea>
+        </div>
+      `;
+      
+              return html;
+    }
+    
+    // Fonction pour générer le texte final des observations
+    function generateFinalObservationsText(groupedObservations) {
+      let text = '';
+      
+      Object.entries(groupedObservations).forEach(([normalizedObs, data]) => {
+        // Trier les équipements par type puis par numéro
+        const sortedEquipments = data.equipments.sort((a, b) => {
+          if (a.type !== b.type) {
+            return a.type.localeCompare(b.type);
+          }
+          const numA = parseInt(a.numero);
+          const numB = parseInt(b.numero);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB;
+          }
+          return a.numero.localeCompare(b.numero);
+        });
+        
+        // Regrouper les équipements par type
+        const equipmentsByType = {};
+        sortedEquipments.forEach(equipment => {
+          if (!equipmentsByType[equipment.type]) {
+            equipmentsByType[equipment.type] = [];
+          }
+          equipmentsByType[equipment.type].push(equipment.numero);
+        });
+        
+        // Ajouter les équipements avec leur observation (format groupé)
+        Object.entries(equipmentsByType).forEach(([type, numeros]) => {
+          // Créer la liste des numéros avec formatage intelligent
+          let numerosList;
+          if (numeros.length === 1) {
+            numerosList = `n°${numeros[0]}`;
+          } else if (numeros.length === 2) {
+            numerosList = `n°${numeros[0]} et ${numeros[1]}`;
+          } else {
+            // Pour 3 ou plus : n°1, 3, 5 et 7
+            const lastNum = numeros.pop();
+            numerosList = `n°${numeros.join(', ')} et ${lastNum}`;
+          }
+          
+          text += `${type} ${numerosList} : ${data.originalText}\n`;
+        });
+        
+        text += '\n';
+      });
+      
+      return text.trim();
+    }
+    
+
+    
+    // Générer les anomalies détectées
+    function generateAnomalies() {
+      const observations = [];
+      
+              // Utiliser les observations vérifiées de cette intervention
+        verifiedObservations.forEach(obs => {
+          observations.push({
+            type: obs.type,
+            numero: obs.numero,
+            observation: obs.observation
+          });
+        });
+      
+      if (observations.length === 0) {
+        return '<div class="summary-item"><span class="summary-item-icon">✅</span><span class="summary-item-text">Aucune observation</span></div>';
+      }
+      
+      // Regrouper les observations par type d'équipement et par problème
+      const groupedObservations = {};
+      
+      observations.forEach(obs => {
+        if (!groupedObservations[obs.type]) {
+          groupedObservations[obs.type] = {};
+        }
+        
+        // Normaliser l'observation pour le regroupement
+        const normalizedObs = obs.observation.toLowerCase().trim();
+        
+        if (!groupedObservations[obs.type][normalizedObs]) {
+          groupedObservations[obs.type][normalizedObs] = {
+            numeros: [],
+            originalText: obs.observation
+          };
+        }
+        
+        groupedObservations[obs.type][normalizedObs].numeros.push(obs.numero);
+      });
+      
+      let html = '';
+      
+      // Générer le résumé synthétisé
+      Object.entries(groupedObservations).forEach(([type, problems]) => {
+        Object.entries(problems).forEach(([normalizedProblem, data]) => {
+          const numeros = data.numeros.sort((a, b) => {
+            // Trier numériquement si possible
+            const numA = parseInt(a);
+            const numB = parseInt(b);
+            if (!isNaN(numA) && !isNaN(numB)) {
+              return numA - numB;
+            }
+            return a.localeCompare(b);
+          }).join(', ');
+          
+          html += `
+            <div class="summary-item">
+              <span class="summary-item-icon">📝</span>
+              <span class="summary-item-text"><strong>${type} ${numeros}</strong> : ${data.originalText}</span>
+            </div>
+          `;
+        });
+      });
+      
+      return html;
+    }
+    
+    // Générer les actions recommandées
+    async function generateActions() {
+      const actions = [];
+      const observations = [];
+      
+      // Récupérer les observations vérifiées de cette intervention
+      const verifiedObservations = await getVerifiedObservations();
+      
+      // Collecter toutes les observations vérifiées
+      verifiedObservations.forEach(obs => {
+        observations.push(obs.observation.toLowerCase());
+      });
+      
+      // Analyser les observations pour déterminer les actions
+      const hasMaintenance = observations.some(obs => 
+        obs.includes('maintenance') || 
+        obs.includes('remplacement') || 
+        obs.includes('révision') ||
+        obs.includes('devis')
+      );
+      
+      const hasCritical = observations.some(obs => 
+        obs.includes('défaut') || 
+        obs.includes('panne') || 
+        obs.includes('hs') ||
+        obs.includes('batterie') ||
+        obs.includes('pression') ||
+        obs.includes('manque')
+      );
+      
+      if (hasCritical) {
+        actions.push('Intervention corrective immédiate requise');
+        actions.push('Mise à jour du registre de sécurité');
+      }
+      
+      if (hasMaintenance) {
+        actions.push('Établir un devis pour maintenance');
+      }
+      
+      if (actions.length === 0) {
+        return '<div class="summary-item"><span class="summary-item-icon">✅</span><span class="summary-item-text">Aucune action requise</span></div>';
+      }
+      
+      let html = '';
+      actions.forEach(action => {
+        html += `
+          <div class="summary-item">
+            <span class="summary-item-icon">🔧</span>
+            <span class="summary-item-text">${action}</span>
+          </div>
+        `;
+      });
+      
+      return html;
+    }
+    
+    // Fonction pour récupérer les équipements vérifiés de cette intervention
+    async function getVerifiedEquipment() {
+      try {
+        // Récupérer l'ID de l'intervention depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const interventionId = urlParams.get('intervention');
+        
+        if (!interventionId) {
+          console.error('❌ ID d\'intervention manquant dans l\'URL');
+          return {};
+        }
+        
+        console.log('🔍 Récupération des équipements vérifiés pour l\'intervention:', interventionId);
+        
+        // Récupérer toutes les vérifications de cette intervention
+        const { data: verifications, error } = await supabase
+          .from('verifications')
+          .select('type_equipement, id_equipement')
+          .eq('id_intervention', interventionId);
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des vérifications:', error);
+          return {};
+        }
+        
+        console.log('🔍 Vérifications trouvées:', verifications);
+        
+        // Grouper par type d'équipement
+        const verifiedEquipment = {
+          extincteurs: [],
+          eclairages: [],
+          alarmes: [],
+          desenfumages: [],
+          rias: [],
+          plans_evacuation: []
+        };
+        
+        // Récupérer les détails des équipements vérifiés
+        for (const verification of verifications) {
+          const { type_equipement, id_equipement } = verification;
+          
+          // Récupérer les détails de l'équipement selon son type
+          let equipmentDetails = null;
+          
+          switch (type_equipement) {
+            case 'extincteurs':
+              const { data: ext } = await supabase
+                .from('extincteurs')
+                .select('*')
+                .eq('id_ext', id_equipement)
+                .single();
+              if (ext) {
+                // Charger l'agent extincteur pour avoir le nom long
+                if (ext.agent_ext) {
+                  const { data: agent, error: agentError } = await supabase
+                    .from('AgentExtincteur')
+                    .select('long_agt')
+                    .eq('id_agt', ext.agent_ext)
+                    .single();
+                  
+                  if (!agentError && agent) {
+                    ext.agent_long_name = agent.long_agt;
+                  }
+                }
+                verifiedEquipment.extincteurs.push(ext);
+              }
+              break;
+              
+            case 'eclairages':
+              const { data: ecl } = await supabase
+                .from('eclairages')
+                .select('*')
+                .eq('id_ecl', id_equipement)
+                .single();
+              if (ecl) verifiedEquipment.eclairages.push(ecl);
+              break;
+              
+            case 'alarmes':
+              const { data: alarm } = await supabase
+                .from('alarmes')
+                .select('*')
+                .eq('id_alarme', id_equipement)
+                .single();
+              if (alarm) verifiedEquipment.alarmes.push(alarm);
+              break;
+              
+            case 'desenfumages':
+              const { data: des } = await supabase
+                .from('desenfumages')
+                .select('*')
+                .eq('id_des', id_equipement)
+                .single();
+              if (des) verifiedEquipment.desenfumages.push(des);
+              break;
+              
+            case 'rias':
+              const { data: ria } = await supabase
+                .from('rias')
+                .select('*')
+                .eq('id_ria', id_equipement)
+                .single();
+              if (ria) verifiedEquipment.rias.push(ria);
+              break;
+              
+            case 'plans_evacuation':
+              const { data: plan } = await supabase
+                .from('plans_evacuation')
+                .select('*')
+                .eq('id_plan', id_equipement)
+                .single();
+              if (plan) verifiedEquipment.plans_evacuation.push(plan);
+              break;
+          }
+        }
+        
+        console.log('✅ Équipements vérifiés récupérés:', verifiedEquipment);
+        return verifiedEquipment;
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la récupération des équipements vérifiés:', error);
+        return {};
+      }
+    }
+    
+    // Fonction pour récupérer les observations de cette intervention
+    async function getVerifiedObservations() {
+      try {
+        // Récupérer l'ID de l'intervention depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const interventionId = urlParams.get('intervention');
+        
+        if (!interventionId) {
+          console.error('❌ ID d\'intervention manquant dans l\'URL');
+          return [];
+        }
+        
+        console.log('🔍 Récupération des observations pour l\'intervention:', interventionId);
+        
+        // Récupérer toutes les vérifications avec observations de cette intervention
+        const { data: verifications, error } = await supabase
+          .from('verifications')
+          .select('type_equipement, id_equipement, observations')
+          .eq('id_intervention', interventionId)
+          .not('observations', 'is', null)
+          .neq('observations', '');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des observations:', error);
+          return [];
+        }
+        
+        console.log('🔍 Vérifications avec observations trouvées:', verifications);
+        
+        const observations = [];
+        
+        // Récupérer les détails des équipements pour avoir leurs numéros
+        for (const verification of verifications) {
+          const { type_equipement, id_equipement, observations: observationText } = verification;
+          
+          if (!observationText || observationText.trim() === '') continue;
+          
+          // Récupérer le numéro de l'équipement selon son type
+          let numero = 'N/A';
+          let typeLabel = type_equipement;
+          
+          try {
+            switch (type_equipement) {
+              case 'extincteurs':
+                const { data: ext } = await supabase
+                  .from('extincteurs')
+                  .select('num_ext')
+                  .eq('id_ext', id_equipement)
+                  .single();
+                if (ext) numero = ext.num_ext || 'N/A';
+                typeLabel = 'Extincteur';
+                break;
+                
+              case 'eclairages':
+                const { data: ecl } = await supabase
+                  .from('eclairages')
+                  .select('num_ecl')
+                  .eq('id_ecl', id_equipement)
+                  .single();
+                if (ecl) numero = ecl.num_ecl || 'N/A';
+                typeLabel = 'Éclairage';
+                break;
+                
+              case 'alarmes':
+                const { data: alarm } = await supabase
+                  .from('alarmes')
+                  .select('num_alarme')
+                  .eq('id_alarme', id_equipement)
+                  .single();
+                if (alarm) numero = alarm.num_alarme || 'N/A';
+                typeLabel = 'Alarme';
+                break;
+                
+              case 'desenfumages':
+                const { data: des } = await supabase
+                  .from('desenfumages')
+                  .select('id_desenfumage')
+                  .eq('id_des', id_equipement)
+                  .single();
+                if (des) numero = des.id_desenfumage || 'N/A';
+                typeLabel = 'Désenfumage';
+                break;
+                
+              case 'rias':
+                const { data: ria } = await supabase
+                  .from('rias')
+                  .select('num_ria')
+                  .eq('id_ria', id_equipement)
+                  .single();
+                if (ria) numero = ria.num_ria || 'N/A';
+                typeLabel = 'RIA';
+                break;
+                
+              case 'plans_evacuation':
+                const { data: plan } = await supabase
+                  .from('plans_evacuation')
+                  .select('num_plan')
+                  .eq('id_plan', id_equipement)
+                  .single();
+                if (plan) numero = plan.num_plan || 'N/A';
+                typeLabel = 'Plan d\'évacuation';
+                break;
+            }
+          } catch (equipmentError) {
+            console.error('❌ Erreur lors de la récupération du numéro d\'équipement:', equipmentError);
+          }
+          
+          observations.push({
+            type: typeLabel,
+            numero: numero,
+            observation: observationText.trim()
+          });
+        }
+        
+        console.log('✅ Observations récupérées:', observations);
+        return observations;
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la récupération des observations:', error);
+        return [];
+      }
+    }
+    
+    // Fonction pour mettre à jour le tableau des équipements
+    async function updateEquipmentTable() {
+      const tbody = document.getElementById('equipmentRecapTableBody');
+      let html = '';
+      
+      // Récupérer les équipements vérifiés de cette intervention
+      const verifiedEquipment = await getVerifiedEquipment();
+      
+      console.log('🔍 Mise à jour tableau - Équipements vérifiés:', verifiedEquipment);
+      
+      // EXTINCTEURS par agent (avec nom long)
+      if (verifiedEquipment.extincteurs.length > 0) {
+        const extincteursByAgent = groupExtincteursByAgent(verifiedEquipment.extincteurs);
+        console.log('🔍 Extincteurs vérifiés groupés par agent:', extincteursByAgent);
+        
+        Object.entries(extincteursByAgent).forEach(([agentId, extincteurs]) => {
+          // Récupérer le nom long depuis le premier extincteur du groupe
+          const firstExtincteur = extincteurs[0];
+          const agentName = firstExtincteur.agent_long_name || `Agent ${agentId}`;
+          const count = extincteurs.length;
+          
+          console.log(`🔍 Ajout extincteur vérifié: ${agentName} - ${count} unités`);
+          
+          html += `
+            <tr>
+              <td>Extincteur - ${agentName}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      } else {
+        console.log('❌ Aucun extincteur vérifié à afficher');
+      }
+      
+      // ÉCLAIRAGES par famille
+      if (verifiedEquipment.eclairages.length > 0) {
+        const eclairagesByFamily = groupEclairagesByFamily(verifiedEquipment.eclairages);
+        Object.entries(eclairagesByFamily).forEach(([family, eclairages]) => {
+          const count = eclairages.length;
+          
+          html += `
+            <tr>
+              <td>Éclairage de sécurité - ${family}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+      
+      // ALARMES par type
+      if (verifiedEquipment.alarmes.length > 0) {
+        const alarmesByType = groupAlarmesByType(verifiedEquipment.alarmes);
+        Object.entries(alarmesByType).forEach(([type, alarmes]) => {
+          const count = alarmes.length;
+          
+          html += `
+            <tr>
+              <td>Alarme - ${type}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+      
+      // DÉSENFUMAGES par type d'équipement
+      if (verifiedEquipment.desenfumages.length > 0) {
+        const desenfumagesByType = groupDesenfumagesByType(verifiedEquipment.desenfumages);
+        Object.entries(desenfumagesByType).forEach(([type, desenfumages]) => {
+          const count = desenfumages.length;
+          html += `
+            <tr>
+              <td>Désenfumage - ${type}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+      
+      // RIAS
+      if (verifiedEquipment.rias.length > 0) {
+        const count = verifiedEquipment.rias.length;
+        
+        html += `
+          <tr>
+            <td>RIA (Robinet d'Incendie Armé)</td>
+            <td class="equipment-count">${count}</td>
+          </tr>
+        `;
+      }
+      
+      // PLANS D'ÉVACUATION
+      if (verifiedEquipment.plans_evacuation.length > 0) {
+        const count = verifiedEquipment.plans_evacuation.length;
+        
+        html += `
+          <tr>
+            <td>Plan d'évacuation</td>
+            <td class="equipment-count">${count}</td>
+          </tr>
+        `;
+      }
+      
+      // Si aucun équipement
+      if (html === '') {
+        html = '<tr><td colspan="2" style="text-align: center; color: #999; font-style: italic;">Aucun équipement enregistré pour ce site</td></tr>';
+      }
+      
+      tbody.innerHTML = html;
+    }
+    
+    // Fonctions de groupement par famille
+    function groupExtincteursByAgent(extincteurs = equipmentData.extincteurs) {
+      const groups = {};
+      console.log('🔍 Groupement extincteurs - données:', extincteurs);
+      
+      extincteurs.forEach(ext => {
+        const agentId = ext.agent_ext || 'Autre';
+        console.log(`🔍 Extincteur agent_ext: ${agentId}`);
+        if (!groups[agentId]) groups[agentId] = [];
+        groups[agentId].push(ext);
+      });
+      
+      console.log('🔍 Groupes finaux:', groups);
+      return groups;
+    }
+    
+    function groupEclairagesByFamily(eclairages = equipmentData.eclairages) {
+      const groups = {};
+      eclairages.forEach(ecl => {
+        const family = ecl.family_ecl || 'Autre';
+        if (!groups[family]) groups[family] = [];
+        groups[family].push(ecl);
+      });
+      return groups;
+    }
+    
+    function groupAlarmesByType(alarmes = equipmentData.alarmes) {
+      const groups = {};
+      alarmes.forEach(alarm => {
+        const type = alarm.type_alarme || 'Autre';
+        if (!groups[type]) groups[type] = [];
+        groups[type].push(alarm);
+      });
+      return groups;
+    }
+    
+    function groupDesenfumagesByType(desenfumages = equipmentData.desenfumages) {
+      const groups = {};
+      desenfumages.forEach(des => {
+        // Utiliser le type d'équipement comme clé de groupement
+        const type = des.equipement_desenfumage || 'Non spécifié';
+        if (!groups[type]) groups[type] = [];
+        groups[type].push(des);
+      });
+      return groups;
+    }
+    
+    // Fonction pour obtenir le nom long de l'agent extincteur
+    function getAgentLongName(agentId) {
+      // Mapping des agents extincteurs avec leurs noms longs
+      const agentNames = {
+        '1': 'Eau + Additif',
+        '2': 'CO2',
+        '3': 'Poudre',
+        '4': 'Mousse',
+        '5': 'Halon',
+        '6': 'Eau pulvérisée',
+        '7': 'Eau sous pression',
+        '8': 'Autre'
+      };
+      
+      return agentNames[agentId] || `Agent ${agentId}`;
+    }
+    
+
+    
+    // Mise à jour de l'interface
+    function updateInterface() {
+      // Informations client
+      document.getElementById('clientCode').textContent = clientData?.code_client || '--';
+      document.getElementById('clientName').textContent = clientData?.nom_client || 'Client inconnu';
+      document.getElementById('clientNameDetail').textContent = clientData?.nom_client || '--';
+      
+      // Informations site - Utilisation des bons champs
+      document.getElementById('siteNumber').textContent = siteData?.num_site || '--';
+      document.getElementById('siteName').textContent = siteData?.nom_site || 'Site inconnu';
+      document.getElementById('siteNameDetail').textContent = siteData?.nom_site || '--';
+      
+      // Informations adresse - Utilisation du bon champ
+      const address = siteData?.adr_site || '';
+      const postalCode = siteData?.cp_site || '';
+      const city = siteData?.ville_site || '';
+      
+      document.getElementById('siteAddress').textContent = address || '--';
+      document.getElementById('siteCity').textContent = `${postalCode} ${city}`.trim() || '--';
+      
+      // Prochaine vérification (1 an après la date actuelle)
+      const nextYear = new Date();
+      nextYear.setFullYear(nextYear.getFullYear() + 1);
+      document.getElementById('nextVerificationDate').textContent = nextYear.toLocaleDateString('fr-FR', { 
+        month: 'long', 
+        year: 'numeric' 
+      });
+    }
+    
+    // Génération du PDF selon la structure demandée
+    async function generatePDF() {
+      try {
+        document.getElementById('generateBtn').classList.add('loading');
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          putOnlyUsedFonts: true,
+          compress: true
+        });
+        
+        // Générer le numéro de bon si pas encore fait
+        if (!numeroDeBon) {
+          await generateBonNumber();
+        }
+        
+        // Couleurs JPSI
+        const jpsiRed = [155, 36, 35];
+        const jpsiDark = [29, 29, 31];
+        const jpsiGray = [107, 114, 128];
+        
+        // Variables de positionnement
+        const pageWidth = 210;
+        let currentY = 40; // Position par défaut
+        
+        // Fonction pour dessiner la grille de référence précise
+        function drawGrid(doc) {
+          doc.setDrawColor(200, 200, 200); // Gris clair
+          doc.setLineWidth(0.1); // Ligne très fine
+          
+          // Grille verticale tous les 10mm (précision doublée)
+          for (let x = 10; x <= 200; x += 10) {
+            doc.line(x, 0, x, 297);
+          }
+          
+          // Grille horizontale tous les 10mm (précision doublée)
+          for (let y = 10; y <= 290; y += 10) {
+            doc.line(0, y, 210, y);
+          }
+          
+          // Numérotation des axes (tous les 20mm pour la lisibilité)
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          
+          // Numérotation horizontale (X)
+          for (let x = 20; x <= 200; x += 20) {
+            doc.text(x.toString(), x, 8);
+          }
+          
+          // Numérotation verticale (Y)
+          for (let y = 20; y <= 280; y += 20) {
+            doc.text(y.toString(), 3, y);
+          }
+        }
+        
+        // Dessiner la grille de référence
+        drawGrid(doc);
+        
+        // 0. Filigrane textuel simple (sans rotation)
+        doc.setTextColor(220, 220, 220); // Gris très clair pour effet filigrane
+        doc.setFontSize(72);
+        doc.setFont('helvetica', 'bold');
+        
+        // Filigrane textuel centré
+        const watermarkText = 'JPSI';
+        const textWidth = doc.getTextWidth(watermarkText);
+        const textX = (pageWidth - textWidth) / 2;
+        const textY = 150; // Centre de la page
+        
+        // Texte filigrane simple
+        doc.text(watermarkText, textX, textY);
+        
+        console.log('✅ Filigrane JPSI ajouté au PDF');
+        
+        // 1. Image d'en-tête en haut
+        try {
+          const img = new Image();
+          img.src = 'img/entete.png';
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+          
+          // Calculer les dimensions pour que l'image s'adapte à la largeur de la page
+          const imgWidth = pageWidth - 20; // 10mm de marge de chaque côté
+          const imgHeight = (img.height * imgWidth) / img.width;
+          
+          doc.addImage(img, 'PNG', 10, 10, imgWidth, imgHeight);
+          
+          // Position de départ pour le contenu après l'image
+          currentY = imgHeight + 20;
+          
+        } catch (error) {
+          console.log('Image d\'en-tête non trouvée, utilisation d\'un titre de remplacement');
+          doc.setFillColor(...jpsiRed);
+          doc.rect(0, 0, 210, 30, 'F');
+          doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+          doc.setFont('helvetica', 'bold');
+          doc.text('JPSI - BON DE VÉRIFICATION', 105, 18, { align: 'center' });
+          currentY = 40;
+        }
+        
+        // Retour à la couleur normale
+        doc.setTextColor(...jpsiDark);
+        
+        // 2. Deux vignettes côte à côte : Client et Site
+        const vignetteWidth = 90;
+        const margin = 10;
+        const spaceBetween = 15; // Réduit l'espace entre les vignettes
+        const clientSiteY = 55; // Position Y fixe pour CLIENT et SITE
+        
+        // Calculer la hauteur nécessaire pour les vignettes (basé sur le contenu)
+        const clientVignetteHeight = 30; // Hauteur fixe pour accommoder tout le contenu
+        
+        // Vignette Client (gauche) - Bordures arrondies noires avec fond transparent
+        doc.setDrawColor(0, 0, 0); // Bordure noire
+        doc.setLineWidth(0.2); // Bordure fine
+        doc.roundedRect(margin, clientSiteY, vignetteWidth, clientVignetteHeight, 3, 3, 'S'); // Bordures arrondies
+        
+        // Titre CLIENT avec soulignement
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0); // Texte noir
+        doc.text('CLIENT', margin + vignetteWidth/2, clientSiteY + 5, { align: 'center' });
+        
+        // Soulignement du titre CLIENT - juste sous le mot
+        const clientTitleWidth = doc.getTextWidth('CLIENT');
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.line(margin + vignetteWidth/2 - clientTitleWidth/2, clientSiteY + 6.5, margin + vignetteWidth/2 + clientTitleWidth/2, clientSiteY + 6.5);
+        
+        // Contenu client complet avec interlignes réduits
+        doc.setTextColor(0, 0, 0); // Texte noir
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        const clientName = document.getElementById('clientName').textContent;
+        doc.text(clientName, margin + 4, clientSiteY + 11);
+        
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        const clientAddress = clientData?.adr_client || '';
+        const clientCodePostal = clientData?.cp_client || '';
+        const clientVille = clientData?.ville_client || '';
+        const clientSiren = clientData?.siren_client || '';
+        
+        doc.text(clientAddress, margin + 4, clientSiteY + 16);
+        doc.text(`${clientCodePostal} - ${clientVille}`, margin + 4, clientSiteY + 21);
+        doc.text(`SIREN: ${clientSiren}`, margin + 4, clientSiteY + 26);
+        
+        // Vignette Site (droite) - Bordures arrondies noires avec fond transparent
+        const siteX = 110; // Position X fixe pour SITE
+        doc.setDrawColor(0, 0, 0); // Bordure noire
+        doc.setLineWidth(0.2); // Bordure fine
+        doc.roundedRect(siteX, clientSiteY, vignetteWidth, clientVignetteHeight, 3, 3, 'S'); // Bordures arrondies
+        
+        // Titre SITE avec soulignement
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0); // Texte noir
+        doc.text('SITE', siteX + vignetteWidth/2, clientSiteY + 5, { align: 'center' });
+        
+        // Soulignement du titre SITE - juste sous le mot
+        const siteTitleWidth = doc.getTextWidth('SITE');
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.line(siteX + vignetteWidth/2 - siteTitleWidth/2, clientSiteY + 6.5, siteX + vignetteWidth/2 + siteTitleWidth/2, clientSiteY + 6.5);
+        
+        // Contenu site complet avec interlignes réduits
+        doc.setTextColor(0, 0, 0); // Texte noir
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        const siteNumero = siteData?.num_site || '';
+        const siteName = siteData?.nom_site || document.getElementById('siteName').textContent;
+        doc.text(`${siteNumero} - ${siteName}`, siteX + 4, clientSiteY + 11);
+        
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        const siteAddress = siteData?.adr_site || '';
+        const siteCodePostal = siteData?.cp_site || '';
+        const siteVille = siteData?.ville_site || '';
+        
+        doc.text(siteAddress, siteX + 4, clientSiteY + 16);
+        doc.text(`${siteCodePostal} - ${siteVille}`, siteX + 4, clientSiteY + 21);
+        
+        // 3. Vignette avec numéro de bon et date - Bordures arrondies noires avec fond transparent
+        const bonY = 90; // Position Y fixe pour le bon de vérification
+        const bonHeight = 10; // Hauteur réduite à 10mm
+        const currentDate = new Date().toLocaleDateString('fr-FR');
+        const bonText = `Bon de vérification n°${numeroDeBon} du ${currentDate}`;
+        
+        doc.setDrawColor(0, 0, 0); // Bordure noire
+        doc.setLineWidth(0.2); // Bordure fine
+        doc.roundedRect(margin, bonY, pageWidth - 2*margin, bonHeight, 3, 3, 'S'); // Bordures arrondies
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0); // Texte noir
+        // Centrage parfait horizontal et vertical dans la vignette
+        doc.text(bonText, pageWidth/2, bonY + bonHeight/2 + 2, { align: 'center' });
+        
+        // 4. Texte de présentation des vérifications
+        const presentationY = 108; // Position Y fixe pour le texte à Y=108
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        const presentationText = "Suite à notre vérification, nous vous prions de trouver ci-joint le résumé des vérifications réalisées";
+        doc.text(presentationText, pageWidth/2, presentationY, { align: 'center' });
+        
+        // Préparer les données du tableau simplifié
+        const tableData = [];
+        tableData.push(['Type d\'appareils', 'Quantités']);
+        
+        // Ajouter les extincteurs
+        if (equipmentData.extincteurs.length > 0) {
+          const extincteursByAgent = groupExtincteursByAgent();
+          Object.entries(extincteursByAgent).forEach(([agentId, extincteurs]) => {
+            const agentName = getAgentLongName(agentId);
+            const count = extincteurs.length;
+            tableData.push([`Extincteur - ${agentName}`, count.toString()]);
+          });
+        }
+        
+        // Ajouter les éclairages
+        if (equipmentData.eclairages.length > 0) {
+          const eclairagesByFamily = groupEclairagesByFamily();
+          Object.entries(eclairagesByFamily).forEach(([family, eclairages]) => {
+            const count = eclairages.length;
+            tableData.push([`Éclairage de sécurité - ${family}`, count.toString()]);
+          });
+        }
+        
+        // Ajouter les alarmes
+        if (equipmentData.alarmes.length > 0) {
+          const alarmesByType = groupAlarmesByType();
+          Object.entries(alarmesByType).forEach(([type, alarmes]) => {
+            const count = alarmes.length;
+            tableData.push([`Alarme - ${type}`, count.toString()]);
+          });
+        }
+        
+        // Ajouter les désenfumages par type d'équipement
+        if (equipmentData.desenfumages.length > 0) {
+          const desenfumagesByType = groupDesenfumagesByType();
+          Object.entries(desenfumagesByType).forEach(([type, desenfumages]) => {
+            const count = desenfumages.length;
+            tableData.push([`Désenfumage - ${type}`, count.toString()]);
+          });
+        }
+        
+        // Ajouter les RIAS
+        if (equipmentData.rias.length > 0) {
+          const count = equipmentData.rias.length;
+          tableData.push(['RIA (Robinet d\'Incendie Armé)', count.toString()]);
+        }
+        
+        // Ajouter les plans d'évacuation
+        if (equipmentData.plans_evacuation.length > 0) {
+          const count = equipmentData.plans_evacuation.length;
+          tableData.push(['Plan d\'évacuation', count.toString()]);
+        }
+        
+        // Générer le tableau dans l'esprit des vignettes
+        if (tableData.length > 1) {
+          // Créer un tableau unifié avec des bordures fines
+          const tableY = 110; // Position Y fixe pour commencer le tableau à Y=110
+          const tableWidth = pageWidth - 2*margin;
+          const rowHeight = 8; // Hauteur adaptée aux caractères
+          const headerHeight = 10; // Hauteur pour l'en-tête
+          const bodyRows = tableData.slice(1);
+          const totalBodyHeight = bodyRows.length * rowHeight;
+          const totalTableHeight = headerHeight + totalBodyHeight;
+          
+          // Tableau unifié (en-tête + corps) avec fond transparent
+          doc.setDrawColor(0, 0, 0); // Bordure noire
+          doc.setLineWidth(0.2); // Bordure fine
+          doc.roundedRect(margin, tableY, tableWidth, totalTableHeight, 2, 2, 'S');
+          
+          // Ligne de séparation en-tête/corps
+          doc.line(margin, tableY + headerHeight, margin + tableWidth, tableY + headerHeight);
+          
+          // Ligne verticale séparant les colonnes
+          doc.line(margin + 140, tableY, margin + 140, tableY + totalTableHeight);
+          
+          // Lignes horizontales entre les lignes du corps
+          for (let i = 1; i < bodyRows.length; i++) {
+            const lineY = tableY + headerHeight + (i * rowHeight);
+            doc.line(margin, lineY, margin + tableWidth, lineY);
+          }
+          
+          // Texte de l'en-tête
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text('Type d\'appareils', margin + 70, tableY + 6, { align: 'center' });
+          doc.text('Quantités', 175, tableY + 6, { align: 'center' });
+          
+          // Contenu des lignes
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0, 0, 0);
+          
+          bodyRows.forEach((row, index) => {
+            const rowY = tableY + headerHeight + (index * rowHeight) + 5;
+            doc.text(row[0], margin + 5, rowY); // Type d'appareil
+            doc.text(row[1], 175, rowY, { align: 'center' }); // Quantité centrée à X=175
+          });
+        }
+        
+
+        
+        // 6. Vignette Observations critiques
+        const obsVignetteHeight = 45; // Hauteur de la vignette observations (augmentée de 10mm)
+        const obsVignetteY = 235 - obsVignetteHeight; // Position Y pour que la vignette finisse à Y=235
+        
+        // Vignette Observations - Bordures arrondies noires avec fond transparent
+        doc.setDrawColor(0, 0, 0); // Bordure noire
+        doc.setLineWidth(0.2); // Bordure fine
+        doc.roundedRect(margin, obsVignetteY, pageWidth - 2*margin, obsVignetteHeight, 3, 3, 'S'); // Bordures arrondies
+        
+        // Titre Observations
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0); // Texte noir
+        doc.text('OBSERVATIONS', pageWidth/2, obsVignetteY + 7, { align: 'center' });
+        
+        // Ligne de séparation sous le titre
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.line(margin + 5, obsVignetteY + 10, pageWidth - margin - 5, obsVignetteY + 10);
+        
+        // Contenu des observations - Utilise le champ de saisie final
+        const finalObservationsTextarea = document.getElementById('finalObservationsText');
+        const observationsText = finalObservationsTextarea ? finalObservationsTextarea.value.trim() : '';
+        
+        if (observationsText && observationsText !== '') {
+          // Il y a des observations
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0, 0, 0);
+          
+          let obsY = obsVignetteY + 18;
+          
+          // Diviser le texte en lignes pour l'affichage
+          const maxLineLength = 80; // Caractères par ligne
+          const lines = [];
+          let currentLine = '';
+          
+          observationsText.split(' ').forEach(word => {
+            if ((currentLine + ' ' + word).length <= maxLineLength) {
+              currentLine += (currentLine ? ' ' : '') + word;
+            } else {
+              if (currentLine) lines.push(currentLine);
+              currentLine = word;
+            }
+          });
+          if (currentLine) lines.push(currentLine);
+          
+          // Afficher les lignes d'observations
+          lines.forEach((line, index) => {
+            if (obsY + (index * 5) < obsVignetteY + obsVignetteHeight - 5) {
+              doc.text(line, margin + 5, obsY + (index * 5));
+            }
+          });
+        } else {
+          // Aucune observation
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(128, 128, 128); // Gris
+          doc.text('Aucune observation', pageWidth/2, obsVignetteY + 23, { align: 'center' });
+        }
+        
+        // 7. Signatures : Client à droite, Technicien à gauche
+        const signatureWidth = 80; // Largeur à 80mm
+        const signatureHeight = 40; // Hauteur pour le texte + signature
+        const signatureY = obsVignetteY + obsVignetteHeight; // Position Y adaptée à la vignette d'observations (remontée de 5mm)
+        
+        // Client commence à X=15 et finit à X=95
+        const clientX = 15;
+        const clientY = signatureY;
+        
+        // Technicien finit à X=190, donc commence à X=110
+        const technicianX = 110;
+        const technicianY = signatureY;
+        
+        // Zone signature Technicien (gauche) - sans bordure avec fond transparent
+        
+        // Titre technicien
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Nom et signature du technicien', technicianX + signatureWidth/2, technicianY + 5, { align: 'center' });
+        
+        // Texte technicien centré sur 70mm
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        const techText = "Je reconnais avoir informé le client des opérations de maintenance faites ou à effectuer, ainsi que des travaux à réaliser.";
+        doc.text(techText, technicianX + signatureWidth/2, technicianY + 9, { align: 'center', maxWidth: 70 });
+        
+        // Zone signature Client (droite) - sans bordure avec fond transparent
+        
+        // Titre client
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Nom et signature du client', clientX + signatureWidth/2, clientY + 5, { align: 'center' });
+        
+        // Texte client centré sur 75mm
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        const clientText = "Je reconnais l'exactitude des quantitatifs indiqués, des travaux réalisés, et prend connaissance des travaux à réaliser.";
+        doc.text(clientText, clientX + signatureWidth/2, clientY + 9, { align: 'center', maxWidth: 75 });
+        
+        // Ajouter les signatures si elles existent
+        const clientCanvas = document.getElementById('clientSignature');
+        const technicianCanvas = document.getElementById('technicianSignature');
+        
+        if (hasTechnicianSignature && technicianCanvas) {
+          try {
+            const technicianSignatureData = technicianCanvas.toDataURL('image/png');
+            doc.addImage(technicianSignatureData, 'PNG', technicianX + 2, technicianY + 20, signatureWidth - 4, 18);
+          } catch (error) {
+            console.log('Signature technicien non disponible pour le PDF');
+          }
+        }
+        
+        if (hasClientSignature && clientCanvas) {
+          try {
+            const clientSignatureData = clientCanvas.toDataURL('image/png');
+            doc.addImage(clientSignatureData, 'PNG', clientX + 2, clientY + 20, signatureWidth - 4, 18);
+          } catch (error) {
+            console.log('Signature client non disponible pour le PDF');
+          }
+        }
+        
+        // 7. Informations légales en bas de page
+        const legalY = 285; // Position Y fixe pour les informations légales
+        
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gris foncé pour les informations légales
+        
+                        // Ligne 1
+                doc.text('Entreprise individuelle – SIRET 794 660 365 00014 – Code APE 4778C – TVA non applicable selon l\'article 293-B du Code Général des Impôts', pageWidth/2, legalY, { align: 'center' });
+                
+                // Ligne 2
+                doc.text('Immatriculé au répertoire des métiers sous le numéro 794 660 365 RM 54 auprès de la Chambre des Métiers de Laxou', pageWidth/2, legalY + 3, { align: 'center' });
+                
+                // Ligne 3
+                doc.text('Immatriculé au Registre du Commerce et des Sociétés sous le numéro 794 660 365 R.C.S. Nancy', pageWidth/2, legalY + 6, { align: 'center' });
+                
+                // Ligne 4
+                doc.text('Voir conditions générales de vente', pageWidth/2, legalY + 9, { align: 'center' });
+        
+        // Sauvegarder le PDF avec le format obligatoire
+        const nomClient = cleanFileName(clientData?.nom_client || 'Client_Inconnu');
+        const nomSite = cleanFileName(siteData?.nom || 'Site_Inconnu');
+        const fileName = `${numeroDeBon} - ${nomClient} - ${nomSite}.pdf`;
+        
+        console.log('📄 Nom du fichier PDF:', fileName);
+        doc.save(fileName);
+        
+        document.getElementById('generateBtn').classList.remove('loading');
+        
+      } catch (error) {
+        console.error('Erreur lors de la génération du PDF:', error);
+        alert('Erreur lors de la génération du PDF');
+        document.getElementById('generateBtn').classList.remove('loading');
+      }
+    }
+    
+    // Fonction pour générer le PDF détaillé
+    async function generatePDF2() {
+      try {
+        document.getElementById('generateBtn2').classList.add('loading');
+        
+        // Récupérer les équipements vérifiés et observations de cette intervention
+        const verifiedEquipment = await getVerifiedEquipment();
+        const verifiedObservations = await getVerifiedObservations();
+        
+        console.log('🔍 Génération PDF avec équipements vérifiés:', verifiedEquipment);
+        console.log('🔍 Génération PDF avec observations vérifiées:', verifiedObservations);
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          putOnlyUsedFonts: true,
+          compress: true
+        });
+        
+        // 0. Filigrane au milieu de la page
+        try {
+          const filigraneImg = new Image();
+          filigraneImg.src = 'img/filigran.png';
+          await new Promise((resolve, reject) => {
+            filigraneImg.onload = resolve;
+            filigraneImg.onerror = reject;
+          });
+          
+          // Position au centre de la page A4 (210mm x 297mm)
+          const pageWidth = 210;
+          const pageHeight = 297;
+          const filigraneWidth = filigraneImg.width * 0.26 * 0.6; // Conversion px vers mm et réduction 40%
+          const filigraneHeight = filigraneImg.height * 0.26 * 0.6;
+          
+          // Centrer l'image (décalé de 7mm vers le bas)
+          const filigraneX = (pageWidth - filigraneWidth) / 2;
+          const filigraneY = (pageHeight - filigraneHeight) / 2 + 7;
+          
+          // Ajouter en mode filigrane (transparent)
+          doc.addImage(filigraneImg, 'PNG', filigraneX, filigraneY, filigraneWidth, filigraneHeight, undefined, 'FAST', 0);
+        } catch (error) {
+          console.log('Image filigran.png non trouvée');
+        }
+        
+        // 1. logobon.png à X=18mm, Y=7mm, réduction de 40%
+        try {
+          const img = new Image();
+          img.src = 'img/logobon.png';
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+          const widthMm = 411 * 0.26 * 0.6 * 1.1 * 1.1; // ≈ 77mm (agrandi de 10% + 10%)
+          const heightMm = 288 * 0.26 * 0.6 * 1.1 * 1.1; // ≈ 55mm (agrandi de 10% + 10%)
+          doc.addImage(img, 'PNG', 13, 7, widthMm, heightMm);
+        } catch (error) {
+          console.log('Logo logobon.png non trouvé');
+        }
+        
+        // 2. coordo.png à X=90mm, Y=15mm, réduction de 30%
+        try {
+          const coordoImg = new Image();
+          coordoImg.src = 'img/coordo.png';
+          await new Promise((resolve, reject) => {
+            coordoImg.onload = resolve;
+            coordoImg.onerror = reject;
+          });
+          const coordoWidth = coordoImg.width * 0.26 * 0.7 * 0.7 * 0.85; // Réduction de 30% + 30% + 15% supplémentaire
+          const coordoHeight = coordoImg.height * 0.26 * 0.7 * 0.7 * 0.85; // Réduction de 30% + 30% + 15% supplémentaire
+          doc.addImage(coordoImg, 'PNG', 112, 15, coordoWidth, coordoHeight);
+        } catch (error) {
+          console.log('Image coordo.png non trouvée');
+        }
+        
+        // 3. Deux vignettes transparentes équilibrées
+        const vignetteWidth = 90; // Largeur réduite de 95 à 90mm (-5mm)
+        const vignetteHeight = 45; // Hauteur adaptée pour 7 lignes de contenu
+        const margin = 15; // Marge depuis les bords
+        const spaceBetween = 20; // Espace entre les vignettes
+        
+        // Position Y pour la vignette SITE (après les images)
+        const vignetteY = 42;
+        
+        // Vignette SITE (s'achève à 10mm du bord droit)
+        const siteX = 210 - vignetteWidth - 10; // Position pour finir à 10mm du bord droit
+        doc.setDrawColor(0, 0, 0); // Bordure noire
+        doc.setLineWidth(0.1); // Bordure très fine
+        doc.roundedRect(siteX, vignetteY, vignetteWidth, vignetteHeight, 1, 1, 'S'); // Bordure arrondie réduite
+        
+        // Vignette Date d'établissement (alignée avec la vignette SITE)
+        const dateVignetteHeight = 20; // Hauteur de la vignette date
+        const dateVignetteX = 10; // Commence à X=10mm
+        const dateVignetteWidth = siteX - dateVignetteX - 10; // Largeur pour finir à 10mm de la vignette SITE
+        const dateVignetteY = vignetteY + vignetteHeight - dateVignetteHeight; // Alignée en bas avec la vignette SITE
+        
+        doc.setDrawColor(0, 0, 0); // Bordure noire
+        doc.setLineWidth(0.1); // Bordure très fine
+        doc.roundedRect(dateVignetteX, dateVignetteY, dateVignetteWidth, dateVignetteHeight, 1, 1, 'S'); // Bordure arrondie réduite
+        
+        // Titre "DATE D'ÉTABLISSEMENT DU PRÉSENT RAPPORT" (10, normal, majuscule, centré, une ligne)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text('DATE D\'ÉTABLISSEMENT DU PRÉSENT RAPPORT', dateVignetteX + dateVignetteWidth/2, dateVignetteY + 8, { align: 'center' });
+        
+        // Date du jour (11, gras, centré, format long)
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        const currentDate = new Date().toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+        doc.text(currentDate, dateVignetteX + dateVignetteWidth/2, dateVignetteY + 16, { align: 'center' });
+        
+        // Titre "Code Client:" dans l'élément du haut
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Code Client:', siteX + 4, vignetteY + 7);
+        
+        // Code client à côté du titre
+        const clientCode = clientData?.code_client || '';
+        const titleWidth = doc.getTextWidth('Code Client:');
+        doc.text(clientCode, siteX + 4 + titleWidth + 2, vignetteY + 7);
+        
+        // Ligne de séparation sous le titre (plus proche du titre)
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.1);
+        doc.line(siteX + 2, vignetteY + 10, siteX + vignetteWidth - 2, vignetteY + 10);
+        
+        // Contenu de la vignette SITE
+        // Ligne 1 : NomClient (11, gras)
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const siteClientName = clientData?.nom_client || '';
+        doc.text(siteClientName, siteX + 4, vignetteY + 16);
+        
+        // Ligne 2 : NumSite - NomSite (10, gras, décalé)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        const numSite = siteData?.num_site || '';
+        const nomSite = siteData?.nom_site || '';
+        // Formater le numéro du site sur 3 chiffres avec des zéros en tête
+        const formattedNumSite = numSite.toString().padStart(3, '0');
+        doc.text(`        ${formattedNumSite} - ${nomSite}`, siteX + 4, vignetteY + 20); // 4 tabulations
+        
+        // Ligne 3 : adrSite (9, normal, décalé)
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const adrSite = siteData?.adr_site || '';
+        doc.text(`        ${adrSite}`, siteX + 4, vignetteY + 24); // 4 tabulations
+        
+        // Ligne 4 : cpSite - villeSite (9, normal, décalé)
+        const cpSite = siteData?.cp_site || '';
+        const villeSite = siteData?.ville_site || '';
+        doc.text(`        ${cpSite} - ${villeSite}`, siteX + 4, vignetteY + 28); // 4 tabulations
+        
+        // Ligne 5 : adrClient (10, normal)
+        doc.setFontSize(10);
+        const adrClient = clientData?.adr_client || '';
+        doc.text(adrClient, siteX + 4, vignetteY + 32);
+        
+        // Ligne 6 : cpClient - villeClient (10, normal)
+        const cpClient = clientData?.cp_client || '';
+        const villeClient = clientData?.ville_client || '';
+        doc.text(`${cpClient} - ${villeClient}`, siteX + 4, vignetteY + 36);
+        
+        // Ligne 7 : sirenClient (8, normal)
+        doc.setFontSize(8);
+        const sirenClient = clientData?.siren_client || '';
+        doc.text(`SIREN: ${sirenClient}`, siteX + 4, vignetteY + 40);
+        
+        // Vignette "BON DE VÉRIFICATION N°" (toute la largeur)
+        const bonVignetteY = vignetteY + vignetteHeight + 5; // 5mm en dessous des vignettes existantes
+        const bonVignetteX = 10; // 10mm de marge à gauche
+        const bonVignetteWidth = 210 - 20; // Toute la largeur moins 10mm de chaque côté
+        const bonVignetteHeight = 10; // Hauteur réduite à 10mm
+        
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.1);
+        doc.roundedRect(bonVignetteX, bonVignetteY, bonVignetteWidth, bonVignetteHeight, 1, 1, 'S');
+        
+        // Titre "BON DE VÉRIFICATION N°" avec numéro (14, gras, centré)
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const bonNumber = numeroDeBon || document.getElementById('bonNumber')?.textContent || '001';
+        doc.text(`BON DE VÉRIFICATION N° ${bonNumber}`, bonVignetteX + bonVignetteWidth/2, bonVignetteY + 7, { align: 'center' });
+        
+        // Texte introductif (6mm en dessous de la vignette BON DE VÉRIFICATION)
+        const introTextY = bonVignetteY + bonVignetteHeight + 6;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Suite à notre vérification, nous vous prions de trouver ci-joint le résumé des vérifications réalisées', 105, introTextY, { align: 'center' });
+        
+        // Tableau des équipements contrôlés (2mm en dessous du texte introductif)
+        const tableauY = introTextY + 2;
+        const tableauX = 10; // Marge gauche
+        const tableauWidth = 190; // Largeur totale (210 - 20mm de marge)
+        const colonneTypeWidth = 140; // Largeur colonne "Type d'appareils"
+        const colonneQteWidth = 50; // Largeur colonne "Quantité"
+        const ligneHeight = 5.5; // Hauteur de chaque ligne (réduite à 5.5mm)
+        
+        // En-tête du tableau
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        
+        // Bordure de l'en-tête
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.2);
+        doc.rect(tableauX, tableauY, tableauWidth, ligneHeight);
+        doc.line(tableauX + colonneTypeWidth, tableauY, tableauX + colonneTypeWidth, tableauY + ligneHeight);
+        
+        // Bordures verticales de l'en-tête
+        doc.line(tableauX, tableauY, tableauX, tableauY + ligneHeight);
+        doc.line(tableauX + tableauWidth, tableauY, tableauX + tableauWidth, tableauY + ligneHeight);
+        
+        // Texte de l'en-tête (centré horizontalement et verticalement)
+        doc.text('Type d\'appareils', tableauX + colonneTypeWidth/2, tableauY + 4.5, { align: 'center' });
+        doc.text('Quantité', tableauX + colonneTypeWidth + colonneQteWidth/2, tableauY + 4.5, { align: 'center' });
+        
+        // 12 lignes pour les équipements (à remplir dynamiquement)
+        let totalEquipements = 0;
+        for (let i = 0; i < 12; i++) {
+          const ligneY = tableauY + ligneHeight + (i * ligneHeight);
+          
+          // Bordure de la ligne
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.1);
+          doc.line(tableauX, ligneY, tableauX + tableauWidth, ligneY);
+          doc.line(tableauX + colonneTypeWidth, ligneY, tableauX + colonneTypeWidth, ligneY + ligneHeight);
+          
+          // Bordures verticales de la ligne
+          doc.line(tableauX, ligneY, tableauX, ligneY + ligneHeight);
+          doc.line(tableauX + tableauWidth, ligneY, tableauX + tableauWidth, ligneY + ligneHeight);
+          
+          // Texte de la ligne (exemples)
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0, 0, 0);
+          
+          // Récupération des vraies données d'équipements
+          let equipements = [];
+          let quantites = [];
+          
+          // EXTINCTEURS par agent
+          if (verifiedEquipment.extincteurs && verifiedEquipment.extincteurs.length > 0) {
+            const extincteursByAgent = {};
+            verifiedEquipment.extincteurs.forEach(ext => {
+              const agentId = ext.agent_ext || 'Autre';
+              if (!extincteursByAgent[agentId]) extincteursByAgent[agentId] = [];
+              extincteursByAgent[agentId].push(ext);
+            });
+            
+            Object.entries(extincteursByAgent).forEach(([agentId, extincteurs]) => {
+              const firstExtincteur = extincteurs[0];
+              const agentName = firstExtincteur.agent_long_name || `Agent ${agentId}`;
+              equipements.push(`Extincteur - ${agentName}`);
+              quantites.push(extincteurs.length);
+            });
+          }
+          
+          // ÉCLAIRAGES par famille
+          if (verifiedEquipment.eclairages && verifiedEquipment.eclairages.length > 0) {
+            const eclairagesByFamily = {};
+            verifiedEquipment.eclairages.forEach(ecl => {
+              const family = ecl.family_ecl || 'Autre';
+              if (!eclairagesByFamily[family]) eclairagesByFamily[family] = [];
+              eclairagesByFamily[family].push(ecl);
+            });
+            
+            Object.entries(eclairagesByFamily).forEach(([family, eclairages]) => {
+              equipements.push(`Éclairage de secours - ${family}`);
+              quantites.push(eclairages.length);
+            });
+          }
+          
+          // ALARMES par type
+          if (verifiedEquipment.alarmes && verifiedEquipment.alarmes.length > 0) {
+            const alarmesByType = {};
+            verifiedEquipment.alarmes.forEach(alarm => {
+              const type = alarm.type_alarme || 'Autre';
+              if (!alarmesByType[type]) alarmesByType[type] = [];
+              alarmesByType[type].push(alarm);
+            });
+            
+            Object.entries(alarmesByType).forEach(([type, alarmes]) => {
+              equipements.push(`Alarme incendie - ${type}`);
+              quantites.push(alarmes.length);
+            });
+          }
+          
+          // DÉSENFUMAGES par type d'équipement
+          if (verifiedEquipment.desenfumages && verifiedEquipment.desenfumages.length > 0) {
+            const desenfumagesByType = groupDesenfumagesByType(verifiedEquipment.desenfumages);
+            Object.entries(desenfumagesByType).forEach(([type, desenfumages]) => {
+              const count = desenfumages.length;
+              equipements.push(`Désenfumage - ${type}`);
+              quantites.push(count);
+            });
+          }
+          
+          // RIAS
+          if (verifiedEquipment.rias && verifiedEquipment.rias.length > 0) {
+            equipements.push('RIA - Robinet d\'incendie armé');
+            quantites.push(verifiedEquipment.rias.length);
+          }
+          
+          // PLANS D'ÉVACUATION
+          if (verifiedEquipment.plans_evacuation && verifiedEquipment.plans_evacuation.length > 0) {
+            equipements.push('Plan d\'évacuation');
+            quantites.push(verifiedEquipment.plans_evacuation.length);
+          }
+          
+          // Affichage des données réelles
+          if (i < equipements.length) {
+            doc.text(equipements[i], tableauX + 5, ligneY + 4.5);
+            doc.text(quantites[i].toString(), tableauX + colonneTypeWidth + colonneQteWidth/2, ligneY + 4.5, { align: 'center' });
+            totalEquipements += quantites[i];
+          }
+        }
+        
+        // Ligne de total
+        const totalLigneY = tableauY + ligneHeight + (12 * ligneHeight);
+        
+        // Bordure de la ligne total
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.2);
+        doc.line(tableauX, totalLigneY, tableauX + tableauWidth, totalLigneY);
+        doc.line(tableauX + colonneTypeWidth, totalLigneY, tableauX + colonneTypeWidth, totalLigneY + ligneHeight);
+        
+        // Bordures verticales de la ligne total
+        doc.line(tableauX, totalLigneY, tableauX, totalLigneY + ligneHeight);
+        doc.line(tableauX + tableauWidth, totalLigneY, tableauX + tableauWidth, totalLigneY + ligneHeight);
+        
+        // Bordure inférieure du tableau
+        doc.line(tableauX, totalLigneY + ligneHeight, tableauX + tableauWidth, totalLigneY + ligneHeight);
+        
+        // Texte du total (centré horizontalement et verticalement)
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('TOTAL', tableauX + colonneTypeWidth/2, totalLigneY + 4.5, { align: 'center' });
+        doc.text(totalEquipements.toString(), tableauX + colonneTypeWidth + colonneQteWidth/2, totalLigneY + 4.5, { align: 'center' });
+        
+        // Vignette Observations (5mm en dessous du tableau)
+        const obsVignetteY = totalLigneY + ligneHeight + 5; // 5mm en dessous du tableau
+        const obsVignetteX = 10; // Même marge que les autres vignettes
+        const obsVignetteWidth = 190; // Même largeur que le tableau
+        const obsVignetteHeight = 40; // Hauteur pour les observations (augmentée de 10mm)
+        
+        // Bordure de la vignette Observations
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.1);
+        doc.roundedRect(obsVignetteX, obsVignetteY, obsVignetteWidth, obsVignetteHeight, 1, 1, 'S');
+        
+        // Titre "Observations" dans l'élément du haut (centré)
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Observations', obsVignetteX + obsVignetteWidth/2, obsVignetteY + 7, { align: 'center' });
+        
+        // Ligne de séparation sous le titre
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.1);
+        doc.line(obsVignetteX + 2, obsVignetteY + 10, obsVignetteX + obsVignetteWidth - 2, obsVignetteY + 10);
+        
+        // Contenu des observations des équipements contrôlés
+        let obsY = obsVignetteY + 15; // Position de départ pour les observations
+        const lineHeight = 5; // Hauteur de ligne pour les observations
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        
+        // Utiliser les observations vérifiées de cette intervention
+        let observations = [];
+        
+        // Utiliser verifiedObservations qui contient déjà les observations de cette intervention
+        verifiedObservations.forEach(obs => {
+          observations.push({
+            type: obs.type,
+            numero: obs.numero,
+            observation: obs.observation
+          });
+        });
+        
+        // Regrouper les observations par type d'équipement et par problème
+        const groupedObservations = {};
+        
+        observations.forEach(obs => {
+          if (!groupedObservations[obs.type]) {
+            groupedObservations[obs.type] = {};
+          }
+          
+          // Normaliser l'observation pour le regroupement
+          const normalizedObs = obs.observation.toLowerCase().trim();
+          
+          if (!groupedObservations[obs.type][normalizedObs]) {
+            groupedObservations[obs.type][normalizedObs] = {
+              numeros: [],
+              originalText: obs.observation
+            };
+          }
+          
+          groupedObservations[obs.type][normalizedObs].numeros.push(obs.numero);
+        });
+        
+        // Utiliser le contenu du champ de saisie final des observations
+        const finalObservationsTextarea = document.getElementById('finalObservationsText');
+        const observationsText = finalObservationsTextarea ? finalObservationsTextarea.value.trim() : '';
+        
+        if (observationsText && observationsText !== '') {
+          // Diviser le texte en lignes pour l'affichage
+          const lines = observationsText.split('\n').filter(line => line.trim() !== '');
+          
+          // Afficher les observations avec gestion de l'espace
+          lines.forEach((line, index) => {
+            const yPosition = obsY + (index * lineHeight);
+            if (yPosition < obsVignetteY + obsVignetteHeight - 5) {
+              // Tronquer le texte si nécessaire pour éviter le débordement
+              const maxTextWidth = obsVignetteWidth - 8; // 4mm de marge de chaque côté
+              const truncatedLine = doc.splitTextToSize(line, maxTextWidth);
+              
+              if (truncatedLine.length === 1) {
+                doc.text(truncatedLine[0], obsVignetteX + 4, yPosition);
+              } else {
+                // Si le texte est tronqué sur plusieurs lignes, ajuster l'espacement
+                truncatedLine.forEach((lineText, lineIndex) => {
+                  const adjustedY = yPosition + (lineIndex * lineHeight);
+                  if (adjustedY < obsVignetteY + obsVignetteHeight - 5) {
+                    doc.text(lineText, obsVignetteX + 4, adjustedY);
+                  }
+                });
+              }
+            }
+          });
+        } else {
+          // Aucune observation
+          doc.text('Aucune observation', obsVignetteX + obsVignetteWidth/2, obsVignetteY + obsVignetteHeight/2, { align: 'center' });
+        }
+        
+
+        
+        // Espaces de signatures (collées à la vignette Observations)
+        const signatureY = obsVignetteY + obsVignetteHeight;
+        const signatureWidth = 75; // Largeur augmentée de 70 à 75mm (+5mm)
+        
+        // Client (gauche) - commence à 10mm du bord gauche
+        const clientX = 10;
+        const clientY = signatureY;
+        
+        // Titre client
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Nom et signature du client', clientX + signatureWidth/2, clientY + 5, { align: 'center' });
+        
+        // Texte client centré sur 70mm
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        const clientText = "Je reconnais l'exactitude des quantitatifs indiqués, des travaux réalisés, et prend connaissance des travaux à réaliser.";
+        doc.text(clientText, clientX + signatureWidth/2, clientY + 9, { align: 'center', maxWidth: 70 });
+        
+        // Nom du signataire client
+        const clientNameInput = document.getElementById('clientNameInput');
+        const clientName = clientNameInput ? clientNameInput.value.trim() : '';
+        if (clientName) {
+          doc.setFontSize(8);
+          doc.setFont('courier', 'normal');
+          doc.setTextColor(0, 0, 0);
+          doc.text(clientName, clientX + 2, clientY + 17);
+        }
+        
+        // Technicien (droite) - finit à 10mm du bord droit
+        const technicianX = 210 - signatureWidth - 10; // 210 - 75 - 10 = 125mm
+        const technicianY = signatureY;
+        
+        // Titre technicien
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Nom et signature du technicien', technicianX + signatureWidth/2, technicianY + 5, { align: 'center' });
+        
+        // Texte technicien centré sur 75mm
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        const techText = "Je reconnais avoir informé le client des opérations de maintenance faites ou à effectuer, ainsi que des travaux à réaliser.";
+        doc.text(techText, technicianX + signatureWidth/2, technicianY + 9, { align: 'center', maxWidth: 75 });
+        
+        // Nom du signataire technicien
+        const technicianNameInput = document.getElementById('technicianNameInput');
+        const technicianName = technicianNameInput ? technicianNameInput.value.trim() : '';
+        if (technicianName) {
+          doc.setFontSize(8);
+          doc.setFont('courier', 'normal');
+          doc.setTextColor(0, 0, 0);
+          doc.text(technicianName, technicianX + 2, technicianY + 17);
+        }
+        
+        // Ajouter les signatures si elles existent
+        const clientCanvas = document.getElementById('clientSignature');
+        const technicianCanvas = document.getElementById('technicianSignature');
+        
+        if (hasTechnicianSignature && technicianCanvas) {
+          try {
+            const technicianSignatureData = technicianCanvas.toDataURL('image/png');
+            doc.addImage(technicianSignatureData, 'PNG', technicianX + 2, technicianY + 25, signatureWidth - 4, 18);
+          } catch (error) {
+            console.log('Signature technicien non disponible pour le PDF détaillé');
+          }
+        }
+        
+        if (hasClientSignature && clientCanvas) {
+          try {
+            const clientSignatureData = clientCanvas.toDataURL('image/png');
+            doc.addImage(clientSignatureData, 'PNG', clientX + 2, clientY + 25, signatureWidth - 4, 18);
+          } catch (error) {
+            console.log('Signature client non disponible pour le PDF détaillé');
+          }
+        }
+        
+        // Informations légales en bas de page
+        const legalY = 285;
+        
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gris foncé pour les informations légales
+        
+        // Ligne 1
+        doc.text('Entreprise individuelle – SIRET 794 660 365 00014 – Code APE 4778C – TVA non applicable selon l\'article 293-B du Code Général des Impôts', 105, legalY, { align: 'center' });
+        
+        // Ligne 2
+        doc.text('Immatriculé au répertoire des métiers sous le numéro 794 660 365 RM 54 auprès de la Chambre des Métiers de Laxou', 105, legalY + 3, { align: 'center' });
+        
+        // Ligne 3
+        doc.text('Immatriculé au Registre du Commerce et des Sociétés sous le numéro 794 660 365 R.C.S. Nancy', 105, legalY + 6, { align: 'center' });
+        
+        // Ligne 4
+        doc.text('Voir conditions générales de vente', 105, legalY + 9, { align: 'center' });
+        
+        // Disclaimer (image)
+        try {
+          const disclaimerImg = new Image();
+          disclaimerImg.src = 'img/Disclaimer.png';
+          await new Promise((resolve, reject) => {
+            disclaimerImg.onload = resolve;
+            disclaimerImg.onerror = reject;
+          });
+          
+          // Position du disclaimer (en bas de page, centré)
+          const disclaimerWidth = disclaimerImg.width * 0.26 * 0.8; // Conversion px vers mm et réduction 20%
+          const disclaimerHeight = disclaimerImg.height * 0.26 * 0.8;
+          const disclaimerX = (210 - disclaimerWidth) / 2; // Centré horizontalement
+          const disclaimerY = legalY + 15; // 15mm en dessous des informations légales
+          
+          doc.addImage(disclaimerImg, 'PNG', disclaimerX, disclaimerY, disclaimerWidth, disclaimerHeight);
+        } catch (error) {
+          console.log('Image Disclaimer.png non trouvée');
+        }
+        
+        // Adapter la hauteur de la vignette SITE si besoin
+        // (déjà augmentée à 35mm, mais on laisse le code pour ajustement futur)
+        
+        // Clôturer l'intervention avant de sauvegarder le PDF
+        await closeIntervention();
+        
+        // Sauvegarder le PDF
+        doc.save('images-seules.pdf');
+        document.getElementById('generateBtn2').classList.remove('loading');
+        
+        // Redirection vers verification.html après la génération du PDF
+        setTimeout(() => {
+          window.location.href = 'verification.html';
+        }, 1000); // Délai de 1 seconde pour laisser le temps au PDF de se télécharger
+      } catch (error) {
+        console.error('Erreur lors de la génération du PDF détaillé:', error);
+        alert('Erreur lors de la génération du PDF détaillé');
+        document.getElementById('generateBtn2').classList.remove('loading');
+      }
+    }
+    
+    // Fonction pour clôturer l'intervention
+    async function closeIntervention() {
+      try {
+        // Récupérer l'ID de l'intervention depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const interventionId = urlParams.get('intervention');
+        const clientId = urlParams.get('client');
+        
+        if (!interventionId) {
+          console.error('❌ ID d\'intervention manquant dans l\'URL');
+          return;
+        }
+        
+        if (!numeroDeBon) {
+          console.error('❌ Numéro de bon non généré');
+          return;
+        }
+        
+        console.log('🔒 Clôture de l\'intervention:', interventionId);
+        console.log('📋 Numéro de bon à enregistrer:', numeroDeBon);
+        console.log('👤 ID client:', clientId);
+        
+        // 1. Mettre à jour l'état de l'intervention
+        const { error: interventionError } = await supabase
+          .from('interventions')
+          .update({ 
+            etat_intervention: 'Terminé'
+          })
+          .eq('id_intervention', interventionId);
+        
+        if (interventionError) {
+          console.error('❌ Erreur lors de la clôture de l\'intervention:', interventionError);
+          throw new Error('Erreur lors de la clôture de l\'intervention');
+        }
+        
+        // 2. Enregistrer le numéro de bon dans la table BV (désactivé temporairement à cause des RLS)
+        // Extraire seulement le numéro (sans l'année) et le convertir en nombre
+        const numeroOnly = parseInt(numeroDeBon.split('-')[1]); // 86 au lieu de "2025-0086"
+        
+        console.log('🔢 Numéro extrait pour BV:', numeroOnly);
+        console.log('📋 Enregistrement du bon dans la table BV...');
+        
+        // Enregistrer le numéro de bon dans la table BV
+        const { error: bvError } = await supabase
+          .from('BV')
+          .insert({
+            num_bv: numeroOnly,
+            client_BV: clientId
+          });
+        
+        if (bvError) {
+          console.error('❌ Erreur lors de l\'enregistrement du bon:', bvError);
+          throw new Error('Erreur lors de l\'enregistrement du bon');
+        }
+        
+        console.log('✅ Intervention clôturée avec succès');
+        console.log('✅ Bon de vérification enregistré:', numeroDeBon);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la clôture:', error);
+        throw error;
+      }
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      // Récupérer l'ID de l'intervention depuis l'URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const interventionId = urlParams.get('intervention');
+      
+      if (interventionId) {
+        // Retourner vers la page de vérification de l'intervention
+        window.location.href = `verifSite.html?intervention=${encodeURIComponent(interventionId)}`;
+      } else {
+        // Retourner vers la page de sélection de vérification
+        window.location.href = 'newVerification.html';
+      }
+    }
+    
+    // Détection iPad/iOS
+    function isIPad() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+    
+
+    
+    // Fonction de test des canvas
+    function testCanvas() {
+      console.log('🧪 Test des canvas de signature...');
+      
+      const clientCanvas = document.getElementById('clientSignature');
+      const technicianCanvas = document.getElementById('technicianSignature');
+      
+      if (!clientCanvas || !technicianCanvas) {
+        console.error('❌ Canvas non trouvés');
+        return false;
+      }
+      
+      console.log('✅ Canvas trouvés:', {
+        client: clientCanvas.id,
+        technician: technicianCanvas.id,
+        clientWidth: clientCanvas.width,
+        clientHeight: clientCanvas.height,
+        technicianWidth: technicianCanvas.width,
+        technicianHeight: technicianCanvas.height
+      });
+      
+      // Test du contexte 2D
+      try {
+        const clientCtx = clientCanvas.getContext('2d');
+        const technicianCtx = technicianCanvas.getContext('2d');
+        
+        if (!clientCtx || !technicianCtx) {
+          console.error('❌ Contexte 2D non disponible');
+          return false;
+        }
+        
+        console.log('✅ Contexte 2D disponible');
+        return true;
+      } catch (error) {
+        console.error('❌ Erreur contexte 2D:', error);
+        return false;
+      }
+    }
+    
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🚀 Initialisation de verificationSummary.html...');
+      
+      // Activer immédiatement le bouton 2 pour les tests
+      const generateBtn2 = document.getElementById('generateBtn2');
+      if (generateBtn2) {
+        generateBtn2.disabled = false;
+        console.log('✅ Bouton PDF détaillé activé pour les tests');
+      }
+      
+      // Test des canvas avant initialisation
+      if (testCanvas()) {
+      initSignatureCanvas();
+      } else {
+        console.error('❌ Impossible d\'initialiser les canvas');
+      }
+      
+      loadVerificationData();
+    });
+  </script>
+</body>
+</html> 

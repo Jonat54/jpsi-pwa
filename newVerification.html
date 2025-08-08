@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
+  <title>JPSI - Nouvelle Vérification</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script>
+    // Enregistrer le Service Worker pour le mode offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {
+        scope: '/'
+      }).then(function(registration) {
+        console.log('✅ ServiceWorker enregistré:', registration.scope);
+      }).catch(function(err) {
+        console.log('❌ Échec ServiceWorker:', err);
+      });
+    }
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .form-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+    
+    .form-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .form-section h3 {
+      color: #9B2423;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    
+    .equipment-types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+    
+    .equipment-type-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 2rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 160px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .equipment-type-card:hover {
+      border-color: #9B2423;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(155, 36, 35, 0.2);
+    }
+    
+    .equipment-type-card.selected {
+      border-color: #9B2423;
+      background: linear-gradient(135deg, #fef7f7 0%, #fdf2f2 100%);
+      box-shadow: 0 8px 25px rgba(155, 36, 35, 0.25);
+      transform: translateY(-2px);
+    }
+    
+    .equipment-icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    .equipment-type-card:hover .equipment-icon {
+      transform: scale(1.1);
+    }
+    
+    .equipment-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      line-height: 1.3;
+    }
+    
+    .equipment-description {
+      font-size: 0.9rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+    
+    .selected-types-info {
+      background: #f0f9ff;
+      border: 2px solid #0ea5e9;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    .selected-type-tag {
+      display: inline-block;
+      background: #0ea5e9;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      margin: 0.25rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+    }
+    
+    .btn-primary, .btn-secondary {
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    
+    .btn-primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      background: #7a1d1c;
+    }
+    
+    .btn-primary:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 2px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    
+    .summary-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .summary-section {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .summary-section:last-child {
+      border-bottom: none;
+    }
+    
+    .summary-section h4 {
+      color: #9B2423;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .equipment-types-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .equipment-type-summary {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f3f4f6;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+    }
+    
+    .equipment-label {
+      font-weight: 500;
+      color: #374151;
+    }
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .form-select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      background: white;
+    }
+    
+    .form-select:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .form-textarea {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    
+    .form-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .actions-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .action-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .action-button:hover {
+      background: #7a1d1c;
+      transform: translateY(-1px);
+    }
+    
+    .action-button.secondary {
+      background: #6b7280;
+    }
+    
+    .action-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 3rem;
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+    
+    .table-container {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .search-section {
+      padding: 1.5rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .data-table th {
+      background: #f9fafb;
+      color: #374151;
+      font-weight: 600;
+      text-align: left;
+      padding: 1rem 1.5rem;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .data-table td {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #f3f4f6;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .data-table tr {
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .client-summary {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 1rem;
+      border-left: 4px solid #9B2423;
+      margin-bottom: 1.5rem;
+    }
+    
+    .client-summary h3 {
+      margin: 0 0 0.5rem 0;
+      color: #23272b;
+      font-size: 1.2rem;
+    }
+    
+    .client-summary p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+    
+    .selected-site-info {
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 1rem;
+      border-left: 4px solid #9B2423;
+    }
+    
+    .selected-site-info h4 {
+      margin: 0 0 0.5rem 0;
+      color: #23272b;
+      font-size: 1.1rem;
+    }
+    
+    .selected-site-info p {
+      margin: 0.25rem 0;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+    
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .detail-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .detail-card:hover {
+      border-color: #9B2423;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    
+    .detail-icon {
+      font-size: 3rem;
+      margin: 0 auto 1rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      background: #f9fafb;
+      border-radius: 50%;
+      border: 2px solid #e5e7eb;
+      transition: all 0.2s;
+    }
+    
+    .detail-card:hover .detail-icon {
+      border-color: #9B2423;
+      background: #fef2f2;
+      transform: scale(1.1);
+    }
+    
+    .detail-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #23272b;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .detail-description {
+      font-size: 0.9rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+    
+    /* 1. Ajout du style pour les voyants */
+    .voyant {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      margin-left: 4px;
+      margin-right: 2px;
+      background: #d1d5db; /* gris par défaut */
+      border: 1.5px solid #b0b6be;
+      vertical-align: middle;
+      transition: background 0.2s;
+    }
+    .voyant.on {
+      background: #2563eb; /* bleu */
+      border-color: #2563eb;
+    }
+    
+    /* Voyants alignés avec icônes naturelles ou grises */
+    .voyants-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      min-width: 90px;
+    }
+    .voyant-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 0;
+      background: transparent;
+      border: none;
+      font-size: 1.15em;
+      transition: filter 0.2s, opacity 0.2s;
+      position: relative;
+      cursor: default;
+      color: inherit;
+    }
+    .voyant-icon.absent {
+      filter: grayscale(1);
+      opacity: 0.5;
+      border: none;
+      background: transparent;
+    }
+    .voyant-icon.present {
+      filter: none;
+      opacity: 1;
+      border-color: transparent;
+      background: transparent;
+    }
+    .voyant-icon:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 130%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #23272b;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.8em;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0.95;
+      z-index: 10;
+    }
+    
+    /* Ajout du style pour le nombre d'équipements sous l'icône */
+    .equip-count {
+      display: block;
+      font-size: 0.85em;
+      color: #23272b;
+      font-weight: 600;
+      margin-top: 2px;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Ajout du style pour le résumé équipements dans le header */
+    .equip-summary {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      margin-left: 2rem;
+    }
+    .equip-summary .equip-icon-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 38px;
+    }
+    .equip-summary .equip-icon-block span {
+      font-size: 1.5em;
+      line-height: 1;
+    }
+    .equip-summary .equip-count {
+      font-size: 1em;
+      color: #23272b;
+      font-weight: 700;
+      margin-top: 2px;
+      text-align: center;
+    }
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .form-card, .actions-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .actions-card {
+        flex-direction: column;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      .equip-summary {
+        gap: 0.7rem;
+        margin-left: 0.5rem;
+      }
+      .equip-summary .equip-icon-block span {
+        font-size: 1.1em;
+      }
+      .equip-summary .equip-count {
+        font-size: 0.9em;
+      }
+    }
+    /* Ajout du style pour le tri des colonnes */
+    .data-table th {
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .data-table th:hover {
+      background: #f3f4f6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <h1 class="header-title">Nouvelle Vérification</h1>
+      <div id="clientEquipSummary" class="equip-summary" style="margin-left: auto;"></div>
+    </div>
+    
+    <!-- Form Card -->
+    <div class="form-card">
+      <div id="formContent">
+        <div class="loading">Chargement du formulaire...</div>
+      </div>
+    </div>
+    
+
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let clients = [];
+    let sites = [];
+    let currentStep = 'clients'; // 'clients', 'sites', 'form'
+    let selectedClient = null;
+    let selectedSite = null;
+    
+    // Ajout des variables de tri globales
+    let currentSortCol = null;
+    let currentSortDir = 'asc';
+    
+    // Ajout des variables de tri pour les clients
+    let currentClientSortCol = null;
+    let currentClientSortDir = 'asc';
+    
+    // Fonction pour charger les clients
+    async function loadClients() {
+      try {
+        console.log('📥 Chargement des clients...');
+        
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .order('nom_client');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des clients:', error);
+          return [];
+        }
+        
+        console.log(`✅ ${data.length} clients chargés`);
+        return data;
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        return [];
+      }
+    }
+    
+    // Fonction pour charger les sites d'un client
+    async function loadSites(clientId) {
+      try {
+        console.log(`📥 Chargement des sites pour le client ${clientId}...`);
+        
+        const { data, error } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id_client', clientId)
+          .order('nom_site');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des sites:', error);
+          return [];
+        }
+        
+        console.log(`✅ ${data.length} sites chargés`);
+        return data;
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        return [];
+      }
+    }
+    
+    // Fonction pour afficher la liste des clients
+    function showClientsList() {
+      currentStep = 'clients';
+      updateHeader();
+      
+      const formContainer = document.getElementById('formContent');
+      
+      formContainer.innerHTML = `
+        <div class="table-container">
+          <div class="search-section">
+            <input type="text" class="form-input" id="clientSearch" placeholder="🔍 Rechercher un client..." onkeyup="filterClients()">
+          </div>
+          <table class="data-table" id="clientsTable">
+            <thead>
+              <tr>
+                <th style="cursor:pointer;" onclick="sortClients('code_client')">Code Client <span id='sort-icon-code_client'></span></th>
+                <th style="cursor:pointer;" onclick="sortClients('nom_client')">Nom Client <span id='sort-icon-nom_client'></span></th>
+                <th>Adresse</th>
+                <th style="cursor:pointer;" onclick="sortClients('ville_client')">Ville <span id='sort-icon-ville_client'></span></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${clients.map(client => `
+                <tr onclick="selectClient(${client.id_client})">
+                  <td><strong>${client.code_client}</strong></td>
+                  <td>${client.nom_client}</td>
+                  <td>${client.adr_client || 'N/A'}</td>
+                  <td>${client.ville_client || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      updateClientSortIcons();
+    }
+    
+    // Fonction pour filtrer les clients
+    function filterClients() {
+      const searchTerm = document.getElementById('clientSearch').value.toLowerCase();
+      const clientRows = document.querySelectorAll('#clientsTable tbody tr');
+      
+      clientRows.forEach(row => {
+        const clientCode = row.cells[0].textContent.toLowerCase();
+        const clientName = row.cells[1].textContent.toLowerCase();
+        const clientAddress = row.cells[2].textContent.toLowerCase();
+        const clientCity = row.cells[3].textContent.toLowerCase();
+        
+        if (clientCode.includes(searchTerm) || clientName.includes(searchTerm) || 
+            clientAddress.includes(searchTerm) || clientCity.includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+    
+    // Fonction pour sélectionner un client
+    async function selectClient(clientId) {
+      selectedClient = clients.find(client => client.id_client === clientId);
+      
+      if (!selectedClient) {
+        alert('❌ Client non trouvé');
+        return;
+      }
+      
+      console.log(`✅ Client sélectionné: ${selectedClient.nom_client}`);
+      
+      // Charger les sites du client
+      sites = await loadSites(clientId);
+      
+      // Afficher la liste des sites
+      showSitesList();
+      updateClientEquipSummary();
+    }
+    
+    // Fonction pour afficher la liste des sites
+    function showSitesList() {
+      currentStep = 'sites';
+      updateHeader();
+      
+      const formContainer = document.getElementById('formContent');
+      
+      formContainer.innerHTML = `
+        <div class="table-container">
+          <div class="search-section">
+            <input type="text" class="form-input" id="siteSearch" placeholder="🔍 Rechercher un site..." onkeyup="filterSites()">
+          </div>
+          <table class="data-table" id="sitesTable">
+            <thead>
+              <tr>
+                <th style="width: 60px; cursor:pointer;" onclick="sortSites('num_site')">Numéro <span id='sort-icon-num_site'></span></th>
+                <th style="cursor:pointer;" onclick="sortSites('nom_site')">Nom <span id='sort-icon-nom_site'></span></th>
+                <th style="cursor:pointer;" onclick="sortSites('ville_site')">Ville <span id='sort-icon-ville_site'></span></th>
+                <th style="cursor:pointer;" onclick="sortSites('adr_site')">Adresse <span id='sort-icon-adr_site'></span></th>
+                <th style="width: 110px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sites.map(site => `
+                <tr onclick=\"selectSite(${site.id_site})\">
+                  <td style=\"width: 60px;\"><strong>${site.num_site || 'N/A'}</strong></td>
+                  <td>${site.nom_site}</td>
+                  <td>${site.ville_site || 'N/A'}</td>
+                  <td>${site.adr_site || 'N/A'}</td>
+                  <td style=\"text-align:center;\">
+                    <div class=\"voyants-row\">
+                      <span class=\"voyant-icon absent\" id=\"voyant-extincteur-${site.id_site}\" data-tooltip=\"Extincteurs\"><img src=\"icons/appicon/ext.png\" alt=\"Extincteurs\" style=\"width: 24px; height: 24px; vertical-align: middle;\"><div class=\"equip-count\" id=\"count-extincteur-${site.id_site}\">-</div></span>
+                      <span class=\"voyant-icon absent\" id=\"voyant-eclairage-${site.id_site}\" data-tooltip=\"Éclairages\"><img src=\"icons/appicon/baes.png\" alt=\"Éclairages\" style=\"width: 24px; height: 24px; vertical-align: middle;\"><div class=\"equip-count\" id=\"count-eclairage-${site.id_site}\">-</div></span>
+                      <span class=\"voyant-icon absent\" id=\"voyant-alarme-${site.id_site}\" data-tooltip=\"Alarme\"><img src=\"icons/appicon/alarme.png\" alt=\"Alarmes\" style=\"width: 24px; height: 24px; vertical-align: middle;\"><div class=\"equip-count\" id=\"count-alarme-${site.id_site}\">-</div></span>
+                      <span class=\"voyant-icon absent\" id=\"voyant-desenfumage-${site.id_site}\" data-tooltip=\"Installations désenfumage\"><img src=\"icons/appicon/DENFC.png\" alt=\"Désenfumage\" style=\"width: 24px; height: 24px; vertical-align: middle;\"><div class=\"equip-count\" id=\"count-desenfumage-${site.id_site}\">-</div></span>
+                      <span class=\"voyant-icon absent\" id=\"voyant-ria-${site.id_site}\" data-tooltip=\"RIA\"><img src=\"icons/appicon/RIA.png\" alt=\"RIA\" style=\"width: 24px; height: 24px; vertical-align: middle;\"><div class=\"equip-count\" id=\"count-ria-${site.id_site}\">-</div></span>
+                      <span class=\"voyant-icon absent\" id=\"voyant-plans-${site.id_site}\" data-tooltip=\"Plans\"><img src=\"icons/appicon/plans.png\" alt=\"Plans\" style=\"width: 24px; height: 24px; vertical-align: middle;\"><div class=\"equip-count\" id=\"count-plans-${site.id_site}\">-</div></span>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      setTimeout(() => { updateSiteVoyants(); updateSortIcons(); }, 100);
+    }
+    
+    // Fonction pour filtrer les sites
+    function filterSites() {
+      const searchTerm = document.getElementById('siteSearch').value.toLowerCase();
+      const siteRows = document.querySelectorAll('#sitesTable tbody tr');
+      
+      siteRows.forEach(row => {
+        const siteNumber = row.cells[0].textContent.toLowerCase();
+        const siteName = row.cells[1].textContent.toLowerCase();
+        const siteCity = row.cells[2].textContent.toLowerCase();
+        const siteAddress = row.cells[3].textContent.toLowerCase();
+        
+        if (siteNumber.includes(searchTerm) || siteName.includes(searchTerm) || 
+            siteCity.includes(searchTerm) || siteAddress.includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+    
+    // Fonction pour sélectionner un site
+    function selectSite(siteId) {
+      selectedSite = sites.find(site => site.id_site === siteId);
+      
+      if (!selectedSite) {
+        alert('❌ Site non trouvé');
+        return;
+      }
+      
+      console.log(`✅ Site sélectionné: ${selectedSite.nom_site}`);
+      
+      // Afficher la page de sélection des types d'équipements
+      showEquipmentTypesPage();
+    }
+    
+    // Fonction pour mettre à jour le header
+    function updateHeader() {
+      const headerTitle = document.querySelector('.header-title');
+      
+      switch (currentStep) {
+        case 'clients':
+          headerTitle.textContent = 'Sélectionner un Client';
+          break;
+        case 'sites':
+          headerTitle.textContent = `Sites de ${selectedClient.nom_client}`;
+          break;
+        case 'equipment_types':
+          headerTitle.textContent = `Types d'équipements - ${selectedSite.nom_site}`;
+          break;
+        case 'summary':
+          headerTitle.textContent = 'Récapitulatif de l\'intervention';
+          break;
+      }
+    }
+    
+    // Fonction pour afficher la page de sélection des types d'équipements
+    function showEquipmentTypesPage() {
+      currentStep = 'equipment_types';
+      updateHeader();
+      
+      const formContainer = document.getElementById('formContent');
+      
+      formContainer.innerHTML = `
+        <div class="selected-site-info">
+          <h4>Site: ${selectedSite.nom_site}</h4>
+          <p><strong>Adresse:</strong> ${selectedSite.adr_site}, ${selectedSite.ville_site}</p>
+          ${selectedSite.resp_site ? `<p><strong>Responsable:</strong> ${selectedSite.resp_site}</p>` : ''}
+        </div>
+        
+        <div class="equipment-types-grid">
+          <div class="equipment-type-card" onclick="selectEquipmentType('extincteurs')">
+            <img src="icons/appicon/ext.png" alt="Extincteurs" class="equipment-icon" style="width: 48px; height: 48px;">
+            <div class="equipment-title">Extincteurs</div>
+          </div>
+          
+          <div class="equipment-type-card" onclick="selectEquipmentType('eclairages')">
+            <img src="icons/appicon/baes.png" alt="Éclairages" class="equipment-icon" style="width: 48px; height: 48px;">
+            <div class="equipment-title">Éclairages de Sécurité</div>
+          </div>
+          
+          <div class="equipment-type-card" onclick="selectEquipmentType('alarmes')">
+            <img src="icons/appicon/alarme.png" alt="Alarmes" class="equipment-icon" style="width: 48px; height: 48px;">
+            <div class="equipment-title">Alarmes Incendie</div>
+          </div>
+          
+          <div class="equipment-type-card" onclick="selectEquipmentType('desenfumages')">
+            <img src="icons/appicon/DENFC.png" alt="Désenfumage" class="equipment-icon" style="width: 48px; height: 48px;">
+            <div class="equipment-title">Désenfumage</div>
+          </div>
+          
+          <div class="equipment-type-card" onclick="selectEquipmentType('rias')">
+            <img src="icons/appicon/RIA.png" alt="RIA" class="equipment-icon" style="width: 48px; height: 48px;">
+            <div class="equipment-title">RIA</div>
+          </div>
+          
+          <div class="equipment-type-card" onclick="selectEquipmentType('plans')">
+            <img src="icons/appicon/plans.png" alt="Plans" class="equipment-icon" style="width: 48px; height: 48px;">
+            <div class="equipment-title">Plans d'Évacuation</div>
+          </div>
+        </div>
+        
+        <div class="selected-types-info" id="selectedTypesInfo" style="display: none;">
+          <h4>Types d'équipements sélectionnés :</h4>
+          <div id="selectedTypesList"></div>
+        </div>
+        
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="goBack()">Retour</button>
+          <button class="btn-primary" onclick="showSummary()" id="continueBtn" disabled>Continuer</button>
+        </div>
+      `;
+    }
+    
+    // Variables globales pour les types d'équipements sélectionnés
+    let selectedEquipmentTypes = [];
+    
+    // Fonction pour sélectionner un type d'équipement
+    function selectEquipmentType(type) {
+      const card = event.target.closest('.equipment-type-card');
+      
+      if (selectedEquipmentTypes.includes(type)) {
+        // Désélectionner
+        selectedEquipmentTypes = selectedEquipmentTypes.filter(t => t !== type);
+        card.classList.remove('selected');
+      } else {
+        // Sélectionner
+        selectedEquipmentTypes.push(type);
+        card.classList.add('selected');
+      }
+      
+      updateSelectedTypesDisplay();
+      updateContinueButton();
+    }
+    
+    // Fonction pour mettre à jour l'affichage des types sélectionnés
+    function updateSelectedTypesDisplay() {
+      const selectedTypesInfo = document.getElementById('selectedTypesInfo');
+      const selectedTypesList = document.getElementById('selectedTypesList');
+      
+      if (selectedEquipmentTypes.length > 0) {
+        selectedTypesInfo.style.display = 'block';
+        selectedTypesList.innerHTML = selectedEquipmentTypes.map(type => 
+          `<span class="selected-type-tag">${getEquipmentTypeWithIcon(type)}</span>`
+        ).join('');
+      } else {
+        selectedTypesInfo.style.display = 'none';
+      }
+    }
+    
+    // Fonction pour obtenir le label d'un type d'équipement
+    function getEquipmentTypeLabel(type) {
+      const labels = {
+        'extincteurs': 'Extincteurs',
+        'eclairages': 'Éclairages',
+        'alarmes': 'Alarmes',
+        'desenfumages': 'Désenfumage',
+        'rias': 'RIA',
+        'plans': 'Plans d\'Évacuation'
+      };
+      return labels[type] || type;
+    }
+    
+    // Fonction pour obtenir le label avec icône d'un type d'équipement
+    function getEquipmentTypeWithIcon(type) {
+      const icons = {
+        'extincteurs': 'icons/appicon/ext.png',
+        'eclairages': 'icons/appicon/baes.png',
+        'alarmes': 'icons/appicon/alarme.png',
+        'desenfumages': 'icons/appicon/DENFC.png',
+        'rias': 'icons/appicon/RIA.png',
+        'plans': 'icons/appicon/plans.png'
+      };
+      const labels = {
+        'extincteurs': 'Extincteurs',
+        'eclairages': 'Éclairages',
+        'alarmes': 'Alarmes',
+        'desenfumages': 'Désenfumage',
+        'rias': 'RIA',
+        'plans': 'Plans d\'Évacuation'
+      };
+      const icon = icons[type] || '';
+      const label = labels[type] || type;
+      return icon ? `<img src="${icon}" alt="${label}" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">${label}` : label;
+    }
+    
+    // Fonction pour mettre à jour le bouton continuer
+    function updateContinueButton() {
+      const continueBtn = document.getElementById('continueBtn');
+      continueBtn.disabled = selectedEquipmentTypes.length === 0;
+    }
+    
+    // Fonction pour afficher le formulaire de vérification
+    function showVerificationForm(selectedType = '') {
+      currentStep = 'form';
+      updateHeader();
+      
+      const formContainer = document.getElementById('formContent');
+      
+      formContainer.innerHTML = `
+        <div class="form-grid">
+          <div class="form-section">
+            <h3>Informations de la Vérification</h3>
+            <div class="form-group">
+              <label class="form-label">Type de Vérification *</label>
+              <select class="form-select" id="type_verif" required>
+                <option value="">Sélectionner un type</option>
+                <option value="Extincteurs" ${selectedType === 'Extincteurs' ? 'selected' : ''}>Extincteurs</option>
+                <option value="Éclairage de Sécurité" ${selectedType === 'Éclairage de Sécurité' ? 'selected' : ''}>Éclairage de Sécurité</option>
+                <option value="Alarme Incendie" ${selectedType === 'Alarme Incendie' ? 'selected' : ''}>Alarme Incendie</option>
+                <option value="Désenfumage" ${selectedType === 'Désenfumage' ? 'selected' : ''}>Désenfumage</option>
+                <option value="RIA" ${selectedType === 'RIA' ? 'selected' : ''}>RIA</option>
+                <option value="Plans d'Évacuation" ${selectedType === 'Plans d\'Évacuation' ? 'selected' : ''}>Plans d'Évacuation</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Priorité *</label>
+              <select class="form-select" id="priorite_verif" required>
+                <option value="">Sélectionner une priorité</option>
+                <option value="Basse">Basse</option>
+                <option value="Normale">Normale</option>
+                <option value="Haute">Haute</option>
+                <option value="Urgente">Urgente</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date de Vérification *</label>
+              <input type="date" class="form-input" id="date_verif" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Heure de Vérification</label>
+              <input type="time" class="form-input" id="heure_verif">
+            </div>
+          </div>
+          
+          <div class="form-section">
+            <h3>Site Sélectionné</h3>
+            <div class="selected-site-info">
+              <h4>${selectedSite.nom_site}</h4>
+              <p><strong>Adresse:</strong> ${selectedSite.adr_site}</p>
+              <p><strong>Ville:</strong> ${selectedSite.ville_site}</p>
+              ${selectedSite.resp_site ? `<p><strong>Responsable:</strong> ${selectedSite.resp_site}</p>` : ''}
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-section" style="margin-top: 2rem;">
+          <h3>Détails de la Vérification</h3>
+          <div class="form-group">
+            <label class="form-label">Description *</label>
+            <textarea class="form-textarea" id="description_verif" placeholder="Décrivez la vérification à effectuer..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-textarea" id="notes_verif" placeholder="Notes supplémentaires..."></textarea>
+          </div>
+        </div>
+      `;
+      
+      // Définir la date d'aujourd'hui par défaut
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date_verif').value = today;
+    }
+    
+    // Fonction appelée quand un client est sélectionné
+    async function onClientChange() {
+      const clientSelect = document.getElementById('client_select');
+      const siteSelect = document.getElementById('site_select');
+      const siteInfo = document.getElementById('siteInfo');
+      
+      const selectedClientId = clientSelect.value;
+      
+      if (!selectedClientId) {
+        siteSelect.innerHTML = '<option value="">Sélectionner d\'abord un client</option>';
+        siteSelect.disabled = true;
+        siteInfo.style.display = 'none';
+        return;
+      }
+      
+      // Charger les sites du client sélectionné
+      sites = await loadSites(selectedClientId);
+      
+      // Mettre à jour la liste des sites
+      siteSelect.innerHTML = `
+        <option value="">Sélectionner un site</option>
+        ${sites.map(site => `
+          <option value="${site.id_site}">${site.nom_site} - ${site.adr_site}, ${site.ville_site}</option>
+        `).join('')}
+      `;
+      
+      siteSelect.disabled = false;
+      siteInfo.style.display = 'none';
+      
+      // Ajouter l'événement pour afficher les infos du site
+      siteSelect.onchange = onSiteChange;
+    }
+    
+    // Fonction appelée quand un site est sélectionné
+    function onSiteChange() {
+      const siteSelect = document.getElementById('site_select');
+      const siteInfo = document.getElementById('siteInfo');
+      
+      const selectedSiteId = siteSelect.value;
+      
+      if (!selectedSiteId) {
+        siteInfo.style.display = 'none';
+        return;
+      }
+      
+      // Trouver le site sélectionné
+      const selectedSite = sites.find(site => site.id_site == selectedSiteId);
+      
+      if (selectedSite) {
+        siteInfo.innerHTML = `
+          <h4>Informations du Site</h4>
+          <p><strong>Nom:</strong> ${selectedSite.nom_site}</p>
+          <p><strong>Adresse:</strong> ${selectedSite.adr_site}</p>
+          <p><strong>Ville:</strong> ${selectedSite.ville_site}</p>
+          ${selectedSite.resp_site ? `<p><strong>Responsable:</strong> ${selectedSite.resp_site}</p>` : ''}
+        `;
+        siteInfo.style.display = 'block';
+      }
+    }
+    
+    // Fonction pour afficher le récapitulatif
+    function showSummary() {
+      currentStep = 'summary';
+      updateHeader();
+      
+      const formContainer = document.getElementById('formContent');
+      
+      // Compter les équipements par type
+      const equipmentCounts = {};
+      selectedEquipmentTypes.forEach(type => {
+        equipmentCounts[type] = 0; // Sera mis à jour avec les vraies données
+      });
+      
+      formContainer.innerHTML = `
+        <div class="summary-card">
+          <h3>📋 Récapitulatif de l'intervention</h3>
+          
+          <div class="summary-section">
+            <h4>🏢 Client</h4>
+            <p><strong>Nom:</strong> ${selectedClient.nom_client}</p>
+            <p><strong>Code:</strong> ${selectedClient.code_client}</p>
+          </div>
+          
+          <div class="summary-section">
+            <h4>📍 Site</h4>
+            <p><strong>Nom:</strong> ${selectedSite.nom_site}</p>
+            <p><strong>Adresse:</strong> ${selectedSite.adr_site}, ${selectedSite.ville_site}</p>
+          </div>
+          
+          <div class="summary-section">
+            <h4>🔧 Types d'équipements à contrôler</h4>
+            <div class="equipment-types-summary">
+              ${selectedEquipmentTypes.map(type => `
+                <div class="equipment-type-summary">
+                  <img src="${getEquipmentTypeIconPath(type)}" alt="${getEquipmentTypeLabel(type)}" class="equipment-icon" style="width: 24px; height: 24px;">
+                  <span class="equipment-label">${getEquipmentTypeLabel(type)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div class="summary-section">
+            <h4>📅 Date de l'intervention</h4>
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="goBack()">Retour</button>
+          <button class="btn-primary" onclick="createIntervention()">Créer l'intervention</button>
+        </div>
+      `;
+    }
+    
+    // Fonction pour obtenir l'icône d'un type d'équipement
+    function getEquipmentTypeIcon(type) {
+      const icons = {
+        'extincteurs': '',
+        'eclairages': '',
+        'alarmes': '',
+        'desenfumages': ''
+      };
+      return icons[type] || '🔧';
+    }
+    
+    // Fonction pour obtenir le chemin de l'icône d'un type d'équipement
+    function getEquipmentTypeIconPath(type) {
+      const iconPaths = {
+        'extincteurs': 'icons/appicon/ext.png',
+        'eclairages': 'icons/appicon/baes.png',
+        'alarmes': 'icons/appicon/alarme.png',
+        'desenfumages': 'icons/appicon/DENFC.png',
+        'rias': 'icons/appicon/RIA.png',
+        'plans': 'icons/appicon/plans.png'
+      };
+      return iconPaths[type] || '';
+    }
+    
+    // Fonction pour créer l'intervention
+    async function createIntervention() {
+      try {
+        console.log('🚀 Création de l\'intervention...');
+        
+        // Générer un numéro d'intervention unique
+        const interventionNumber = await generateInterventionNumber();
+        
+        console.log('🔍 Types d\'équipements à sauvegarder:', selectedEquipmentTypes);
+        
+        // Créer l'intervention en base
+        const { data: intervention, error } = await supabase
+          .from('interventions')
+          .insert({
+            numero_intervention: interventionNumber,
+            id_site: selectedSite.id_site,
+            date_debut: new Date().toISOString().split('T')[0],
+            etat_intervention: 'En cours',
+            types_equipements: selectedEquipmentTypes,
+            observations: ''
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur création intervention:', error);
+          alert('❌ Erreur lors de la création de l\'intervention');
+          return;
+        }
+        
+        console.log('✅ Intervention créée:', intervention);
+        
+        // Rediriger vers verifSite.html avec l'ID de l'intervention
+        const params = new URLSearchParams({
+          intervention: intervention.id_intervention
+        });
+        
+        window.location.href = `verifSite.html?${params.toString()}`;
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        alert('❌ Erreur lors de la création de l\'intervention');
+      }
+    }
+    
+    // Fonction pour générer un numéro d'intervention unique
+    function generateInterventionNumber() {
+      const now = new Date();
+      
+      // Format : AAAAMMJJHHMM
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hour = String(now.getHours()).padStart(2, '0');
+      const minute = String(now.getMinutes()).padStart(2, '0');
+      
+      return `${year}${month}${day}${hour}${minute}`;
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      switch (currentStep) {
+        case 'clients':
+          window.location.href = 'accueil.html';
+          break;
+        case 'sites':
+          showClientsList();
+          break;
+        case 'equipment_types':
+          showSitesList();
+          break;
+        case 'summary':
+          showEquipmentTypesPage();
+          break;
+      }
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Nouvelle Vérification...');
+      
+      // Charger les clients
+      clients = await loadClients();
+      
+      if (clients.length === 0) {
+        document.getElementById('formContent').innerHTML = `
+          <div class="error">Aucun client trouvé. Veuillez d'abord créer des clients.</div>
+        `;
+        return;
+      }
+      
+      // Vérifier les paramètres d'URL pour pré-sélectionner le client
+      const urlParams = new URLSearchParams(window.location.search);
+      const clientId = urlParams.get('client');
+      const step = urlParams.get('step');
+      
+      if (clientId && step === 'sites') {
+        // Pré-sélectionner le client et aller directement à la sélection des sites
+        const selectedClient = clients.find(c => c.id_client == clientId);
+        if (selectedClient) {
+          currentClient = selectedClient;
+          currentStep = 'sites';
+          await loadSites(selectedClient.id_client);
+          showSitesList();
+        } else {
+          showClientsList();
+        }
+      } else {
+        // Afficher la liste des clients normalement
+        showClientsList();
+      }
+      
+      // Initialiser l'affichage des équipements (même si aucun client n'est sélectionné)
+      updateClientEquipSummary();
+    });
+
+    // 2. Ajoute la fonction pour mettre à jour les voyants pour chaque site
+    async function updateSiteVoyants() {
+      for (const site of sites) {
+        // Extincteurs
+        const extSpan = document.getElementById(`voyant-extincteur-${site.id_site}`);
+        const extCountDiv = document.getElementById(`count-extincteur-${site.id_site}`);
+        const { data: ext } = await supabase
+          .from('extincteurs')
+          .select('id_ext')
+          .eq('id_site', site.id_site);
+        if (ext && ext.length > 0) {
+          extSpan.classList.remove('absent');
+          extSpan.classList.add('present');
+          extCountDiv.textContent = ext.length;
+        } else {
+          extSpan.classList.remove('present');
+          extSpan.classList.add('absent');
+          extCountDiv.textContent = '0';
+        }
+        // Eclairages
+        const eclSpan = document.getElementById(`voyant-eclairage-${site.id_site}`);
+        const eclCountDiv = document.getElementById(`count-eclairage-${site.id_site}`);
+        const { data: ecl } = await supabase
+          .from('eclairages')
+          .select('id_ecl')
+          .eq('id_site', site.id_site);
+        if (ecl && ecl.length > 0) {
+          eclSpan.classList.remove('absent');
+          eclSpan.classList.add('present');
+          eclCountDiv.textContent = ecl.length;
+        } else {
+          eclSpan.classList.remove('present');
+          eclSpan.classList.add('absent');
+          eclCountDiv.textContent = '0';
+        }
+        // Alarmes
+        const alSpan = document.getElementById(`voyant-alarme-${site.id_site}`);
+        const alCountDiv = document.getElementById(`count-alarme-${site.id_site}`);
+        const { data: al } = await supabase
+          .from('alarmes')
+          .select('id_alarme')
+          .eq('id_site', site.id_site);
+        if (al && al.length > 0) {
+          alSpan.classList.remove('absent');
+          alSpan.classList.add('present');
+          alCountDiv.textContent = al.length;
+        } else {
+          alSpan.classList.remove('present');
+          alSpan.classList.add('absent');
+          alCountDiv.textContent = '0';
+        }
+        // Désenfumage - Utiliser la nouvelle logique de voyant
+        const desSpan = document.getElementById(`voyant-desenfumage-${site.id_site}`);
+        const desCountDiv = document.getElementById(`count-desenfumage-${site.id_site}`);
+        const { data: desenfumages } = await supabase
+          .from('desenfumages')
+          .select('*')
+          .eq('id_site', site.id_site);
+        
+        if (desenfumages && desenfumages.length > 0) {
+          // Fonction pour calculer l'état du voyant selon la nouvelle logique
+          const calculateVoyantStatus = (desenfumage) => {
+            const now = new Date();
+            const lastDes = desenfumage.last_des ? new Date(desenfumage.last_des) : null;
+            const hasObservations = desenfumage.obs_des && desenfumage.obs_des.trim() !== '';
+            
+            // Si pas de date de vérification, considéré comme non vérifié
+            if (!lastDes) {
+              return false;
+            }
+            
+            // Calculer la différence en mois
+            const diffTime = Math.abs(now - lastDes);
+            const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30.44));
+            
+            // Si plus de 10 mois, considéré comme non vérifié
+            if (diffMonths > 10) {
+              return false;
+            }
+            
+            // Si moins de 10 mois et pas d'observations, considéré comme vérifié
+            if (diffMonths <= 10 && !hasObservations) {
+              return true;
+            }
+            
+            // Sinon (avec observations), considéré comme non vérifié
+            return false;
+          };
+          
+          const verifiedCount = desenfumages.filter(desenfumage => calculateVoyantStatus(desenfumage)).length;
+          const totalCount = desenfumages.length;
+          
+          // Déterminer l'état de l'icône basé sur le pourcentage de vérification
+          if (verifiedCount === totalCount && totalCount > 0) {
+            // Tous vérifiés - vert
+            desSpan.classList.remove('absent', 'warning');
+            desSpan.classList.add('present');
+          } else if (verifiedCount > 0) {
+            // Partiellement vérifiés - orange
+            desSpan.classList.remove('absent', 'present');
+            desSpan.classList.add('warning');
+          } else {
+            // Aucun vérifié - rouge
+            desSpan.classList.remove('present', 'warning');
+            desSpan.classList.add('absent');
+          }
+          
+          desCountDiv.textContent = `${verifiedCount}/${totalCount}`;
+        } else {
+          desSpan.classList.remove('present', 'warning');
+          desSpan.classList.add('absent');
+          desCountDiv.textContent = '0';
+        }
+      }
+    }
+
+    // Ajout de la fonction pour afficher le résumé équipements dans le header
+    async function updateClientEquipSummary() {
+      if (!selectedClient) {
+        // Afficher des valeurs par défaut (0) quand aucun client n'est sélectionné
+        document.getElementById('clientEquipSummary').innerHTML = `
+          <div class="equip-icon-block"><img src="icons/appicon/ext.png" alt="Extincteurs" title="Extincteurs" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">0</div></div>
+          <div class="equip-icon-block"><img src="icons/appicon/baes.png" alt="Éclairages" title="Éclairages" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">0</div></div>
+          <div class="equip-icon-block"><img src="icons/appicon/alarme.png" alt="Alarmes" title="Alarmes" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">0</div></div>
+          <div class="equip-icon-block"><img src="icons/appicon/DENFC.png" alt="Installations désenfumage" title="Installations désenfumage" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">0</div></div>
+          <div class="equip-icon-block"><img src="icons/appicon/RIA.png" alt="RIA" title="RIA" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">0</div></div>
+          <div class="equip-icon-block"><img src="icons/appicon/plans.png" alt="Plans" title="Plans" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">0</div></div>
+        `;
+        return;
+      }
+      // Récupérer tous les sites du client
+      const { data: clientSites } = await supabase
+        .from('sites')
+        .select('id_site')
+        .eq('id_client', selectedClient.id_client);
+      if (!clientSites || clientSites.length === 0) {
+        document.getElementById('clientEquipSummary').innerHTML = '';
+        return;
+      }
+      const siteIds = clientSites.map(s => s.id_site);
+      // Récupérer le nombre d'extincteurs
+      const { count: extCount } = await supabase
+        .from('extincteurs')
+        .select('id_ext', { count: 'exact', head: true })
+        .in('id_site', siteIds);
+      // Récupérer le nombre d'éclairages
+      const { count: eclCount } = await supabase
+        .from('eclairages')
+        .select('id_ecl', { count: 'exact', head: true })
+        .in('id_site', siteIds);
+      // Récupérer le nombre d'alarmes
+      const { count: alCount } = await supabase
+        .from('alarmes')
+        .select('id_alarme', { count: 'exact', head: true })
+        .in('id_site', siteIds);
+      // Récupérer le nombre d'installations de désenfumage avec la nouvelle logique
+      let desCount = 0;
+      let desVerifiedCount = 0;
+      for (const siteId of siteIds) {
+        const { data: desenfumages } = await supabase
+          .from('desenfumages')
+          .select('*')
+          .eq('id_site', siteId);
+        
+        if (desenfumages && desenfumages.length > 0) {
+          // Fonction pour calculer l'état du voyant selon la nouvelle logique
+          const calculateVoyantStatus = (desenfumage) => {
+            const now = new Date();
+            const lastDes = desenfumage.last_des ? new Date(desenfumage.last_des) : null;
+            const hasObservations = desenfumage.obs_des && desenfumage.obs_des.trim() !== '';
+            
+            if (!lastDes) return false;
+            
+            const diffTime = Math.abs(now - lastDes);
+            const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30.44));
+            
+            if (diffMonths > 10) return false;
+            if (diffMonths <= 10 && !hasObservations) return true;
+            return false;
+          };
+          
+          desCount += desenfumages.length;
+          desVerifiedCount += desenfumages.filter(desenfumage => calculateVoyantStatus(desenfumage)).length;
+        }
+      }
+      // Récupérer le nombre de RIA
+      const { count: riaCount } = await supabase
+        .from('rias')
+        .select('id_ria', { count: 'exact', head: true })
+        .in('id_site', siteIds);
+      
+      // Récupérer le nombre de plans
+      const { count: plansCount } = await supabase
+        .from('plans')
+        .select('id_plan', { count: 'exact', head: true })
+        .in('id_site', siteIds);
+      
+      // Affichage
+      document.getElementById('clientEquipSummary').innerHTML = `
+        <div class="equip-icon-block"><img src="icons/appicon/ext.png" alt="Extincteurs" title="Extincteurs" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">${extCount ?? 0}</div></div>
+        <div class="equip-icon-block"><img src="icons/appicon/baes.png" alt="Éclairages" title="Éclairages" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">${eclCount ?? 0}</div></div>
+        <div class="equip-icon-block"><img src="icons/appicon/alarme.png" alt="Alarmes" title="Alarmes" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">${alCount ?? 0}</div></div>
+        <div class="equip-icon-block"><img src="icons/appicon/DENFC.png" alt="Installations désenfumage" title="Installations désenfumage" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">${desCount ?? 0}</div></div>
+        <div class="equip-icon-block"><img src="icons/appicon/RIA.png" alt="RIA" title="RIA" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">${riaCount ?? 0}</div></div>
+        <div class="equip-icon-block"><img src="icons/appicon/plans.png" alt="Plans" title="Plans" style="width: 24px; height: 24px; vertical-align: middle;"><div class="equip-count">${plansCount ?? 0}</div></div>
+      `;
+    }
+
+    // Fonction de tri des sites
+    function sortSites(col) {
+      if (currentSortCol === col) {
+        currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSortCol = col;
+        currentSortDir = 'asc';
+      }
+      sites.sort((a, b) => {
+        let va = a[col] || '';
+        let vb = b[col] || '';
+        // Pour numéro, trier numériquement
+        if (col === 'num_site') {
+          va = parseInt(va) || 0;
+          vb = parseInt(vb) || 0;
+        } else {
+          va = va.toString().toLowerCase();
+          vb = vb.toString().toLowerCase();
+        }
+        if (va < vb) return currentSortDir === 'asc' ? -1 : 1;
+        if (va > vb) return currentSortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+      showSitesList();
+      updateSortIcons();
+    }
+    // Fonction pour afficher l'icône de tri
+    function updateSortIcons() {
+      const cols = ['num_site','nom_site','ville_site','adr_site'];
+      cols.forEach(col => {
+        const icon = document.getElementById('sort-icon-' + col);
+        if (!icon) return;
+        if (col === currentSortCol) {
+          icon.textContent = currentSortDir === 'asc' ? '▲' : '▼';
+          icon.style.color = '#9B2423';
+          icon.style.fontSize = '0.9em';
+        } else {
+          icon.textContent = '';
+        }
+      });
+    }
+
+    // Fonction de tri des clients
+    function sortClients(col) {
+      if (currentClientSortCol === col) {
+        currentClientSortDir = currentClientSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentClientSortCol = col;
+        currentClientSortDir = 'asc';
+      }
+      clients.sort((a, b) => {
+        let va = a[col] || '';
+        let vb = b[col] || '';
+        if (col === 'code_client') {
+          va = va.toString().toLowerCase();
+          vb = vb.toString().toLowerCase();
+        } else if (col === 'nom_client' || col === 'ville_client') {
+          va = va.toString().toLowerCase();
+          vb = vb.toString().toLowerCase();
+        }
+        if (va < vb) return currentClientSortDir === 'asc' ? -1 : 1;
+        if (va > vb) return currentClientSortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+      showClientsList();
+      updateClientSortIcons();
+    }
+    // Fonction pour afficher l'icône de tri sur les clients
+    function updateClientSortIcons() {
+      const cols = ['code_client','nom_client','ville_client'];
+      cols.forEach(col => {
+        const icon = document.getElementById('sort-icon-' + col);
+        if (!icon) return;
+        if (col === currentClientSortCol) {
+          icon.textContent = currentClientSortDir === 'asc' ? '▲' : '▼';
+          icon.style.color = '#9B2423';
+          icon.style.fontSize = '0.9em';
+        } else {
+          icon.textContent = '';
+        }
+      });
+    }
+  </script>
+</body>
+</html> 

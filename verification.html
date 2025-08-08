@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
+  <title>JPSI - Vérifications</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script>
+    // Enregistrer le Service Worker pour le mode offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {
+        scope: '/'
+      }).then(function(registration) {
+        console.log('✅ ServiceWorker enregistré:', registration.scope);
+      }).catch(function(err) {
+        console.log('❌ Échec ServiceWorker:', err);
+      });
+    }
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .tiles-wrapper {
+      width: calc(100vw - 4cm);
+      height: calc(100vh - 4cm);
+      min-width: 320px;
+      min-height: 320px;
+      max-width: 1400px;
+      max-height: 900px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 2.5rem 2.5rem;
+      width: 100%;
+      height: 100%;
+      justify-items: center;
+      align-items: center;
+    }
+    .tile {
+      width: 100%;
+      height: 100%;
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.2s, border 0.2s, opacity 0.3s, filter 0.3s;
+      min-width: 0;
+      min-height: 0;
+      cursor: pointer;
+    }
+    
+    .tile:hover {
+      box-shadow: 0 8px 32px 0 rgba(30,32,36,0.2), 0 1.5px 0 #e5e7eb inset;
+      transform: translateY(-2px);
+    }
+    
+    .tile.disabled {
+      opacity: 0.4;
+      filter: grayscale(100%);
+      cursor: not-allowed;
+      border-color: #9ca3af;
+    }
+    
+    .tile.disabled:hover {
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      transform: none;
+    }
+    
+    .tile-icon {
+      display: block;
+      margin-bottom: 1.1rem;
+      text-align: center;
+      width: 70px;
+      height: 70px;
+      max-width: 80px;
+      max-height: 80px;
+    }
+    
+    .tile-icon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    
+    .tile-icon img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+    
+    .tile-label {
+      display: block;
+      font-size: 1.32rem;
+      color: #23272b;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      opacity: 0.98;
+      text-align: center;
+      user-select: none;
+      margin-top: 0.1rem;
+    }
+    
+    .icon-img {
+      width: 70px;
+      height: 70px;
+      max-width: 80px;
+      max-height: 80px;
+      display: block;
+      margin: 0 auto 1.1rem auto;
+      filter: drop-shadow(0 2px 8px #23272b11);
+    }
+    
+    .header-card {
+      position: absolute;
+      top: 2rem;
+      left: 2rem;
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 50%;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 0;
+      z-index: 10;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+      transform: scale(1.05);
+    }
+    
+
+    
+    @media (max-width: 900px), (max-height: 600px) {
+      .tiles-wrapper {
+        width: calc(100vw - 1.2cm);
+        height: calc(100vh - 1.2cm);
+        min-width: 180px;
+        min-height: 180px;
+      }
+      .tiles-grid {
+        gap: 1rem 1rem;
+      }
+      .tile {
+        border-radius: 18px;
+        border-width: 2px;
+      }
+      .header-card {
+        top: 1rem;
+        left: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+      <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+    </div>
+
+  <div class="tiles-wrapper">
+    <div class="tiles-grid">
+      <div class="tile" id="newVerifTile" onclick="navigateToNewVerification()">
+        <span class="tile-icon">
+          <img src="icons/appicon/ajouter.png" alt="Nouvelle Vérification" class="icon-img" />
+        </span>
+        <span class="tile-label">Nouvelle Vérification</span>
+      </div>
+      <div class="tile" id="ongoingVerifTile" onclick="navigateToOngoing()">
+        <span class="tile-icon">
+          <img src="icons/appicon/En cours.png" alt="Vérifications en Cours" class="icon-img" />
+        </span>
+        <span class="tile-label">Vérifications en Cours</span>
+      </div>
+      <div class="tile" id="historyTile" onclick="navigateToHistory()">
+        <span class="tile-icon">
+          <img src="icons/appicon/histo.png" alt="Historique" class="icon-img" />
+        </span>
+        <span class="tile-label">Historique</span>
+      </div>
+      <div class="tile">
+        <span class="tile-icon">
+          <img src="icons/appicon/codag.png" alt="Soon" class="icon-img" />
+        </span>
+        <span class="tile-label">Soon</span>
+      </div>
+      <div class="tile">
+        <span class="tile-icon">
+          <img src="icons/appicon/codag.png" alt="Soon" class="icon-img" />
+        </span>
+        <span class="tile-label">Soon</span>
+      </div>
+      <div class="tile">
+        <span class="tile-icon">
+          <img src="icons/appicon/codag.png" alt="Soon" class="icon-img" />
+        </span>
+        <span class="tile-label">Soon</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let isConnected = false;
+    
+    // Fonction pour vérifier la connexion Supabase
+    async function checkSupabaseConnection() {
+      try {
+        console.log('🔍 Vérification de la connexion Supabase...');
+        
+        // Test de connexion en récupérant la session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Erreur de connexion Supabase:', error);
+          return false;
+        }
+        
+        console.log('✅ Connexion Supabase vérifiée');
+        isConnected = true;
+        return true;
+        
+      } catch (error) {
+        console.error('❌ Échec de la vérification Supabase:', error);
+        return false;
+      }
+    }
+    
+    // Fonction pour griser les tuiles si pas de connexion
+    function updateTilesState() {
+      const newVerifTile = document.getElementById('newVerifTile');
+      const ongoingVerifTile = document.getElementById('ongoingVerifTile');
+      const historyTile = document.getElementById('historyTile');
+      
+      if (!isConnected) {
+        console.log('⚠️ Connexion non établie - Grisage des tuiles');
+        newVerifTile.classList.add('disabled');
+        newVerifTile.style.cursor = 'not-allowed';
+        newVerifTile.onclick = null;
+        ongoingVerifTile.classList.add('disabled');
+        ongoingVerifTile.style.cursor = 'not-allowed';
+        ongoingVerifTile.onclick = null;
+        historyTile.classList.add('disabled');
+        historyTile.style.cursor = 'not-allowed';
+        historyTile.onclick = null;
+      } else {
+        console.log('✅ Connexion établie - Tuiles actives');
+        newVerifTile.classList.remove('disabled');
+        newVerifTile.style.cursor = 'pointer';
+        ongoingVerifTile.classList.remove('disabled');
+        ongoingVerifTile.style.cursor = 'pointer';
+        historyTile.classList.remove('disabled');
+        historyTile.style.cursor = 'pointer';
+      }
+    }
+    
+    // Fonction de navigation vers Nouvelle Vérification
+    function navigateToNewVerification() {
+      if (isConnected) {
+        window.location.href = 'newVerification.html';
+      } else {
+        alert('⚠️ Connexion non établie. Impossible d\'accéder aux vérifications.');
+      }
+    }
+    
+    // Fonction de navigation vers l'Historique
+    function navigateToHistory() {
+      if (isConnected) {
+        window.location.href = 'verificationHistory.html';
+      } else {
+        alert('⚠️ Connexion non établie. Impossible d\'accéder à l\'historique.');
+      }
+    }
+    
+    // Fonction de navigation vers les Interventions en Cours
+    function navigateToOngoing() {
+      if (isConnected) {
+        window.location.href = 'ongoingInterventions.html';
+      } else {
+        alert('⚠️ Connexion non établie. Impossible d\'accéder aux interventions en cours.');
+      }
+    }
+    
+
+    
+    // Fonction pour retourner à l'accueil
+    function goBack() {
+      window.location.href = 'accueil.html';
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Vérifications...');
+      
+      // Vérifier la connexion Supabase
+      await checkSupabaseConnection();
+      
+      // Mettre à jour l'état des tuiles
+      updateTilesState();
+    });
+  </script>
+</body>
+</html> 

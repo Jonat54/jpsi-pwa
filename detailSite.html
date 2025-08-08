@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Détail Site</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .site-info {
+      font-size: 1.1rem;
+      color: #6b7280;
+      font-weight: 500;
+      margin-left: auto;
+    }
+    
+    .content-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .site-summary {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border-left: 4px solid #9B2423;
+      margin-bottom: 2rem;
+    }
+    
+    .site-summary h3 {
+      margin: 0 0 0.5rem 0;
+      color: #23272b;
+      font-size: 1.3rem;
+    }
+    
+    .site-summary p {
+      margin: 0.25rem 0;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+    
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .detail-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .detail-card:hover {
+      border-color: #9B2423;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    
+    .detail-icon {
+      font-size: 3rem;
+      margin: 0 auto 1rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      background: #f9fafb;
+      border-radius: 50%;
+      border: 2px solid #e5e7eb;
+      transition: all 0.2s;
+    }
+    
+    .detail-card:hover .detail-icon {
+      border-color: #9B2423;
+      background: #fef2f2;
+      transform: scale(1.1);
+    }
+    
+    .detail-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #23272b;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .detail-description {
+      font-size: 0.9rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+    
+    .site-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .action-button {
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      padding: 0.7rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .action-button.edit {
+      background: #10b981;
+      color: white;
+    }
+    .action-button.edit:hover {
+      background: #059669;
+    }
+    .action-button.delete {
+      background: #ef4444;
+      color: white;
+    }
+    .action-button.delete:hover {
+      background: #b91c1c;
+    }
+    .action-button.suspend {
+      background: #f59e42;
+      color: white;
+    }
+    .action-button.suspend:hover {
+      background: #d97706;
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .content-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .site-info {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <h1 class="header-title">Vérifications du Site</h1>
+      <div class="site-info" id="siteInfo">Chargement...</div>
+    </div>
+    
+    <!-- Content Card -->
+    <div class="content-card">
+      <div id="content">
+        <div class="loading">Chargement des informations du site...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentSite = null;
+    let currentClient = null;
+    
+    // Fonction pour récupérer l'ID du site depuis l'URL
+    function getSiteIdFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const siteId = urlParams.get('site');
+      
+      if (!siteId) {
+        console.error('❌ Aucun ID de site fourni dans l\'URL');
+        return null;
+      }
+      
+      console.log(`🔍 ID du site récupéré: ${siteId}`);
+      return decodeURIComponent(siteId);
+    }
+    
+    // Fonction pour charger les données du site
+    async function loadSiteData(siteId) {
+      try {
+        console.log(`📥 Chargement des données pour le site: ${siteId}`);
+        
+        const { data: site, error } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id_site', siteId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du site:', error);
+          showError('Erreur lors du chargement du site');
+          return;
+        }
+        
+        if (!site) {
+          console.error('❌ Site non trouvé');
+          showError('Site non trouvé');
+          return;
+        }
+        
+        console.log('✅ Données du site chargées:', site);
+        currentSite = site;
+        
+        // Charger les informations du client
+        await loadClientInfo(site.id_client);
+        
+        // Mettre à jour l'interface
+        updateDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour charger les informations du client
+    async function loadClientInfo(clientId) {
+      try {
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id_client', clientId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du client:', error);
+          return;
+        }
+        
+        currentClient = client;
+        console.log('✅ Informations du client chargées:', client);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement du client:', error);
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage
+    function updateDisplay() {
+      if (!currentSite) return;
+      
+      // Mettre à jour les informations du site dans le header
+      const clientName = currentClient ? currentClient.nom_client : 'Client inconnu';
+      document.getElementById('siteInfo').textContent = `${currentSite.nom_site} - ${clientName}`;
+      
+      // Créer le contenu
+      const contentContainer = document.getElementById('content');
+      
+      contentContainer.innerHTML = `
+        <div class="site-summary">
+          <h3>Site: ${currentSite.nom_site}</h3>
+          <p><strong>Adresse:</strong> ${currentSite.adr_site}, ${currentSite.ville_site}</p>
+          ${currentSite.resp_site ? `<p><strong>Responsable:</strong> ${currentSite.resp_site}</p>` : ''}
+          ${currentSite.telresp_site ? `<p><strong>Téléphone:</strong> ${currentSite.telresp_site}</p>` : ''}
+          ${currentSite.mailresp_site ? `<p><strong>Email:</strong> ${currentSite.mailresp_site}</p>` : ''}
+          <div class="site-actions">
+            <button class="action-button edit" onclick="editSite()">✏️ Éditer</button>
+            <button class="action-button suspend" onclick="suspendSite()">⏸️ Suspendre</button>
+            <button class="action-button delete" onclick="deleteSite()">🗑️ Supprimer</button>
+          </div>
+        </div>
+        
+        <div class="detail-grid">
+          <div class="detail-card" onclick="selectVerificationType('Extincteurs')">
+            <img src="icons/appicon/ext.png" alt="Extincteurs" class="detail-icon" style="width: 48px; height: 48px;">
+            <div class="detail-title">Extincteurs</div>
+            <div class="detail-description">Vérification des extincteurs portatifs et fixes</div>
+          </div>
+          
+                     <div class="detail-card" onclick="selectVerificationType('Éclairage de Sécurité')">
+             <img src="icons/appicon/baes.png" alt="Éclairage de Sécurité" class="detail-icon" style="width: 48px; height: 48px;">
+             <div class="detail-title">Éclairage de Sécurité</div>
+             <div class="detail-description">Contrôle des blocs de secours et éclairage</div>
+           </div>
+          
+                     <div class="detail-card" onclick="selectVerificationType('Alarme Incendie')">
+             <img src="icons/appicon/alarme.png" alt="Alarme Incendie" class="detail-icon" style="width: 48px; height: 48px;">
+             <div class="detail-title">Alarme Incendie</div>
+             <div class="detail-description">Test des détecteurs et sirènes d'alarme</div>
+           </div>
+          
+                     <div class="detail-card" onclick="selectVerificationType('Désenfumage')">
+             <img src="icons/appicon/DENFC.png" alt="Désenfumage" class="detail-icon" style="width: 48px; height: 48px;">
+             <div class="detail-title">Désenfumage</div>
+             <div class="detail-description">Vérification des systèmes de désenfumage</div>
+           </div>
+          
+                     <div class="detail-card" onclick="selectVerificationType('RIA')">
+             <img src="icons/appicon/RIA.png" alt="RIA" class="detail-icon" style="width: 48px; height: 48px;">
+             <div class="detail-title">RIA</div>
+             <div class="detail-description">Contrôle des robinets d'incendie armés</div>
+           </div>
+          
+                     <div class="detail-card" onclick="selectVerificationType('Plans d\'Évacuation')">
+             <img src="icons/appicon/plans.png" alt="Plans d'Évacuation" class="detail-icon" style="width: 48px; height: 48px;">
+             <div class="detail-title">Plans d'Évacuation</div>
+             <div class="detail-description">Vérification des plans et signalisation</div>
+           </div>
+        </div>
+      `;
+    }
+    
+    // Fonction pour sélectionner un type de vérification
+    function selectVerificationType(type) {
+      if (!currentSite) {
+        alert('⚠️ Site non chargé');
+        return;
+      }
+      
+      console.log(`✅ Type de vérification sélectionné: ${type} pour le site ${currentSite.nom_site}`);
+      
+      // Rediriger vers la page de création de vérification avec les paramètres
+      const params = new URLSearchParams({
+        site: currentSite.id_site,
+        type: encodeURIComponent(type)
+      });
+      
+      window.location.href = `newVerification.html?${params.toString()}`;
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      if (currentClient) {
+        window.location.href = `client.html?code=${encodeURIComponent(currentClient.code_client)}`;
+      } else {
+        window.location.href = 'ListClients.html';
+      }
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('content').innerHTML = `
+        <div style="text-align: center; padding: 3rem; color: #ef4444; font-size: 1.1rem;">
+          ${message}
+        </div>
+      `;
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Détail Site...');
+      
+      // Récupérer l'ID du site depuis l'URL
+      const siteId = getSiteIdFromURL();
+      
+      if (!siteId) {
+        showError('ID du site manquant dans l\'URL');
+        return;
+      }
+      
+      // Charger les données du site
+      await loadSiteData(siteId);
+    });
+
+    // Fonctions pour les actions sur le site
+    function editSite() {
+      if (!currentSite) return;
+      window.location.href = `editSite.html?site=${encodeURIComponent(currentSite.id_site)}`;
+    }
+    function deleteSite() {
+      if (!currentSite) return;
+      if (confirm('Voulez-vous vraiment supprimer ce site ? Cette action est irréversible.')) {
+        supabase.from('sites').delete().eq('id_site', currentSite.id_site).then(({ error }) => {
+          if (error) {
+            alert('Erreur lors de la suppression du site.');
+          } else {
+            alert('Site supprimé.');
+            goBack();
+          }
+        });
+      }
+    }
+    function suspendSite() {
+      if (!currentSite) return;
+      // Ici, il faudrait avoir un champ "suspendu" ou "statut" dans la table sites
+      supabase.from('sites').update({ statut: 'suspendu' }).eq('id_site', currentSite.id_site).then(({ error }) => {
+        if (error) {
+          alert('Erreur lors de la suspension du site.');
+        } else {
+          alert('Site suspendu.');
+          location.reload();
+        }
+      });
+    }
+  </script>
+</body>
+</html> 

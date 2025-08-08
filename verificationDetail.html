@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détail Vérification - JPSI</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .info-section {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 1.5rem 2rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .info-section h3 {
+      margin: 0 0 1.2rem 0;
+      color: #374151;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border-bottom: 2px solid #f3f4f6;
+      padding-bottom: 0.5rem;
+    }
+    
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .info-table th {
+      background: #f3f4f6;
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+    
+    .info-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #f9fafb;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+    
+    .info-simple-layout {
+      display: flex;
+      gap: 3rem;
+      margin-top: 0.5rem;
+    }
+    
+    .info-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .info-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .info-line {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.15rem 0;
+    }
+    
+    .info-code {
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+    
+    .info-separator {
+      color: #9B2423;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .info-name {
+      font-weight: 700;
+      color: #374151;
+      font-size: 1rem;
+    }
+    
+    .info-address {
+      font-weight: 500;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .info-city {
+      font-weight: 500;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 0.9rem;
+      min-width: 140px;
+    }
+    
+    .info-date {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .observations-content {
+      margin-top: 1rem;
+    }
+    
+    .loading-text {
+      color: #6b7280;
+      font-style: italic;
+    }
+    
+    .observation-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 12px;
+      border-left: 4px solid #9B2423;
+      transition: all 0.2s ease;
+    }
+    
+    .observation-item:hover {
+      background: #f3f4f6;
+      transform: translateX(4px);
+    }
+    
+    .observation-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .observation-icon {
+      font-size: 1.2rem;
+      margin-top: 0.1rem;
+      flex-shrink: 0;
+    }
+    
+    .observation-text {
+      flex: 1;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      color: #374151;
+    }
+    
+    .observation-header {
+      background: #9B2423;
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(155, 36, 35, 0.3);
+    }
+    
+    .next-verification-content {
+      margin-top: 1rem;
+    }
+    
+    .verification-line {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+    }
+    
+    .verification-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      min-width: 150px;
+    }
+    
+    .verification-date {
+      font-weight: 600;
+      color: #9B2423;
+      font-size: 1rem;
+    }
+    
+    .bon-content {
+      margin-top: 1rem;
+    }
+    
+    .bon-line {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      margin-bottom: 1rem;
+    }
+    
+    .bon-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+      min-width: 150px;
+    }
+    
+    .bon-number {
+      font-weight: 700;
+      color: #9B2423;
+      font-size: 1.1rem;
+      background: #f3f4f6;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+    }
+    
+    .equipment-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    
+    .equipment-table th {
+      background: #f3f4f6;
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+    
+    .equipment-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #f9fafb;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+    
+    .equipment-count {
+      text-align: center;
+      font-weight: 600;
+      color: #9B2423;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 2rem;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #9B2423;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
+      
+      .info-section {
+        padding: 1rem;
+      }
+      
+      .back-button {
+        align-self: center;
+      }
+      
+      .info-simple-layout {
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      
+      .info-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+      
+      .info-label {
+        min-width: auto;
+      }
+      
+      .observation-item {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      
+      .verification-line,
+      .bon-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      
+      .verification-label,
+      .bon-label {
+        min-width: auto;
+      }
+      
+      .equipment-table {
+        font-size: 0.8rem;
+      }
+      
+      .equipment-table th,
+      .equipment-table td {
+        padding: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- En-tête principal -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <div class="header-title">
+        <span id="clientName">Détail Vérification</span>
+        <span class="header-subtitle" id="siteName">Chargement...</span>
+      </div>
+    </div>
+
+    <!-- Sections d'information -->
+    <div class="info-grid">
+      <!-- Section Informations -->
+      <div class="info-section">
+        <h3>📋 Informations générales</h3>
+        <div class="info-simple-layout">
+          <!-- Partie gauche -->
+          <div class="info-left">
+            <div class="info-line">
+              <span class="info-code" id="clientCode">--</span>
+              <span class="info-separator">-</span>
+              <span class="info-name" id="clientNameDetail">--</span>
+            </div>
+            <div class="info-line">
+              <span class="info-code" id="siteNumber">--</span>
+              <span class="info-separator">-</span>
+              <span class="info-name" id="siteNameDetail">--</span>
+            </div>
+            <div class="info-line">
+              <span class="info-address" id="siteAddress">--</span>
+            </div>
+            <div class="info-line">
+              <span class="info-city" id="siteCity">--</span>
+            </div>
+          </div>
+          
+          <!-- Partie droite -->
+          <div class="info-right">
+            <div class="info-line">
+              <span class="info-label">Début vérification :</span>
+              <span class="info-date" id="startDate">--</span>
+            </div>
+            <div class="info-line">
+              <span class="info-label">Fin vérification :</span>
+              <span class="info-date" id="endDate">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Équipements vérifiés -->
+      <div class="info-section">
+        <h3>Équipements vérifiés</h3>
+        <table class="equipment-table" id="equipmentRecapTable">
+          <thead>
+            <tr>
+              <th>Type d'équipement</th>
+              <th>Quantité</th>
+            </tr>
+          </thead>
+          <tbody id="equipmentRecapTableBody">
+            <tr>
+              <td colspan="2" style="text-align: center; color: #999; font-style: italic;">Chargement des équipements...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section Observations -->
+      <div class="info-section">
+        <h3>📊 Observations</h3>
+        <div class="observations-content" id="observationsContent">
+          <div class="loading-text">Analyse en cours...</div>
+        </div>
+      </div>
+
+      <!-- Section Prochaine vérification -->
+      <div class="info-section">
+        <h3>📅 Prochaine vérification</h3>
+        <div class="next-verification-content">
+          <div class="verification-line">
+            <span class="verification-label">Vérification annuelle :</span>
+            <span class="verification-date" id="nextVerificationDate">Chargement...</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Section Bon de vérification -->
+      <div class="info-section">
+        <h3>📋 Bon de vérification</h3>
+        <div class="bon-content">
+          <div class="bon-line">
+            <span class="bon-label">Numéro du bon :</span>
+            <span class="bon-number" id="bonNumber">Génération en cours...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Variables globales
+    let verificationData = null;
+    let clientData = null;
+    let siteData = null;
+    let equipmentData = {
+      extincteurs: [],
+      eclairages: [],
+      alarmes: [],
+      desenfumages: [],
+      rias: [],
+      plans: []
+    };
+    let numeroDeBon = null;
+    
+    // Récupération des paramètres URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const verificationId = urlParams.get('id');
+    
+    console.log('🔍 ID de vérification récupéré:', verificationId);
+    
+    function goBack() {
+      window.location.href = 'verificationHistory.html';
+    }
+    
+    // Fonction pour générer un numéro de bon
+    async function generateBonNumber() {
+      try {
+        console.log('🔢 Génération du numéro de bon...');
+        
+        const { data: lastBV, error } = await supabase
+          .from('BV')
+          .select('num_bv')
+          .order('num_bv', { ascending: false })
+          .limit(1);
+
+        if (error) {
+          console.error('❌ Erreur lors de la récupération du dernier BV:', error);
+          const currentYear = new Date().getFullYear();
+          numeroDeBon = `${currentYear}-0001`;
+          return;
+        }
+
+        let nextNumber = 1;
+        if (lastBV && lastBV.length > 0 && lastBV[0].num_bv) {
+          nextNumber = parseInt(lastBV[0].num_bv) + 1;
+        }
+
+        const currentYear = new Date().getFullYear();
+        numeroDeBon = `${currentYear}-${nextNumber.toString().padStart(4, '0')}`;
+        
+        console.log('🔢 Numéro de bon généré:', numeroDeBon);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la génération du numéro de bon:', error);
+        const currentYear = new Date().getFullYear();
+        numeroDeBon = `${currentYear}-0001`;
+      }
+    }
+    
+    // Chargement des données
+    async function loadVerificationData() {
+      try {
+        console.log('🔍 Chargement des données de vérification...');
+        
+        if (!verificationId) {
+          console.error('❌ ID de vérification manquant');
+          alert('ID de vérification manquant');
+          return;
+        }
+        
+        // Vérifier d'abord si l'intervention existe
+        console.log('🔍 Vérification de l\'existence de l\'intervention ID:', verificationId);
+        const { data: interventionExists, error: checkError } = await supabase
+          .from('interventions')
+          .select('id_intervention')
+          .eq('id_intervention', verificationId)
+          .single();
+        
+        if (checkError) {
+          console.error('❌ Intervention non trouvée:', checkError);
+          document.getElementById('clientName').textContent = 'Intervention non trouvée';
+          document.getElementById('siteName').textContent = `ID ${verificationId} inexistant`;
+          alert(`Intervention ID ${verificationId} non trouvée dans la base de données.`);
+          return;
+        }
+        
+        console.log('✅ Intervention trouvée, chargement des données...');
+        
+        // Récupérer l'intervention avec ses relations
+        const { data: intervention, error: intError } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            sites!left(
+              *,
+              clients!left(*)
+            )
+          `)
+          .eq('id_intervention', verificationId)
+          .single();
+        
+        if (intError) {
+          console.error('❌ Erreur lors du chargement de l\'intervention:', intError);
+          document.getElementById('clientName').textContent = 'Erreur de chargement';
+          document.getElementById('siteName').textContent = 'Vérifiez la connexion';
+          alert(`Erreur lors du chargement de l'intervention: ${intError.message}`);
+          return;
+        }
+        
+        console.log('✅ Intervention chargée:', intervention);
+        
+        // Extraire les données avec gestion des cas manquants
+        verificationData = { id_intervention: intervention.id_intervention };
+        siteData = intervention.sites || null;
+        clientData = intervention.sites?.clients || null;
+        
+        console.log('📊 Données extraites:', {
+          verification: verificationData,
+          site: siteData,
+          client: clientData
+        });
+        
+        // Mettre à jour l'interface
+        updateInterface();
+        
+        // Charger les équipements du site
+        await loadEquipmentData();
+        
+        // Charger les dates de vérification
+        await loadVerificationDates();
+        
+        // Générer et afficher le numéro du bon
+        await generateBonNumber();
+        document.getElementById('bonNumber').textContent = numeroDeBon || 'Erreur de génération';
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement:', error);
+        alert('Erreur lors du chargement des données');
+      }
+    }
+    
+    // Fonction pour charger les dates de vérification
+    async function loadVerificationDates() {
+      try {
+        const interventionId = verificationData?.id_intervention;
+        
+        if (!interventionId) {
+          console.log('⚠️ Aucune intervention disponible');
+          document.getElementById('startDate').textContent = 'Non définie';
+          document.getElementById('endDate').textContent = 'Non définie';
+          return;
+        }
+        
+        console.log('🔍 Chargement des dates de vérification pour l\'intervention:', interventionId);
+        
+        const { data: verifications, error } = await supabase
+          .from('verifications')
+          .select('date_verification')
+          .eq('id_intervention', interventionId)
+          .not('date_verification', 'is', null);
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des vérifications:', error);
+          document.getElementById('startDate').textContent = 'Erreur';
+          document.getElementById('endDate').textContent = 'Erreur';
+          return;
+        }
+        
+        console.log('🔍 Vérifications trouvées:', verifications);
+        
+        let earliestDate = null;
+        let latestDate = null;
+        
+        verifications.forEach(verification => {
+          if (verification.date_verification) {
+            const date = new Date(verification.date_verification);
+            if (!earliestDate || date < earliestDate) earliestDate = date;
+            if (!latestDate || date > latestDate) latestDate = date;
+          }
+        });
+        
+        if (earliestDate) {
+          document.getElementById('startDate').textContent = earliestDate.toLocaleDateString('fr-FR');
+        } else {
+          document.getElementById('startDate').textContent = 'Non définie';
+        }
+        
+        if (latestDate) {
+          document.getElementById('endDate').textContent = latestDate.toLocaleDateString('fr-FR');
+        } else {
+          document.getElementById('endDate').textContent = 'Non définie';
+        }
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des dates:', error);
+        document.getElementById('startDate').textContent = 'Erreur';
+        document.getElementById('endDate').textContent = 'Erreur';
+      }
+    }
+    
+    // Fonction pour charger les équipements du site
+    async function loadEquipmentData() {
+      try {
+        if (!siteData) {
+          console.log('⚠️ Aucun site associé à cette vérification');
+          return;
+        }
+        
+        console.log('🔍 Chargement des équipements pour le site:', siteData.id_site);
+        
+        // Charger les extincteurs
+        const { data: extincteurs, error: extError } = await supabase
+          .from('extincteurs')
+          .select('*')
+          .eq('id_site', siteData.id_site);
+        
+        if (!extError && extincteurs) {
+          equipmentData.extincteurs = extincteurs;
+          
+          // Charger les agents pour chaque extincteur
+          for (let ext of equipmentData.extincteurs) {
+            if (ext.agent_ext) {
+              const { data: agent, error: agentError } = await supabase
+                .from('AgentExtincteur')
+                .select('long_agt')
+                .eq('id_agt', ext.agent_ext)
+                .single();
+              
+              if (!agentError && agent) {
+                ext.agent_long_name = agent.long_agt;
+              }
+            }
+          }
+        }
+        
+        // Charger les éclairages
+        const { data: eclairages, error: eclError } = await supabase
+          .from('eclairages')
+          .select('*')
+          .eq('id_site', siteData.id_site);
+        
+        if (!eclError && eclairages) {
+          equipmentData.eclairages = eclairages;
+        }
+        
+        // Charger les alarmes
+        const { data: alarmes, error: alarmError } = await supabase
+          .from('alarmes')
+          .select('*')
+          .eq('id_site', siteData.id_site);
+        
+        if (!alarmError && alarmes) {
+          equipmentData.alarmes = alarmes;
+        }
+        
+        // Charger les désenfumages
+        const { data: desenfumages, error: desError } = await supabase
+          .from('desenfumages')
+          .select('*')
+          .eq('id_site', siteData.id_site);
+        
+        if (!desError && desenfumages) {
+          equipmentData.desenfumages = desenfumages;
+        }
+        
+        // Charger les RIAS
+        const { data: rias, error: riaError } = await supabase
+          .from('rias')
+          .select('*')
+          .eq('id_site', siteData.id_site);
+        
+        if (!riaError && rias) {
+          equipmentData.rias = rias;
+        }
+        
+        // Charger les plans d'évacuation
+        const { data: plans, error: planError } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('id_site', siteData.id_site);
+        
+        if (!planError && plans) {
+          equipmentData.plans = plans;
+        }
+        
+        console.log('✅ Équipements chargés:', equipmentData);
+        
+        // Mettre à jour le tableau
+        await updateEquipmentTable();
+        
+        // Générer le résumé des observations
+        await generateObservationsSummary();
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des équipements:', error);
+        alert('Erreur lors du chargement des équipements. Vérifiez votre connexion.');
+        return;
+      }
+    }
+    
+    // Fonction pour générer le résumé des observations
+    async function generateObservationsSummary() {
+      console.log('🔍 Génération du résumé des observations...');
+      
+      const observationsContent = await generateObservationsContent();
+      document.getElementById('observationsContent').innerHTML = observationsContent;
+    }
+    
+    // Fonction pour générer tout le contenu des observations
+    async function generateObservationsContent() {
+      const observations = [];
+      
+      try {
+        const interventionId = verificationData.id_intervention;
+        
+        if (!interventionId) {
+          console.error('❌ ID d\'intervention manquant');
+          return '<div class="observation-item"><span class="observation-icon">❌</span><span class="observation-text">Erreur: Intervention non trouvée</span></div>';
+        }
+        
+        console.log('🔍 Récupération des observations pour l\'intervention:', interventionId);
+        
+        const { data: verifications, error } = await supabase
+          .from('verifications')
+          .select('type_equipement, id_equipement, observations')
+          .eq('id_intervention', interventionId)
+          .not('observations', 'is', null)
+          .neq('observations', '');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des observations:', error);
+          return '<div class="observation-item"><span class="observation-icon">❌</span><span class="observation-text">Erreur lors du chargement des observations</span></div>';
+        }
+        
+        console.log('🔍 Vérifications avec observations trouvées:', verifications);
+        
+        for (const verification of verifications) {
+          const { type_equipement, id_equipement, observations: observationText } = verification;
+          
+          if (!observationText || observationText.trim() === '') continue;
+          
+          let numero = 'N/A';
+          let typeLabel = type_equipement;
+          
+          try {
+            switch (type_equipement) {
+              case 'extincteurs':
+                const { data: ext } = await supabase
+                  .from('extincteurs')
+                  .select('num_ext')
+                  .eq('id_ext', id_equipement)
+                  .single();
+                if (ext) numero = ext.num_ext || 'N/A';
+                typeLabel = 'Extincteur';
+                break;
+                
+              case 'eclairages':
+                const { data: ecl } = await supabase
+                  .from('eclairages')
+                  .select('num_ecl')
+                  .eq('id_ecl', id_equipement)
+                  .single();
+                if (ecl) numero = ecl.num_ecl || 'N/A';
+                typeLabel = 'Éclairage';
+                break;
+                
+              case 'alarmes':
+                const { data: alarm } = await supabase
+                  .from('alarmes')
+                  .select('num_alarme')
+                  .eq('id_alarme', id_equipement)
+                  .single();
+                if (alarm) numero = alarm.num_alarme || 'N/A';
+                typeLabel = 'Alarme';
+                break;
+                
+              case 'desenfumages':
+                const { data: des } = await supabase
+                  .from('desenfumages')
+                  .select('id_desenfumage')
+                  .eq('id_des', id_equipement)
+                  .single();
+                if (des) numero = des.id_desenfumage || 'N/A';
+                typeLabel = 'Désenfumage';
+                break;
+                
+              case 'rias':
+                const { data: ria } = await supabase
+                  .from('rias')
+                  .select('num_ria')
+                  .eq('id_ria', id_equipement)
+                  .single();
+                if (ria) numero = ria.num_ria || 'N/A';
+                typeLabel = 'RIA';
+                break;
+                
+              case 'plans':
+                const { data: plan } = await supabase
+                  .from('plans')
+                  .select('num_plan')
+                  .eq('id_plan', id_equipement)
+                  .single();
+                if (plan) numero = plan.num_plan || 'N/A';
+                typeLabel = 'Plan d\'évacuation';
+                break;
+            }
+          } catch (equipmentError) {
+            console.error('❌ Erreur lors de la récupération du numéro d\'équipement:', equipmentError);
+          }
+          
+          observations.push({
+            type: typeLabel,
+            numero: numero,
+            observation: observationText.trim()
+          });
+        }
+        
+        console.log('✅ Observations récupérées:', observations);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la récupération des observations:', error);
+        return '<div class="observation-item"><span class="observation-icon">❌</span><span class="observation-text">Erreur lors de la récupération des observations</span></div>';
+      }
+      
+      if (observations.length === 0) {
+        return '<div class="observation-item"><span class="observation-icon">✅</span><span class="observation-text">Aucune observation</span></div>';
+      }
+      
+      let html = '';
+      
+      html = `<div class="observation-header">📊 <strong>${observations.length} observation(s) au total</strong></div>`;
+      
+      observations.forEach((obs, index) => {
+        html += `
+          <div class="observation-item">
+            <span class="observation-icon">📝</span>
+            <span class="observation-text"><strong>${obs.type} ${obs.numero}</strong> : ${obs.observation}</span>
+          </div>
+        `;
+      });
+      
+      return html;
+    }
+    
+    // Fonction pour mettre à jour le tableau des équipements
+    async function updateEquipmentTable() {
+      const tbody = document.getElementById('equipmentRecapTableBody');
+      let html = '';
+      
+      // EXTINCTEURS par agent
+      if (equipmentData.extincteurs.length > 0) {
+        const extincteursByAgent = groupExtincteursByAgent();
+        
+        Object.entries(extincteursByAgent).forEach(([agentId, extincteurs]) => {
+          const firstExtincteur = extincteurs[0];
+          const agentName = firstExtincteur.agent_long_name || `Agent ${agentId}`;
+          const count = extincteurs.length;
+          
+          html += `
+            <tr>
+              <td>Extincteur ${agentName}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+      
+      // ÉCLAIRAGES par famille
+      if (equipmentData.eclairages.length > 0) {
+        const eclairagesByFamily = groupEclairagesByFamily();
+        Object.entries(eclairagesByFamily).forEach(([family, eclairages]) => {
+          const count = eclairages.length;
+          
+          html += `
+            <tr>
+              <td>Éclairage de sécurité - ${family}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+      
+      // ALARMES par type
+      if (equipmentData.alarmes.length > 0) {
+        const alarmesByType = groupAlarmesByType();
+        Object.entries(alarmesByType).forEach(([type, alarmes]) => {
+          const count = alarmes.length;
+          
+          html += `
+            <tr>
+              <td>Alarme ${type}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+      
+      // DÉSENFUMAGES par type d'équipement
+      if (equipmentData.desenfumages.length > 0) {
+        const desenfumagesByType = groupDesenfumagesByType();
+        Object.entries(desenfumagesByType).forEach(([type, desenfumages]) => {
+          const count = desenfumages.length;
+          html += `
+            <tr>
+              <td>Désenfumage - ${type}</td>
+              <td class="equipment-count">${count}</td>
+            </tr>
+          `;
+        });
+      }
+      
+      // RIAS
+      if (equipmentData.rias.length > 0) {
+        const count = equipmentData.rias.length;
+        
+        html += `
+          <tr>
+            <td>RIA (Robinet d'Incendie Armé)</td>
+            <td class="equipment-count">${count}</td>
+          </tr>
+        `;
+      }
+      
+      // PLANS D'ÉVACUATION
+      if (equipmentData.plans.length > 0) {
+        const count = equipmentData.plans.length;
+        
+        html += `
+          <tr>
+            <td>Plan d'évacuation</td>
+            <td class="equipment-count">${count}</td>
+          </tr>
+        `;
+      }
+      
+      // Si aucun équipement
+      if (html === '') {
+        html = '<tr><td colspan="2" style="text-align: center; color: #999; font-style: italic;">Aucun équipement enregistré pour ce site</td></tr>';
+      }
+      
+      tbody.innerHTML = html;
+    }
+    
+    // Fonctions de groupement par famille
+    function groupExtincteursByAgent(extincteurs = equipmentData.extincteurs) {
+      const groups = {};
+      
+      extincteurs.forEach(ext => {
+        const agentId = ext.agent_ext || 'Autre';
+        if (!groups[agentId]) groups[agentId] = [];
+        groups[agentId].push(ext);
+      });
+      
+      return groups;
+    }
+    
+    function groupEclairagesByFamily(eclairages = equipmentData.eclairages) {
+      const groups = {};
+      eclairages.forEach(ecl => {
+        const family = ecl.family_ecl || 'Autre';
+        if (!groups[family]) groups[family] = [];
+        groups[family].push(ecl);
+      });
+      return groups;
+    }
+    
+    function groupAlarmesByType(alarmes = equipmentData.alarmes) {
+      const groups = {};
+      alarmes.forEach(alarm => {
+        const type = alarm.type_alarme || 'Autre';
+        if (!groups[type]) groups[type] = [];
+        groups[type].push(alarm);
+      });
+      return groups;
+    }
+    
+    function groupDesenfumagesByType(desenfumages = equipmentData.desenfumages) {
+      const groups = {};
+      desenfumages.forEach(des => {
+        const type = des.equipement_desenfumage || 'Non spécifié';
+        if (!groups[type]) groups[type] = [];
+        groups[type].push(des);
+      });
+      return groups;
+    }
+    
+    // Mise à jour de l'interface
+    function updateInterface() {
+      console.log('🔄 Mise à jour de l\'interface...');
+      
+      // Informations client
+      const clientCode = clientData?.code_client || '--';
+      const clientName = clientData?.nom_client || 'Client inconnu';
+      
+      document.getElementById('clientCode').textContent = clientCode;
+      document.getElementById('clientName').textContent = clientName;
+      document.getElementById('clientNameDetail').textContent = clientName;
+      
+      // Informations site
+      const siteNumber = siteData?.num_site || '--';
+      const siteName = siteData?.nom_site || 'Site inconnu';
+      
+      document.getElementById('siteNumber').textContent = siteNumber;
+      document.getElementById('siteName').textContent = siteName;
+      document.getElementById('siteNameDetail').textContent = siteName;
+      
+      // Informations adresse
+      const address = siteData?.adr_site || '';
+      const postalCode = siteData?.cp_site || '';
+      const city = siteData?.ville_site || '';
+      const fullAddress = `${postalCode} ${city}`.trim();
+      
+      document.getElementById('siteAddress').textContent = address || '--';
+      document.getElementById('siteCity').textContent = fullAddress || '--';
+      
+      // Prochaine vérification (1 an après la date actuelle)
+      const nextYear = new Date();
+      nextYear.setFullYear(nextYear.getFullYear() + 1);
+      document.getElementById('nextVerificationDate').textContent = nextYear.toLocaleDateString('fr-FR', { 
+        month: 'long', 
+        year: 'numeric' 
+      });
+      
+      console.log('✅ Interface mise à jour');
+    }
+    
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadVerificationData();
+    });
+  </script>
+</body>
+</html>

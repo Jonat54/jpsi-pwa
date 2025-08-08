@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Ajouter Désenfumage</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .form-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 0.625rem; /* 10mm d'espacement intérieur */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+    }
+    
+    .form-section {
+      margin-bottom: 2rem;
+    }
+    
+    .form-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #23272b;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .form-group {
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+      letter-spacing: 0.025em;
+      padding-left: 0.625rem; /* 10mm du bord gauche intérieur */
+    }
+    
+    .form-label.required::after {
+      content: ' *';
+      color: #ef4444;
+      font-weight: 700;
+    }
+    
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      line-height: 1.5;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: white;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: #9B2423;
+      box-shadow: 0 0 0 4px rgba(155, 36, 35, 0.1), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+    }
+    
+    .form-textarea {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      line-height: 1.6;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: white;
+      resize: vertical;
+      min-height: 120px;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      box-sizing: border-box;
+    }
+    
+    .form-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+      box-shadow: 0 0 0 4px rgba(155, 36, 35, 0.1), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+    }
+    
+    .form-input[readonly] {
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+      color: #64748b;
+      cursor: not-allowed;
+      box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    
+    .form-input[readonly]:focus {
+      background-color: #f8fafc;
+      color: #64748b;
+      border-color: #cbd5e1;
+      box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      transform: none;
+    }
+    
+    .form-help {
+      display: block;
+      font-size: 0.875rem;
+      color: #64748b;
+      margin-top: 0.5rem;
+      line-height: 1.4;
+      font-style: italic;
+      padding-left: 0.625rem; /* 10mm du bord gauche intérieur */
+    }
+    
+    .buttons-container {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid #f3f4f6;
+    }
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 44px;
+    }
+    
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+    
+    .btn-primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .error-message {
+      color: #ef4444;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    
+    .success-message {
+      color: #10b981;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    
+    /* Optimisations pour iPad */
+    @media (min-width: 768px) {
+      .container {
+        padding: 2.5rem;
+      }
+      
+      .form-card {
+        padding: 0.75rem; /* 12mm d'espacement intérieur uniforme sur iPad */
+      }
+      
+      .form-label {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        padding-left: 0.75rem; /* 12mm du bord gauche intérieur sur iPad */
+      }
+      
+      .form-input,
+      .form-select,
+      .form-textarea {
+        width: 100%;
+        padding: 1.25rem 1.5rem;
+        font-size: 1.1rem;
+        border-radius: 16px;
+      }
+      
+      .form-textarea {
+        min-height: 140px;
+      }
+      
+      .form-help {
+        font-size: 1rem;
+        margin-top: 0.75rem;
+        padding-left: 0.75rem; /* 12mm du bord gauche intérieur sur iPad */
+      }
+      
+      
+      
+      .btn {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+        min-height: 48px;
+      }
+    }
+    
+    /* Responsive pour petits écrans */
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        padding: 1.5rem;
+        border-radius: 20px;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .form-card {
+        padding: 1.5rem;
+      }
+      
+      .buttons-container {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ←
+      </button>
+      <div>
+        <h1 class="header-title">
+          Ajouter un Désenfumage
+          <span class="header-subtitle" id="siteName">Chargement...</span>
+        </h1>
+      </div>
+    </div>
+    
+    <!-- Form -->
+    <div class="form-card">
+      <form id="desenfumageForm" onsubmit="saveDesenfumage(event)">
+        <!-- Informations de base -->
+        <div class="form-section">
+          <h2 class="section-title">Informations de base</h2>
+          
+          <div class="form-group">
+            <label for="numDes" class="form-label required">Numéro</label>
+            <input type="text" id="numDes" name="numDes" class="form-input" required readonly>
+            <small class="form-help">Le numéro est généré automatiquement en fonction du dernier numéro existant sur ce site.</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="localisationDes" class="form-label required">Localisation</label>
+            <input type="text" id="localisationDes" name="localisationDes" class="form-input" required placeholder="Ex: Zone A, Secteur Nord, R+1">
+          </div>
+        </div>
+        
+        <!-- Type de commande -->
+        <div class="form-section">
+          <h2 class="section-title">Type de commande</h2>
+          
+          <div class="form-group">
+            <label for="equipementDesenfumage" class="form-label required">Type de commande</label>
+            <select id="equipementDesenfumage" name="equipementDesenfumage" class="form-select" required>
+              <option value="">Sélectionnez un type</option>
+              <option value="Treuil mécanique à relâchement de câble">Treuil mécanique à relâchement de câble</option>
+              <option value="Tirez-lâchez">Tirez-lâchez</option>
+              <option value="Commande ouverture-fermeture pneumatique">Commande ouverture-fermeture pneumatique</option>
+              <option value="Commande pneumatique">Commande pneumatique</option>
+              <option value="Commande électrique">Commande électrique</option>
+              <option value="Commande manuelle">Commande manuelle</option>
+              <option value="Automatique">Automatique</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Type d'ouvrant -->
+        <div class="form-section">
+          <h2 class="section-title">Type d'ouvrant</h2>
+          
+          <div class="form-group">
+            <label for="descouvrDes" class="form-label required">Type d'ouvrant</label>
+            <select id="descouvrDes" name="descouvrDes" class="form-select" required>
+              <option value="">Sélectionnez un type</option>
+              <option value="Ouvrant en façade intérieur">Ouvrant en façade intérieur</option>
+              <option value="Ouvrant en façade extérieur">Ouvrant en façade extérieur</option>
+              <option value="Exutoire en toiture">Exutoire en toiture</option>
+              <option value="Fenêtre de toit">Fenêtre de toit</option>
+              <option value="Lanterneau">Lanterneau</option>
+              <option value="Porte coupe-feu">Porte coupe-feu</option>
+              <option value="Ventilateur">Ventilateur</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Observations -->
+        <div class="form-section">
+          <h2 class="section-title">Observations</h2>
+          
+          <div class="form-group">
+            <label for="obsDes" class="form-label">Observations</label>
+            <textarea id="obsDes" name="obsDes" class="form-textarea" placeholder="Observations, remarques, détails techniques..."></textarea>
+          </div>
+        </div>
+        
+        <!-- Boutons -->
+        <div class="buttons-container">
+          <button type="button" class="btn btn-secondary" onclick="goBack()">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-primary" id="saveButton">
+            <span id="saveButtonText">Enregistrer</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Utiliser la configuration Supabase existante
+    let supabaseClient = null;
+    
+    let currentSite = null;
+    let existingNumbers = [];
+
+    // Récupérer l'ID du site depuis l'URL
+    function getSiteIdFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('site');
+    }
+
+    // Charger les données du site
+    async function loadSiteData(siteId) {
+      try {
+        console.log('Chargement du site:', siteId);
+        
+        const { data: site, error } = await supabaseClient
+          .from('sites')
+          .select('*')
+          .eq('id_site', siteId)
+          .single();
+
+        if (error) {
+          console.error('Erreur site:', error);
+          throw error;
+        }
+
+        currentSite = site;
+        document.getElementById('siteName').textContent = `${site.nom_site} - ${site.ville_site}`;
+        
+        console.log('Site chargé:', site);
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement du site:', error);
+        showError('Erreur lors du chargement du site: ' + error.message);
+      }
+    }
+
+    // Charger les numéros existants
+    async function loadExistingNumbers() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('desenfumages')
+          .select('num_des')
+          .eq('id_site', currentSite.id_site)
+          .not('num_des', 'is', null);
+
+        if (error) {
+          console.error('Erreur chargement numéros:', error);
+          return;
+        }
+
+        existingNumbers = data.map(item => item.num_des).filter(num => num);
+        console.log('Numéros existants:', existingNumbers);
+      } catch (error) {
+        console.error('Erreur lors du chargement des numéros:', error);
+      }
+    }
+
+    // Générer un numéro automatique
+    function generateNumber() {
+      if (!currentSite) {
+        alert('Site non chargé');
+        return;
+      }
+
+      // Extraire les numéros numériques existants
+      const numericNumbers = existingNumbers
+        .map(num => {
+          // Extraire uniquement les chiffres du numéro
+          const numericPart = num.toString().replace(/\D/g, '');
+          return numericPart ? parseInt(numericPart, 10) : 0;
+        })
+        .filter(num => num > 0)
+        .sort((a, b) => a - b);
+
+      console.log('Numéros numériques extraits:', numericNumbers);
+
+      // Trouver le prochain numéro
+      let nextNumber = 1;
+      
+      if (numericNumbers.length > 0) {
+        // Prendre le plus grand numéro et ajouter 1
+        const maxNumber = Math.max(...numericNumbers);
+        nextNumber = maxNumber + 1;
+      }
+
+      // Formater le numéro (minimum 3 chiffres)
+      const formattedNumber = nextNumber.toString().padStart(3, '0');
+      
+      document.getElementById('numDes').value = formattedNumber;
+      console.log('Numéro généré:', formattedNumber);
+    }
+
+    // Sauvegarder le désenfumage
+    async function saveDesenfumage(event) {
+      event.preventDefault();
+      
+      if (!currentSite) {
+        alert('Site non chargé');
+        return;
+      }
+      
+      // Récupérer les données du formulaire
+      const formData = new FormData(event.target);
+      
+      // Validation des champs requis
+      const numDes = formData.get('numDes');
+      const localisationDes = formData.get('localisationDes');
+      const equipementDesenfumage = formData.get('equipementDesenfumage');
+      const descouvrDes = formData.get('descouvrDes');
+      
+      if (!numDes || !localisationDes || !equipementDesenfumage || !descouvrDes) {
+        alert('Veuillez remplir tous les champs obligatoires');
+        return;
+      }
+      
+             // Données à sauvegarder
+       const desenfumageData = {
+         id_site: currentSite.id_site,
+         num_des: numDes,
+         localisation_des: localisationDes,
+         equipement_desenfumage: equipementDesenfumage,
+         descouvr_des: descouvrDes,
+         obs_des: formData.get('obsDes') || null,
+         created_at: new Date().toISOString()
+       };
+      
+      console.log('Données à sauvegarder:', desenfumageData);
+      
+      // Afficher le loading
+      const saveButton = document.getElementById('saveButton');
+      const saveButtonText = document.getElementById('saveButtonText');
+      saveButton.disabled = true;
+      saveButtonText.textContent = 'Enregistrement...';
+      document.getElementById('desenfumageForm').classList.add('loading');
+      
+      try {
+        const { data, error } = await supabaseClient
+          .from('desenfumages')
+          .insert([desenfumageData]);
+
+        if (error) {
+          console.error('Erreur sauvegarde:', error);
+          throw error;
+        }
+
+        console.log('Désenfumage sauvegardé:', data);
+        alert('Désenfumage ajouté avec succès !');
+        
+        // Rediriger vers la liste
+        goBack();
+        
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde:', error);
+        alert('Erreur lors de la sauvegarde: ' + error.message);
+      } finally {
+        // Restaurer le bouton
+        saveButton.disabled = false;
+        saveButtonText.textContent = 'Enregistrer';
+        document.getElementById('desenfumageForm').classList.remove('loading');
+      }
+    }
+
+    // Retourner à la page précédente
+    function goBack() {
+      if (currentSite) {
+        window.location.href = 'desenfumageList.html?site=' + encodeURIComponent(currentSite.id_site);
+      } else {
+        window.history.back();
+      }
+    }
+
+    // Afficher une erreur
+    function showError(message) {
+      alert('Erreur: ' + message);
+    }
+
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('Initialisation de la page Ajouter Désenfumage...');
+      
+      // Utiliser la configuration Supabase existante
+      if (window.supabaseClient) {
+        supabaseClient = window.supabaseClient;
+        console.log('✅ Supabase client trouvé');
+      } else {
+        console.log('❌ Supabase client non trouvé');
+        showError('Erreur de configuration Supabase');
+        return;
+      }
+      
+      const siteId = getSiteIdFromURL();
+      console.log('Site ID depuis URL:', siteId);
+      
+      if (!siteId) {
+        showError('ID du site manquant dans l\'URL');
+        return;
+      }
+      
+      await loadSiteData(siteId);
+      
+      // Charger les numéros existants et générer un premier numéro
+      await loadExistingNumbers();
+      generateNumber();
+    });
+  </script>
+</body>
+</html> 

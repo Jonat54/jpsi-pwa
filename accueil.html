@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Accueil</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  
+  <!-- Meta tags supplémentaires pour iOS -->
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-TileColor" content="#9B2423">
+  <meta name="msapplication-config" content="none">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="simple_auth.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .tiles-wrapper {
+      width: calc(100vw - 4cm);
+      height: calc(100vh - 4cm);
+      min-width: 320px;
+      min-height: 320px;
+      max-width: 1400px;
+      max-height: 900px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 2.5rem 2.5rem;
+      width: 100%;
+      height: 100%;
+      justify-items: center;
+      align-items: center;
+    }
+    .tile {
+      width: 100%;
+      height: 100%;
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.2s, border 0.2s, opacity 0.3s, filter 0.3s;
+      min-width: 0;
+      min-height: 0;
+    }
+    
+    .tile.disabled {
+      opacity: 0.4;
+      filter: grayscale(100%);
+      cursor: not-allowed;
+      border-color: #9ca3af;
+    }
+    
+    .tile.disabled:hover {
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+    }
+    .tile-num {
+      font-size: 2.8rem;
+      color: #9B2423;
+      font-weight: 700;
+      opacity: 0.7;
+      user-select: none;
+    }
+    .tile-icon {
+      display: block;
+      margin-bottom: 1.1rem;
+      text-align: center;
+      width: 70px;
+      height: 70px;
+      max-width: 80px;
+      max-height: 80px;
+    }
+    .tile-icon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .tile-label {
+      display: block;
+      font-size: 1.32rem;
+      color: #23272b;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      opacity: 0.98;
+      text-align: center;
+      user-select: none;
+      margin-top: 0.1rem;
+    }
+    .icon-img {
+      width: 70px;
+      height: 70px;
+      max-width: 80px;
+      max-height: 80px;
+      display: block;
+      margin: 0 auto 1.1rem auto;
+      filter: drop-shadow(0 2px 8px #23272b11);
+    }
+    @media (max-width: 900px), (max-height: 600px) {
+      .tiles-wrapper {
+        width: calc(100vw - 1.2cm);
+        height: calc(100vh - 1.2cm);
+        min-width: 180px;
+        min-height: 180px;
+      }
+      .tiles-grid {
+        gap: 1rem 1rem;
+      }
+      .tile {
+        border-radius: 18px;
+        border-width: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="tiles-wrapper">
+    <div class="tiles-grid">
+      <div class="tile" id="clientsTile" onclick="navigateToClients()" style="cursor: pointer;">
+        <span class="tile-icon">
+          <img src="icons/appicon/clients.png" alt="Clients" class="icon-img" />
+        </span>
+        <span class="tile-label">Clients</span>
+      </div>
+      <div class="tile" id="verifTile" onclick="navigateToVerification()" style="cursor: pointer;">
+        <span class="tile-icon">
+          <img src="icons/appicon/verif.png" alt="Vérification" class="icon-img" />
+        </span>
+        <span class="tile-label">Vérification</span>
+      </div>
+      <div class="tile" id="auditsTile" onclick="navigateToAudits()" style="cursor: pointer;">
+        <span class="tile-icon">
+          <img src="icons/appicon/audits.png" alt="Audits" class="icon-img" />
+        </span>
+        <span class="tile-label">Audits</span>
+      </div>
+      <div class="tile" id="inventaireTile" onclick="navigateToInventaire()" style="cursor: pointer;">
+        <span class="tile-icon">
+          <img src="icons/appicon/inventaire.png" alt="Inventaire PDF" class="icon-img" />
+        </span>
+        <span class="tile-label">Inventaire PDF</span>
+      </div>
+      <div class="tile">
+        <span class="tile-icon">
+          <img src="icons/appicon/stocks.png" alt="Gestion Stocks" class="icon-img" />
+        </span>
+        <span class="tile-label">Gestion Stocks</span>
+      </div>
+      <div class="tile" onclick="navigateToParametres()" style="cursor: pointer;">
+        <span class="tile-icon">
+          <img src="icons/appicon/parametres.png" alt="Paramètres" class="icon-img" />
+        </span>
+        <span class="tile-label">Paramètres</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    
+    // Fonction pour vérifier la connexion Supabase
+    async function checkSupabaseConnection() {
+      try {
+        console.log('🔍 Vérification de la connexion Supabase...');
+        
+        // Utiliser la fonction centralisée
+        const success = await JPSI.testConnection();
+        
+        if (success) {
+          console.log('✅ Connexion Supabase vérifiée');
+          return true;
+        } else {
+          return false;
+        }
+        
+      } catch (error) {
+        console.error('❌ Échec de la vérification Supabase:', error);
+        return false;
+      }
+    }
+    
+    // Fonction pour griser les tuiles si pas de connexion
+    function updateTilesState() {
+      const clientsTile = document.getElementById('clientsTile');
+      const verifTile = document.getElementById('verifTile');
+      const auditsTile = document.getElementById('auditsTile');
+      const inventaireTile = document.getElementById('inventaireTile');
+      
+      if (!simpleAuth.isLoggedIn()) {
+        console.log('⚠️ Connexion non établie - Grisage des tuiles Clients, Vérification, Audits et Inventaire');
+        clientsTile.classList.add('disabled');
+        verifTile.classList.add('disabled');
+        auditsTile.classList.add('disabled');
+        inventaireTile.classList.add('disabled');
+        
+        // Retirer le curseur pointer et l'onclick
+        clientsTile.style.cursor = 'not-allowed';
+        clientsTile.onclick = null;
+        verifTile.style.cursor = 'not-allowed';
+        verifTile.onclick = null;
+        auditsTile.style.cursor = 'not-allowed';
+        auditsTile.onclick = null;
+        inventaireTile.style.cursor = 'not-allowed';
+        inventaireTile.onclick = null;
+      } else {
+        console.log('✅ Connexion établie - Tuiles actives');
+        clientsTile.classList.remove('disabled');
+        verifTile.classList.remove('disabled');
+        auditsTile.classList.remove('disabled');
+        inventaireTile.classList.remove('disabled');
+        
+        // Restaurer le curseur pointer
+        clientsTile.style.cursor = 'pointer';
+        verifTile.style.cursor = 'pointer';
+        auditsTile.style.cursor = 'pointer';
+        inventaireTile.style.cursor = 'pointer';
+      }
+    }
+    
+    // Fonction de navigation vers Clients
+    function navigateToClients() {
+      if (simpleAuth.isLoggedIn()) {
+        window.location.href = 'ListClients.html';
+      } else {
+        alert('⚠️ Connexion non établie. Impossible d\'accéder aux clients.');
+      }
+    }
+    
+    // Fonction de navigation vers Vérification
+    function navigateToVerification() {
+      if (simpleAuth.isLoggedIn()) {
+        window.location.href = 'verification.html';
+      } else {
+        alert('⚠️ Connexion non établie. Impossible d\'accéder aux vérifications.');
+      }
+    }
+
+    // Fonction de navigation vers Audits
+    function navigateToAudits() {
+      if (simpleAuth.isLoggedIn()) {
+        window.location.href = 'audits.html';
+      } else {
+        alert('⚠️ Connexion non établie. Impossible d\'accéder aux audits.');
+      }
+    }
+
+    // Fonction de navigation vers Inventaire PDF
+    function navigateToInventaire() {
+      if (simpleAuth.isLoggedIn()) {
+        window.location.href = 'inventairePDF.html';
+      } else {
+        alert('⚠️ Connexion non établie. Impossible d\'accéder à l\'inventaire.');
+      }
+    }
+
+    // Fonction de navigation vers Paramètres
+    function navigateToParametres() {
+      window.location.href = 'parametres.html';
+    }
+    
+    // Fonction de navigation vers Test PWA
+    function navigateToTestPWA() {
+      window.location.href = 'test-pwa.html';
+    }
+
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page d\'accueil...');
+      
+      // Vérifier la connexion Supabase
+      await checkSupabaseConnection();
+      
+      // Vérifier l'authentification
+      const isLoggedIn = await simpleAuth.checkLogin();
+      if (isLoggedIn) {
+        console.log('✅ Utilisateur connecté:', simpleAuth.getCurrentClient());
+      } else {
+        console.log('⚠️ Utilisateur non connecté');
+      }
+      
+      // Mettre à jour l'état des tuiles
+      updateTilesState();
+    });
+  </script>
+</body>
+</html> 

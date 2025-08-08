@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
+  <title>JPSI - Interventions en Cours</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script>
+    // Enregistrer le Service Worker pour le mode offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {
+        scope: '/'
+      }).then(function(registration) {
+        console.log('✅ ServiceWorker enregistré:', registration.scope);
+      }).catch(function(err) {
+        console.log('❌ Échec ServiceWorker:', err);
+      });
+    }
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .filters-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .filters-container {
+      display: flex;
+      gap: 1.5rem;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .filter-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+    
+    .filter-select {
+      padding: 0.75rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      transition: border-color 0.2s;
+      min-width: 150px;
+    }
+    
+    .filter-select:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .search-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      transition: border-color 0.2s;
+      min-width: 200px;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .refresh-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .refresh-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .table-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      overflow: hidden;
+    }
+    
+    .interventions-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .interventions-table th {
+      background: #9B2423;
+      color: white;
+      padding: 1.2rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .interventions-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.95rem;
+    }
+    
+    .interventions-table tr:hover {
+      background: #f8f9fa;
+      cursor: pointer;
+    }
+    
+    .interventions-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .status-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      display: inline-block;
+    }
+    
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-completed {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .status-cancelled {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 2rem;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #9B2423;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .filters-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .table-card {
+        border-radius: 18px;
+        padding: 1rem;
+      }
+      
+      .filters-container {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .filter-select, .search-input {
+        min-width: auto;
+        width: 100%;
+      }
+      
+      .interventions-table {
+        font-size: 0.9rem;
+      }
+      
+      .interventions-table th,
+      .interventions-table td {
+        padding: 0.75rem 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <h1 class="header-title">Interventions en Cours</h1>
+    </div>
+    
+    <div class="filters-card">
+      <div class="filters-container">
+        <div class="filter-group">
+          <label class="filter-label">Client</label>
+          <select class="filter-select" id="clientFilter" onchange="filterInterventions()">
+            <option value="">Tous les clients</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Site</label>
+          <select class="filter-select" id="siteFilter" onchange="filterInterventions()">
+            <option value="">Tous les sites</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-label">Recherche</label>
+          <input type="text" class="search-input" id="searchInput" placeholder="Rechercher..." onkeyup="filterInterventions()">
+        </div>
+        <button class="refresh-button" onclick="loadInterventions()">
+          🔄 Actualiser
+        </button>
+      </div>
+    </div>
+    
+    <div class="table-card">
+      <div id="loadingState" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Chargement des interventions...</p>
+      </div>
+      
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">📋</div>
+        <h3>Aucune intervention trouvée</h3>
+        <p>Aucune intervention ne correspond aux critères de recherche.</p>
+      </div>
+      
+      <table class="interventions-table" id="interventionsTable" style="display: none;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Site</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="interventionsTableBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let allInterventions = [];
+    let allClients = [];
+    let allSites = [];
+    
+    function goBack() {
+      window.location.href = 'verification.html';
+    }
+    
+    async function loadClients() {
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('id_client, nom_client')
+          .order('nom_client');
+        
+        if (error) throw error;
+        
+        allClients = data || [];
+        const clientFilter = document.getElementById('clientFilter');
+        clientFilter.innerHTML = '<option value="">Tous les clients</option>';
+        
+        allClients.forEach(client => {
+          const option = document.createElement('option');
+          option.value = client.id_client;
+          option.textContent = client.nom_client;
+          clientFilter.appendChild(option);
+        });
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des clients:', error);
+      }
+    }
+    
+    async function loadSites() {
+      try {
+        const { data, error } = await supabase
+          .from('sites')
+          .select('id_site, nom_site, id_client')
+          .order('nom_site');
+        
+        if (error) throw error;
+        
+        allSites = data || [];
+        const siteFilter = document.getElementById('siteFilter');
+        siteFilter.innerHTML = '<option value="">Tous les sites</option>';
+        
+        allSites.forEach(site => {
+          const option = document.createElement('option');
+          option.value = site.id_site;
+          option.textContent = site.nom_site;
+          siteFilter.appendChild(option);
+        });
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des sites:', error);
+      }
+    }
+    
+    async function loadInterventions() {
+      const loadingState = document.getElementById('loadingState');
+      const table = document.getElementById('interventionsTable');
+      const emptyState = document.getElementById('emptyState');
+      
+      loadingState.style.display = 'block';
+      table.style.display = 'none';
+      emptyState.style.display = 'none';
+      
+      try {
+        // Récupérer les interventions en cours
+        const { data: interventionsData, error: interError } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            sites!inner(
+              nom_site,
+              clients!inner(nom_client)
+            )
+          `)
+          .eq('etat_intervention', 'En cours')
+          .order('date_debut', { ascending: false });
+      
+        if (interError) throw interError;
+        
+        allInterventions = interventionsData || [];
+        displayInterventions(allInterventions);
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des interventions:', error);
+        showEmptyState('Erreur lors du chargement des données');
+      } finally {
+        loadingState.style.display = 'none';
+      }
+    }
+    
+    function displayInterventions(interventions) {
+      const tableBody = document.getElementById('interventionsTableBody');
+      const table = document.getElementById('interventionsTable');
+      const emptyState = document.getElementById('emptyState');
+      
+      if (interventions.length === 0) {
+        table.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+      
+      tableBody.innerHTML = '';
+      
+      interventions.forEach(intervention => {
+        const row = document.createElement('tr');
+        row.onclick = () => viewIntervention(intervention.id_intervention);
+        
+        const statusClass = getStatusClass(intervention.etat_intervention);
+        const statusText = getStatusText(intervention.etat_intervention);
+        
+        // Accéder aux données via la relation sites -> clients
+        const siteName = intervention.sites?.nom_site || 'N/A';
+        const clientName = intervention.sites?.clients?.nom_client || 'N/A';
+        
+        row.innerHTML = `
+          <td>${formatDateOnly(intervention.date_debut)}</td>
+          <td>${clientName}</td>
+          <td>${siteName}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td>
+            <button onclick="viewIntervention('${intervention.id_intervention}')" style="background: #9B2423; color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.9rem;">
+              Voir
+            </button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+      
+      table.style.display = 'table';
+      emptyState.style.display = 'none';
+    }
+    
+    function getStatusClass(status) {
+      switch (status) {
+        case 'En cours': return 'status-pending';
+        case 'Terminé': return 'status-completed';
+        case 'Annulé': return 'status-cancelled';
+        default: return 'status-pending';
+      }
+    }
+    
+    function getStatusText(status) {
+      switch (status) {
+        case 'En cours': return 'En cours';
+        case 'Terminé': return 'Terminée';
+        case 'Annulé': return 'Annulée';
+        default: return 'En cours';
+      }
+    }
+    
+    function formatDateOnly(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+    
+    function filterInterventions() {
+      const clientFilter = document.getElementById('clientFilter').value;
+      const siteFilter = document.getElementById('siteFilter').value;
+      const searchInput = document.getElementById('searchInput').value.toLowerCase();
+      
+      let filtered = allInterventions.filter(intervention => {
+        // Filtrer par client (via la relation sites -> clients)
+        const matchesClient = !clientFilter || 
+          intervention.sites?.clients?.id_client === parseInt(clientFilter);
+        
+        // Filtrer par site (via la relation sites)
+        const matchesSite = !siteFilter || 
+          intervention.sites?.id_site === parseInt(siteFilter);
+        
+        // Recherche textuelle
+        const matchesSearch = !searchInput || 
+          (intervention.sites?.clients?.nom_client || '').toLowerCase().includes(searchInput) ||
+          (intervention.sites?.nom_site || '').toLowerCase().includes(searchInput) ||
+          (intervention.numero_intervention || '').toLowerCase().includes(searchInput);
+        
+        return matchesClient && matchesSite && matchesSearch;
+      });
+      
+      displayInterventions(filtered);
+    }
+    
+    function viewIntervention(interventionId) {
+      // Confirmation pour reprendre l'intervention
+      const confirmed = confirm(
+        '🔄 Voulez-vous reprendre cette intervention en cours ?\n\n' +
+        'Vous serez redirigé vers la page de vérification du site.'
+      );
+      
+      if (!confirmed) return;
+      
+      // Trouver l'intervention pour récupérer les informations du site
+      const intervention = allInterventions.find(interv => interv.id_intervention === parseInt(interventionId));
+      
+      if (intervention) {
+        // Navigation vers verifSite.html avec les paramètres du site et de l'intervention
+        const params = new URLSearchParams({
+          site: intervention.sites.id_site,
+          intervention: interventionId
+        });
+        
+        window.location.href = `verifSite.html?${params.toString()}`;
+      } else {
+        alert('❌ Erreur : Intervention non trouvée');
+      }
+    }
+    
+    function showEmptyState(message) {
+      const emptyState = document.getElementById('emptyState');
+      const table = document.getElementById('interventionsTable');
+      
+      emptyState.innerHTML = `
+        <div class="empty-state-icon">📋</div>
+        <h3>${message}</h3>
+        <p>Aucune intervention ne correspond aux critères de recherche.</p>
+      `;
+      
+      table.style.display = 'none';
+      emptyState.style.display = 'block';
+    }
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadClients();
+      await loadSites();
+      await loadInterventions();
+    });
+  </script>
+</body>
+</html>

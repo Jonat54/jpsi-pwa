@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
+  <title>JPSI - Vérifications Site</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script>
+    // Enregistrer le Service Worker pour le mode offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {
+        scope: '/'
+      }).then(function(registration) {
+        console.log('✅ ServiceWorker enregistré:', registration.scope);
+      }).catch(function(err) {
+        console.log('❌ Échec ServiceWorker:', err);
+      });
+    }
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+    
+    .header-text {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .header-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    
+    .progress-indicator {
+      flex-shrink: 0;
+    }
+    
+    .circular-progress {
+      position: relative;
+      width: 60px;
+      height: 60px;
+    }
+    
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    
+    .progress-ring-bg {
+      fill: none;
+      stroke: #e5e7eb;
+      stroke-width: 4;
+    }
+    
+    .progress-ring-fill {
+      fill: none;
+      stroke: #9B2423;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 150.8;
+      stroke-dashoffset: 150.8;
+      transition: stroke-dashoffset 0.5s ease-in-out;
+    }
+    
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .intervention-header {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .intervention-info h2 {
+      color: #9B2423;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 0 0 1rem 0;
+    }
+    
+    .intervention-info p {
+      margin: 0.5rem 0;
+      color: #374151;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-badge.en-cours {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    
+    .status-badge.terminé {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    
+    .status-badge.annulé {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .equipment-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .equipment-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .equipment-section h3 {
+      color: #9B2423;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    
+    .equipment-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    
+    .equipment-item {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .equipment-item:hover {
+      border-color: #9B2423;
+      background: #fef7f7;
+    }
+    
+    .equipment-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .equipment-number {
+      font-weight: 600;
+      color: #23272b;
+      font-size: 1rem;
+    }
+    
+    .equipment-location {
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+    
+    .verification-status {
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 0.25rem 0.75rem;
+      border-radius: 8px;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    
+    .verification-status.ok {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    
+    .verification-status.not-ok {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .intervention-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+    }
+    
+    .btn-primary, .btn-secondary {
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    
+    .btn-primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 2px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    
+    .content-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .detail-card.selected {
+      border-color: #9B2423;
+      background: #fef7f7;
+    }
+    
+    .detail-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .detail-card.disabled:hover {
+      transform: none;
+      border-color: #e5e7eb;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+      opacity: 0.3; /* Grisé par défaut */
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+      opacity: 0.5; /* Un peu moins grisé au survol */
+    }
+    
+    .back-button.long-press {
+      opacity: 1 !important; /* Complètement visible lors de l'appui long */
+      background: #7a1d1c !important;
+      transform: scale(1.1);
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .header-sub {
+      font-size: 1rem;
+      color: #6b7280;
+      font-weight: 500;
+      margin-top: 0.2rem;
+      margin-bottom: 0;
+    }
+    
+
+    
+
+    
+
+    
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .detail-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 160px;
+    }
+    
+    .detail-card:hover {
+      border-color: #9B2423;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    
+    .detail-icon {
+      margin: 0 auto 0.75rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background: #f9fafb;
+      border-radius: 50%;
+      border: 2px solid #e5e7eb;
+      transition: all 0.2s;
+      font-size: 2rem;
+    }
+    
+    .detail-card:hover .detail-icon {
+      border-color: #9B2423;
+      background: #fef2f2;
+      transform: scale(1.1);
+    }
+    
+    .detail-card:hover .detail-icon svg {
+      transform: scale(1.05);
+    }
+    
+    .detail-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #23272b;
+      margin: 0 0 0.25rem 0;
+    }
+    
+
+    
+    .detail-status {
+      margin-top: 0.5rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-align: center;
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    
+    .status-not-started {
+      background: #f3f4f6;
+      color: #6b7280;
+      border: 1px solid #d1d5db;
+    }
+    
+    .status-in-progress {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #f59e0b;
+    }
+    
+    .status-completed {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #22c55e;
+    }
+    
+    .status-progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      margin-top: 0;
+      overflow: hidden;
+    }
+    
+    .status-progress-fill {
+      height: 100%;
+      background: #9B2423;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    
+    .status-progress-fill.completed {
+      background: #22c55e;
+    }
+    
+    .status-progress-fill.in-progress {
+      background: #f59e0b;
+    }
+    
+    .report-card {
+      background: linear-gradient(135deg, #fef2f2 0%, #f9fafb 100%);
+      border-color: #9B2423;
+    }
+    
+    .report-card:hover {
+      background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+      border-color: #7a1d1c;
+    }
+    
+    /* Styles pour la card d'actions d'intervention */
+    .intervention-actions-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+    }
+    
+    .intervention-btn {
+      padding: 1rem 2rem;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 180px;
+      justify-content: center;
+    }
+    
+    .intervention-btn.pause {
+      background: #f59e0b;
+      color: white;
+    }
+    
+    .intervention-btn.pause:hover {
+      background: #d97706;
+      transform: translateY(-1px);
+    }
+    
+    .intervention-btn.report {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .intervention-btn.report:hover {
+      background: #7a1d1c;
+      transform: translateY(-1px);
+    }
+    
+    @media (max-width: 900px) {
+      .intervention-actions-card {
+        border-radius: 18px;
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .intervention-btn {
+        min-width: auto;
+        width: 100%;
+      }
+    }
+    
+
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
+      
+      .header-text {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+      }
+      
+      .header-info {
+        text-align: center;
+      }
+      
+      .progress-indicator {
+        align-self: center;
+      }
+      
+      .content-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .detail-card {
+        height: auto;
+        min-height: 140px;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .site-info {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <div class="header-content">
+        <div class="header-text">
+      <button class="back-button" 
+              onmousedown="startLongPress(event)" 
+              onmouseup="endLongPress(event)" 
+              ontouchstart="startLongPress(event)" 
+              ontouchend="endLongPress(event)"
+              title="Appui long pour retourner">
+        ‹
+      </button>
+          <div class="header-info">
+        <h1 class="header-title" id="pageTitle">Chargement...</h1>
+        <div class="header-sub" id="headerSub"></div>
+      </div>
+    </div>
+        <div class="progress-indicator">
+          <div class="circular-progress">
+            <svg class="progress-ring" width="60" height="60">
+              <circle class="progress-ring-bg" cx="30" cy="30" r="24" stroke-width="4"/>
+              <circle class="progress-ring-fill" cx="30" cy="30" r="24" stroke-width="4"/>
+            </svg>
+            <div class="progress-text" id="circularProgressText">0%</div>
+      </div>
+      </div>
+      </div>
+    </div>
+    
+    
+
+    
+
+    <!-- Content -->
+    <div id="content">
+      <div class="loading">Chargement des informations du site...</div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentSite = null;
+    let currentClient = null;
+    let verifications = [];
+    let verificationProgress = {
+      extincteurs: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+      eclairage: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+      alarme: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+      desenfumage: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+      ria: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+      plans: { status: 'not-started', progress: 0, count: 0, verified: 0 }
+    };
+    
+    // Fonction pour récupérer l'ID du site depuis l'URL
+    function getSiteIdFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const siteId = urlParams.get('site');
+      
+      if (!siteId) {
+        console.error('❌ Aucun ID de site fourni dans l\'URL');
+        return null;
+      }
+      
+      console.log(`🔍 ID du site récupéré: ${siteId}`);
+      return decodeURIComponent(siteId);
+    }
+    
+    // Fonction pour charger les données du site
+    async function loadSiteData(siteId) {
+      try {
+        console.log(`📥 Chargement des données pour le site: ${siteId}`);
+        
+        // Charger les données du site depuis Supabase
+        const { data: site, error } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id_site', siteId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du site:', error);
+          showError('Erreur lors du chargement du site');
+          return;
+        }
+        
+        if (!site) {
+          console.error('❌ Site non trouvé');
+          showError('Site non trouvé');
+          return;
+        }
+        
+        console.log('✅ Données du site chargées:', site);
+        currentSite = site;
+        
+        // Charger les informations du client
+        await loadClientInfo(site.id_client);
+        
+        // Charger les données du site dans IndexedDB pour le mode offline
+        if (syncManager.isOnline) {
+          console.log('📥 Chargement des données dans IndexedDB...');
+          await syncManager.loadSiteData(siteId);
+          await syncManager.loadCatalogues();
+        }
+        
+        // Mettre à jour l'interface
+        updateDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour charger les informations du client
+    async function loadClientInfo(clientId) {
+      try {
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id_client', clientId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du client:', error);
+          return;
+        }
+        
+        currentClient = client;
+        console.log('✅ Informations du client chargées:', client);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement du client:', error);
+      }
+    }
+    
+    // Fonction pour charger l'état d'avancement des vérifications
+    async function loadVerificationProgress() {
+      try {
+        console.log('📊 Chargement de l\'état d\'avancement pour le site:', currentSite.id_site);
+        
+        // Charger les vérifications de l'intervention actuelle
+        const { data: verificationsData, error: verifError } = await supabase
+          .from('verifications')
+          .select('*')
+          .eq('id_intervention', currentIntervention.id_intervention);
+        
+        if (verifError) {
+          console.error('❌ Erreur lors du chargement des vérifications:', verifError);
+          verifications = [];
+        } else {
+          verifications = verificationsData || [];
+        }
+        
+        console.log('🔍 Vérifications chargées:', verifications);
+        console.log('🔍 Intervention actuelle:', currentIntervention);
+        
+        // Charger les extincteurs et leur état de vérification
+        console.log('🔍 Recherche d\'extincteurs pour le site:', currentSite.id_site);
+        const { data: extincteurs, error: extError } = await supabase
+          .from('extincteurs')
+          .select('*')
+          .eq('id_site', currentSite.id_site);
+        
+        if (extError) {
+          console.error('❌ Erreur chargement extincteurs:', extError);
+        }
+        
+        if (!extError && extincteurs) {
+          console.log('🔍 Extincteurs chargés:', extincteurs);
+          
+          // Compter les extincteurs vérifiés dans cette intervention (équipements uniques)
+          const extincteurVerifications = verifications.filter(v => v.type_equipement === 'extincteurs');
+          console.log('🔍 Vérifications extincteurs:', extincteurVerifications);
+          
+          const verifiedExtincteurIds = new Set(
+            extincteurVerifications.map(v => v.id_equipement)
+          );
+          
+          const verifiedCount = verifiedExtincteurIds.size;
+          const totalCount = extincteurs.length;
+          const progress = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
+          
+          console.log('🔍 Comptage extincteurs:', {
+            verifiedCount,
+            totalCount,
+            progress,
+            verifiedIds: Array.from(verifiedExtincteurIds)
+          });
+          
+          verificationProgress.extincteurs = {
+            count: totalCount,
+            verified: verifiedCount,
+            progress: progress,
+            status: progress === 0 ? 'not-started' : progress === 100 ? 'completed' : 'in-progress'
+          };
+        }
+        
+        // Charger les éclairages et leur état de vérification
+        const { data: eclairages, error: eclError } = await supabase
+          .from('eclairages')
+          .select('*')
+          .eq('id_site', currentSite.id_site);
+        
+        if (!eclError && eclairages) {
+          // Compter les éclairages vérifiés dans cette intervention (équipements uniques)
+          const verifiedEclairageIds = new Set(
+            verifications
+              .filter(v => v.type_equipement === 'eclairages')
+              .map(v => v.id_equipement)
+          );
+          
+          const verifiedCount = verifiedEclairageIds.size;
+          const totalCount = eclairages.length;
+          const progress = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
+          
+          verificationProgress.eclairage = {
+            count: totalCount,
+            verified: verifiedCount,
+            progress: progress,
+            status: progress === 0 ? 'not-started' : progress === 100 ? 'completed' : 'in-progress'
+          };
+        }
+        
+        // Charger les alarmes et leur état de vérification
+        const { data: alarmes, error: alarmError } = await supabase
+          .from('alarmes')
+          .select('*')
+          .eq('id_site', currentSite.id_site);
+        
+        if (!alarmError && alarmes) {
+          // Compter les alarmes vérifiées dans cette intervention (équipements uniques)
+          const verifiedAlarmeIds = new Set(
+            verifications
+              .filter(v => v.type_equipement === 'alarmes')
+              .map(v => v.id_equipement)
+          );
+          
+          const verifiedCount = verifiedAlarmeIds.size;
+          const totalCount = alarmes.length;
+          const progress = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
+          
+          verificationProgress.alarme = {
+            count: totalCount,
+            verified: verifiedCount,
+            progress: progress,
+            status: progress === 0 ? 'not-started' : progress === 100 ? 'completed' : 'in-progress'
+          };
+        }
+        
+        // Charger les désenfumages et leur état de vérification
+        const { data: desenfumages, error: desError } = await supabase
+          .from('desenfumages')
+          .select('*')
+          .eq('id_site', currentSite.id_site);
+        
+        if (!desError && desenfumages) {
+          // Compter les désenfumages vérifiés dans cette intervention (équipements uniques)
+          const verifiedDesenfumageIds = new Set(
+            verifications
+              .filter(v => v.type_equipement === 'desenfumages')
+              .map(v => v.id_equipement)
+          );
+          
+          const verifiedCount = verifiedDesenfumageIds.size;
+          const totalCount = desenfumages.length;
+          const progress = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
+          
+          verificationProgress.desenfumage = {
+            count: totalCount,
+            verified: verifiedCount,
+            progress: progress,
+            status: progress === 0 ? 'not-started' : progress === 100 ? 'completed' : 'in-progress'
+          };
+        } else {
+          verificationProgress.desenfumage = { count: 0, verified: 0, progress: 0, status: 'not-started' };
+        }
+        
+        // Pour RIA et Plans, on utilise des données réelles si les tables existent
+        // Sinon, on les laisse à 0 (pas de données de démonstration)
+        try {
+          // Essayer de charger les RIA (si la table existe)
+          const { data: rias, error: riaError } = await supabase
+            .from('rias')
+            .select('*')
+            .eq('id_site', currentSite.id_site);
+          
+          if (riaError) {
+            console.log('ℹ️ Table rias non trouvée (normale si pas d\'équipements RIA)');
+            verificationProgress.ria = { count: 0, verified: 0, progress: 0, status: 'not-started' };
+          } else if (rias) {
+            // Compter les RIA vérifiés dans cette intervention (équipements uniques)
+            const verifiedRiaIds = new Set(
+              verifications
+                .filter(v => v.type_equipement === 'rias')
+                .map(v => v.id_equipement)
+            );
+            
+            const verifiedCount = verifiedRiaIds.size;
+            const totalCount = rias.length;
+            const progress = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
+            
+            verificationProgress.ria = {
+              count: totalCount,
+              verified: verifiedCount,
+              progress: progress,
+              status: totalCount === 0 ? 'not-started' : verifiedCount === totalCount ? 'completed' : 'in-progress'
+            };
+          } else {
+            verificationProgress.ria = { count: 0, verified: 0, progress: 0, status: 'not-started' };
+          }
+        } catch (error) {
+          console.log('ℹ️ Erreur lors du chargement des RIA:', error);
+          verificationProgress.ria = { count: 0, verified: 0, progress: 0, status: 'not-started' };
+        }
+        
+        try {
+          // Essayer de charger les Plans (si la table existe)
+          const { data: plans, error: plansError } = await supabase
+            .from('plans_evacuation')
+            .select('*')
+            .eq('id_site', currentSite.id_site);
+          
+          if (plansError) {
+            console.log('ℹ️ Table plans_evacuation non trouvée (normale si pas de plans)');
+            verificationProgress.plans = { count: 0, verified: 0, progress: 0, status: 'not-started' };
+          } else if (plans) {
+            // Compter les Plans vérifiés dans cette intervention (équipements uniques)
+            const verifiedPlanIds = new Set(
+              verifications
+                .filter(v => v.type_equipement === 'plans_evacuation')
+                .map(v => v.id_equipement)
+            );
+            
+            const verifiedCount = verifiedPlanIds.size;
+            const totalCount = plans.length;
+            const progress = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
+            
+            verificationProgress.plans = {
+              count: totalCount,
+              verified: verifiedCount,
+              progress: progress,
+              status: totalCount === 0 ? 'not-started' : verifiedCount === totalCount ? 'completed' : 'in-progress'
+            };
+          } else {
+            verificationProgress.plans = { count: 0, verified: 0, progress: 0, status: 'not-started' };
+          }
+        } catch (error) {
+          console.log('ℹ️ Erreur lors du chargement des plans:', error);
+          verificationProgress.plans = { count: 0, verified: 0, progress: 0, status: 'not-started' };
+        }
+        
+        console.log('✅ État d\'avancement chargé:', verificationProgress);
+        
+        // Mettre à jour l'affichage avec les indicateurs de progression
+        updateDisplayWithProgress();
+        
+        // Mettre à jour la progression globale
+        updateGlobalProgress();
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement de l\'état d\'avancement:', error);
+        // En cas d'erreur, on met tout à 0 (pas de données de démonstration)
+        verificationProgress = {
+          extincteurs: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+          eclairage: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+          alarme: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+          desenfumage: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+          ria: { status: 'not-started', progress: 0, count: 0, verified: 0 },
+          plans: { status: 'not-started', progress: 0, count: 0, verified: 0 }
+        };
+        
+        updateDisplayWithProgress();
+        updateGlobalProgress();
+      }
+    }
+    
+    // Fonction pour charger des données de démonstration (SUPPRIMÉE)
+    // Toutes les données sont maintenant réelles depuis Supabase
+    
+    // Fonction pour mettre à jour l'affichage
+    function updateDisplay() {
+      if (!currentSite) return;
+      
+      // Mettre à jour le titre avec le format demandé
+      const clientName = currentClient ? currentClient.nom_client : 'Client inconnu';
+      const clientCode = currentClient ? currentClient.code_client : 'N/A';
+      const siteNumber = currentSite.num_site || 'N/A';
+      
+      document.getElementById('pageTitle').textContent = `${clientName} - ${currentSite.nom_site}`;
+      document.getElementById('headerSub').textContent = `${clientCode} - ${siteNumber}`;
+    }
+    
+    // Fonction pour mettre à jour l'affichage avec les indicateurs de progression
+    function updateDisplayWithProgress() {
+      if (!currentSite || !currentIntervention) return;
+      
+      // Récupérer les types d'équipements sélectionnés dans l'intervention
+      let types = currentIntervention.types_equipements || [];
+      
+      // Si c'est une string JSON, la parser
+      if (typeof types === 'string') {
+        try {
+          types = JSON.parse(types);
+        } catch (e) {
+          console.error('❌ Erreur parsing types_equipements:', e);
+          types = [];
+        }
+      }
+      
+      // S'assurer que c'est bien un tableau
+      if (!Array.isArray(types)) {
+        console.error('❌ types_equipements n\'est pas un tableau:', types);
+        types = [];
+      }
+      
+      console.log('🔍 Types d\'équipements à afficher:', types);
+      
+      // Créer le contenu avec les indicateurs de progression
+      const contentContainer = document.getElementById('content');
+      
+      // Générer les vignettes pour chaque type sélectionné
+      const vignettesHTML = types.map(type => {
+        const typeKey = getTypeKey(type);
+        const progress = verificationProgress[typeKey] || { status: 'not-started', progress: 0, count: 0, verified: 0 };
+        
+        return `
+          <div class="detail-card" onclick="handleCardClick('${type}', event)">
+            <div class="detail-icon">${getTypeIcon(type)}</div>
+            <div class="detail-title">${getTypeLabel(type)}</div>
+            <div class="detail-status status-${progress.status}">
+              ${getStatusText(progress)}
+            </div>
+            <div class="status-progress-bar">
+              <div class="status-progress-fill ${progress.status}" style="width: ${progress.progress}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      contentContainer.innerHTML = `
+        <div class="detail-grid">
+          ${vignettesHTML}
+        </div>
+        
+        <!-- Intervention Actions Card -->
+        <div class="intervention-actions-card" style="margin-top: 30px;">
+          <button class="intervention-btn pause" onclick="pauseIntervention()">
+            ⏸️ Mise en attente
+          </button>
+          <button class="intervention-btn report" onclick="generateReport()">
+            📄 Générer le Rapport
+          </button>
+        </div>
+      `;
+    }
+    
+    // Fonction pour générer le texte de statut
+    function getStatusText(progress) {
+      if (progress.status === 'not-started') {
+        if (progress.count === 0) {
+          return 'Aucun équipement';
+        } else {
+          return `${progress.count} équipements à vérifier`;
+        }
+      } else if (progress.status === 'in-progress') {
+        const remaining = progress.count - progress.verified;
+        return `${progress.verified}/${progress.count} vérifiés (${remaining} restants)`;
+      } else if (progress.status === 'completed') {
+        return `${progress.count} équipements vérifiés ✓`;
+      }
+      return 'Statut inconnu';
+    }
+    
+    // Fonction pour obtenir la clé du type d'équipement
+    function getTypeKey(type) {
+      const typeMap = {
+        'extincteurs': 'extincteurs',
+        'eclairages': 'eclairage',
+        'alarmes': 'alarme',
+        'desenfumages': 'desenfumage',
+        'rias': 'ria',
+        'plans_evacuation': 'plans'
+      };
+      return typeMap[type] || type;
+    }
+    
+    // Fonction pour obtenir le label du type d'équipement
+    function getTypeLabel(type) {
+      const labelMap = {
+        'extincteurs': 'Extincteurs',
+        'eclairages': 'Éclairage de Sécurité',
+        'alarmes': 'Alarme Incendie',
+        'desenfumages': 'Désenfumage',
+        'rias': 'RIA',
+        'plans_evacuation': 'Plans d\'Évacuation'
+      };
+      return labelMap[type] || type;
+    }
+    
+    // Fonction pour obtenir l'icône du type d'équipement
+    function getTypeIcon(type) {
+      const iconMap = {
+        'extincteurs': '',
+        'eclairages': '',
+        'alarmes': '',
+        'desenfumages': '',
+        'rias': '',
+        'plans_evacuation': ''
+      };
+      return iconMap[type] || '';
+    }
+    
+    // Fonction pour calculer et mettre à jour la progression globale
+    function updateGlobalProgress() {
+      let totalEquipments = 0;
+      let totalVerified = 0;
+      
+      // Calculer les totaux
+      Object.values(verificationProgress).forEach(progress => {
+        totalEquipments += progress.count;
+        totalVerified += progress.verified;
+      });
+      
+      // Calculer le pourcentage global
+      const globalPercentage = totalEquipments > 0 ? Math.round((totalVerified / totalEquipments) * 100) : 0;
+      
+      // Mettre à jour l'indicateur circulaire
+      const progressText = document.getElementById('circularProgressText');
+      const progressRing = document.querySelector('.progress-ring-fill');
+      
+      if (progressText && progressRing) {
+        progressText.textContent = `${globalPercentage}%`;
+        
+        // Calculer le stroke-dashoffset pour l'animation circulaire
+        const circumference = 2 * Math.PI * 24; // r = 24
+        const offset = circumference - (globalPercentage / 100) * circumference;
+        progressRing.style.strokeDashoffset = offset;
+        
+        // Changer la couleur selon la progression
+        if (globalPercentage === 100) {
+          progressRing.style.stroke = '#22c55e';
+        } else if (globalPercentage >= 50) {
+          progressRing.style.stroke = '#f59e0b';
+        } else {
+          progressRing.style.stroke = '#9B2423';
+        }
+      }
+    }
+    
+    // Fonction pour sélectionner un type de vérification
+    function selectVerificationType(type) {
+      if (!currentSite) {
+        alert('⚠️ Site non chargé');
+        return;
+      }
+      
+      console.log(`✅ Type de vérification sélectionné: ${type} pour le site ${currentSite.nom_site}`);
+      
+      if (type === 'Extincteurs') {
+        // Rediriger vers extSite.html pour les extincteurs
+        window.location.href = `extSite.html?site=${encodeURIComponent(currentSite.id_site)}`;
+      } else if (type === 'Éclairage de Sécurité') {
+        // Rediriger vers eclairageSite.html pour l'éclairage
+        window.location.href = `eclairageSite.html?site=${encodeURIComponent(currentSite.id_site)}`;
+      } else if (type === 'Alarme Incendie') {
+        // Rediriger vers alarmeSite.html pour l'alarme
+        window.location.href = `alarmeSite.html?site=${encodeURIComponent(currentSite.id_site)}`;
+      } else if (type === 'Désenfumage') {
+        // Rediriger vers desenfumageList.html pour voir la liste des installations
+        window.location.href = `desenfumageList.html?site=${encodeURIComponent(currentSite.id_site)}`;
+      } else {
+        // Rediriger vers la page de création de vérification avec les paramètres
+        const params = new URLSearchParams({
+          site: currentSite.id_site,
+          type: encodeURIComponent(type)
+        });
+        
+        window.location.href = `newVerification.html?${params.toString()}`;
+      }
+    }
+    
+    // Fonction pour démarrer l'appui long sur le bouton retour
+    function startLongPress(event) {
+      event.preventDefault();
+      const button = event.target;
+      
+      // Ajouter la classe pour l'effet visuel
+      button.classList.add('long-press');
+      
+      // Démarrer le timer
+      longPressTimer = setTimeout(() => {
+        // Exécuter la fonction de retour après l'appui long
+        goBack();
+      }, 1000); // 1 seconde pour l'appui long
+    }
+    
+    // Fonction pour terminer l'appui long sur le bouton retour
+    function endLongPress(event) {
+      event.preventDefault();
+      const button = event.target;
+      
+      // Retirer la classe d'effet visuel
+      button.classList.remove('long-press');
+      
+      // Annuler le timer si l'appui n'a pas duré assez longtemps
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      // Retourner vers newVerification.html avec le contexte du client sélectionné
+      if (currentClient && currentSite) {
+        // Retourner vers la page de sélection des sites avec le client pré-sélectionné
+        const params = new URLSearchParams({
+          client: currentClient.id_client,
+          step: 'sites'
+        });
+        window.location.href = `newVerification.html?${params.toString()}`;
+      } else {
+        // Fallback vers la page de vérification générale
+        window.location.href = 'verification.html';
+      }
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('content').innerHTML = `
+        <div style="text-align: center; padding: 3rem; color: #ef4444; font-size: 1.1rem;">
+          ${message}
+        </div>
+      `;
+    }
+
+
+    
+    function showClientSummary() {
+      if (!currentSite) {
+        alert('⚠️ Site non chargé');
+        return;
+      }
+      
+      console.log('📋 Ouverture du résumé client pour le site:', currentSite.nom_site);
+      
+      // Rediriger vers la page de résumé avec les paramètres du site
+      const params = new URLSearchParams({
+        site: currentSite.id_site,
+        client: currentClient ? currentClient.id_client : '',
+        siteName: encodeURIComponent(currentSite.nom_site),
+        clientName: currentClient ? encodeURIComponent(currentClient.nom_client) : 'Client inconnu'
+      });
+      
+      window.location.href = `verificationSummary.html?${params.toString()}`;
+    }
+    
+    // Variables globales pour l'intervention
+    let currentIntervention = null;
+    let interventionEquipments = [];
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Vérifications Site...');
+      
+      // Récupérer l'ID de l'intervention depuis l'URL
+      const interventionId = getInterventionIdFromURL();
+      
+      if (!interventionId) {
+        showError('ID de l\'intervention manquant dans l\'URL');
+        return;
+      }
+      
+              // Charger les données de l'intervention
+        await loadInterventionData(interventionId);
+        
+        // Charger l'état d'avancement des vérifications
+        await loadVerificationProgress();
+    });
+    
+    // Fonction pour récupérer l'ID de l'intervention depuis l'URL
+    function getInterventionIdFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('intervention');
+    }
+    
+    // Fonction pour charger les données de l'intervention
+    async function loadInterventionData(interventionId) {
+      try {
+        console.log('🔍 Chargement de l\'intervention:', interventionId);
+        
+        // Charger l'intervention
+        const { data: intervention, error: interventionError } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            sites!inner(
+              *,
+              clients!inner(*)
+            )
+          `)
+          .eq('id_intervention', interventionId)
+          .single();
+        
+        if (interventionError) {
+          console.error('❌ Erreur chargement intervention:', interventionError);
+          showError('Erreur lors du chargement de l\'intervention');
+          return;
+        }
+        
+        currentIntervention = intervention;
+        currentSite = intervention.sites;
+        currentClient = intervention.sites.clients;
+        
+        console.log('✅ Intervention chargée:', currentIntervention);
+        console.log('🔍 types_equipements brut:', currentIntervention.types_equipements);
+        console.log('🔍 type de types_equipements:', typeof currentIntervention.types_equipements);
+        
+        // Charger les équipements selon les types sélectionnés
+        await loadInterventionEquipments();
+        
+        // Afficher l'interface
+        displayInterventionInterface();
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        showError('Erreur lors du chargement des données');
+      }
+    }
+    
+    // Fonction pour charger les équipements de l'intervention
+    async function loadInterventionEquipments() {
+      try {
+        // S'assurer que types_equipements est bien un tableau
+        let types = currentIntervention.types_equipements || [];
+        
+        // Si c'est une string JSON, la parser
+        if (typeof types === 'string') {
+          try {
+            types = JSON.parse(types);
+          } catch (e) {
+            console.error('❌ Erreur parsing types_equipements:', e);
+            types = [];
+          }
+        }
+        
+        // S'assurer que c'est bien un tableau
+        if (!Array.isArray(types)) {
+          console.error('❌ types_equipements n\'est pas un tableau:', types);
+          types = [];
+        }
+        
+        console.log('🔍 Types d\'équipements chargés:', types);
+        interventionEquipments = [];
+        
+        for (const type of types) {
+          let equipments = [];
+          
+          switch (type) {
+            case 'extincteurs':
+              const { data: ext } = await supabase
+                .from('extincteurs')
+                .select('*')
+                .eq('id_site', currentSite.id_site);
+              equipments = ext || [];
+              break;
+              
+            case 'eclairages':
+              const { data: ecl } = await supabase
+                .from('eclairages')
+                .select('*')
+                .eq('id_site', currentSite.id_site);
+              equipments = ecl || [];
+              break;
+              
+            case 'alarmes':
+              const { data: alarm } = await supabase
+                .from('alarmes')
+                .select('*')
+                .eq('id_site', currentSite.id_site);
+              equipments = alarm || [];
+              break;
+              
+            case 'desenfumages':
+              const { data: des } = await supabase
+                .from('desenfumages')
+                .select('*')
+                .eq('id_site', currentSite.id_site);
+              equipments = des || [];
+              break;
+          }
+          
+          interventionEquipments.push({
+            type: type,
+            equipments: equipments
+          });
+        }
+        
+        console.log('✅ Équipements chargés:', interventionEquipments);
+        
+      } catch (error) {
+        console.error('❌ Erreur chargement équipements:', error);
+      }
+    }
+    
+    // Fonction pour afficher l'interface de l'intervention
+    function displayInterventionInterface() {
+      // Mettre à jour le header
+      document.getElementById('pageTitle').textContent = `${currentClient.nom_client} - ${currentSite.nom_site}`;
+      document.getElementById('headerSub').textContent = `Intervention ${currentIntervention.numero_intervention}`;
+      
+      // Calculer la progression globale
+      let totalEquipments = 0;
+      let totalVerified = 0;
+      
+      interventionEquipments.forEach(section => {
+        totalEquipments += section.equipments.length;
+        // Compter les vérifications déjà faites
+        section.equipments.forEach(equipment => {
+          // Ici on pourrait vérifier si l'équipement a déjà été vérifié
+          // Pour l'instant, on considère qu'aucun n'est vérifié
+        });
+      });
+      
+      const globalProgress = totalEquipments > 0 ? Math.round((totalVerified / totalEquipments) * 100) : 0;
+      document.getElementById('circularProgressText').textContent = `${globalProgress}%`;
+      
+      // Mettre à jour l'indicateur circulaire
+      const progressRing = document.querySelector('.progress-ring-fill');
+      const circumference = 2 * Math.PI * 24;
+      const offset = circumference - (globalProgress / 100) * circumference;
+      progressRing.style.strokeDashoffset = offset;
+      
+      // Afficher la grille des équipements
+      const content = document.getElementById('content');
+      
+      content.innerHTML = `
+        <div class="content-card">
+          <div class="detail-grid">
+            ${getEquipmentCards()}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Fonction pour générer les cartes d'équipements
+    function getEquipmentCards() {
+      const allTypes = [
+        { key: 'extincteurs', label: 'Extincteurs', icon: '' },
+        { key: 'eclairages', label: 'Éclairage de Sécurité', icon: '' },
+        { key: 'alarmes', label: 'Alarme Incendie', icon: '' },
+        { key: 'desenfumages', label: 'Désenfumage', icon: '' },
+        { key: 'ria', label: 'RIA', icon: '' },
+        { key: 'plans', label: 'Plans d\'Évacuation', icon: '' }
+      ];
+      
+      return allTypes.map(type => {
+        const section = interventionEquipments.find(s => s.type === type.key);
+        const equipmentCount = section ? section.equipments.length : 0;
+        const verifiedCount = 0; // À implémenter avec les vraies données
+        
+        const isSelected = currentIntervention.types_equipements.includes(type.key);
+        const status = isSelected ? (verifiedCount === equipmentCount && equipmentCount > 0 ? 'completed' : 'in-progress') : 'not-started';
+        const progress = equipmentCount > 0 ? (verifiedCount / equipmentCount) * 100 : 0;
+        
+        return `
+          <div class="detail-card ${isSelected ? 'selected' : 'disabled'}" 
+               onclick="handleCardClick('${type.key}', event)"
+               onmousedown="handleLongPress('${type.key}', event)"
+               onmouseup="handleLongPressEnd()"
+               onmouseleave="handleLongPressEnd()"
+               ontouchstart="handleLongPress('${type.key}', event)"
+               ontouchend="handleLongPressEnd()"
+               ontouchcancel="handleLongPressEnd()">
+            <div class="detail-icon">${type.icon}</div>
+            <div class="detail-title">${type.label}</div>
+            <div class="detail-status status-${status}">
+              ${isSelected ? 
+                `${verifiedCount}/${equipmentCount} équipements vérifiés` : 
+                'Aucun équipement'
+              }
+            </div>
+            <div class="status-progress-bar">
+              <div class="status-progress-fill ${status}" style="width: ${progress}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Variables pour la gestion des appuis longs
+    let longPressTimer = null;
+    let longPressTarget = null;
+    let hasLongPress = false;
+    
+    // Fonction pour gérer les clics sur les cartes
+    function handleCardClick(type, event) {
+      // Si c'était un appui long, ne pas traiter le clic
+      if (hasLongPress) {
+        hasLongPress = false;
+        return;
+      }
+      
+      console.log(`🔍 Clic sur type: ${type}`);
+      console.log(`🔍 currentIntervention:`, currentIntervention);
+      console.log(`🔍 types_equipements:`, currentIntervention?.types_equipements);
+      
+      if (!currentIntervention) {
+        console.error('❌ currentIntervention non défini');
+        return;
+      }
+      
+      // Vérifier si le type est inclus dans l'intervention
+      let types = currentIntervention.types_equipements || [];
+      
+      // Si c'est une string JSON, la parser
+      if (typeof types === 'string') {
+        try {
+          types = JSON.parse(types);
+        } catch (e) {
+          console.error('❌ Erreur parsing types_equipements:', e);
+          types = [];
+        }
+      }
+      
+      // S'assurer que c'est bien un tableau
+      if (!Array.isArray(types)) {
+        console.error('❌ types_equipements n\'est pas un tableau:', types);
+        types = [];
+      }
+      
+      if (!types.includes(type)) {
+        console.log(`❌ Type ${type} non inclus dans l'intervention`);
+        console.log(`🔍 Types disponibles:`, types);
+        // Pour les cartes désactivées, on ne fait rien au clic simple
+        return;
+      }
+      
+      console.log(`✅ Redirection vers ${type}`);
+      console.log(`🔍 Site ID:`, currentSite.id_site);
+      console.log(`🔍 Intervention ID:`, currentIntervention.id_intervention);
+      
+      // Rediriger vers la page spécifique selon le type
+      const params = new URLSearchParams({
+        site: currentSite.id_site,
+        intervention: currentIntervention.id_intervention
+      });
+      
+      console.log(`🔍 URL de redirection:`, `${type}.html?${params.toString()}`);
+      
+      switch (type) {
+        case 'extincteurs':
+          window.location.href = `extSite.html?${params.toString()}`;
+          break;
+        case 'eclairages':
+          window.location.href = `eclairageSite.html?${params.toString()}`;
+          break;
+        case 'alarmes':
+          window.location.href = `alarmeSite.html?${params.toString()}`;
+          break;
+        case 'desenfumages':
+          window.location.href = `desenfumageList.html?${params.toString()}`;
+          break;
+        case 'ria':
+          // Page RIA à créer
+          alert('Page RIA à implémenter');
+          break;
+        case 'plans':
+          // Page Plans d'évacuation à créer
+          alert('Page Plans d\'évacuation à implémenter');
+          break;
+        default:
+          console.log(`Type non géré: ${type}`);
+      }
+    }
+    
+
+    
+    // Fonction pour gérer l'appui long
+    function handleLongPress(type, event) {
+      // Démarrer le timer pour l'appui long
+      longPressTimer = setTimeout(() => {
+        hasLongPress = true; // Marquer qu'un appui long a eu lieu
+        if (!currentIntervention.types_equipements.includes(type)) {
+          // Appui long sur carte désactivée
+          showAddEquipmentDialog(type);
+        }
+      }, 500); // 500ms pour l'appui long
+      
+      longPressTarget = type;
+    }
+    
+    // Fonction pour arrêter l'appui long
+    function handleLongPressEnd() {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      longPressTarget = null;
+    }
+    
+    // Fonction pour afficher le dialogue d'ajout d'équipement
+    function showAddEquipmentDialog(type) {
+      const typeLabels = {
+        'extincteurs': 'Extincteurs',
+        'eclairages': 'Éclairages de Sécurité',
+        'alarmes': 'Alarmes Incendie',
+        'desenfumages': 'Désenfumage',
+        'ria': 'RIA',
+        'plans': 'Plans d\'Évacuation'
+      };
+      
+      const typeIcons = {
+        'extincteurs': '',
+        'eclairages': '',
+        'alarmes': '',
+        'desenfumages': '',
+        'ria': '',
+        'plans': ''
+      };
+      
+      const confirmed = confirm(
+        `${typeIcons[type]} Voulez-vous ajouter des ${typeLabels[type]} à ce site ?\n\n` +
+        `Cela permettra de les inclure dans les futures interventions.`
+      );
+      
+      if (confirmed) {
+        // Rediriger vers la page d'ajout d'équipement
+        const params = new URLSearchParams({
+          site: currentSite.id_site,
+          type: type
+        });
+        
+        // Ici on pourrait rediriger vers une page d'ajout d'équipement
+        // Pour l'instant, on affiche un message
+        alert(`Redirection vers la page d'ajout de ${typeLabels[type]} - Fonctionnalité à implémenter`);
+      }
+    }
+    
+    // Fonction pour obtenir le label d'un type d'équipement
+    function getEquipmentTypeLabel(type) {
+      const labels = {
+        'extincteurs': 'Extincteurs',
+        'eclairages': 'Éclairages',
+        'alarmes': 'Alarmes',
+        'desenfumages': 'Désenfumage'
+      };
+      return labels[type] || type;
+    }
+    
+    // Fonction pour vérifier un équipement
+    async function verifyEquipment(type, equipmentId) {
+      const status = prompt(`Vérification de l'équipement ${equipmentId}\n\nStatut: OK ou Pas OK`);
+      
+      if (!status) return;
+      
+      const observations = prompt('Observations (optionnel):');
+      
+      try {
+        // Préparer les données de vérification
+        const verificationData = {
+          type_equipement: type,
+          id_equipement: equipmentId,
+          id_intervention: currentIntervention.id_intervention,
+          observations: observations || '',
+          statut: status === 'OK' ? 'OK' : 'Pas OK',
+          date_verification: new Date().toISOString()
+        };
+
+        // Sauvegarder en mode offline/online
+        await syncManager.saveVerification(verificationData);
+        
+        // Mettre à jour l'affichage
+        const statusElement = document.getElementById(`status-${type}-${equipmentId}`);
+        if (statusElement) {
+          statusElement.textContent = status === 'OK' ? '✅ OK' : '❌ Pas OK';
+          statusElement.className = `verification-status ${status === 'OK' ? 'ok' : 'not-ok'}`;
+        }
+        
+        console.log('✅ Vérification enregistrée (offline/online)');
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        alert('❌ Erreur lors de la vérification');
+      }
+    }
+    
+    // Fonction pour mettre en attente l'intervention
+    async function pauseIntervention() {
+      const confirmed = confirm(
+        '⏸️ Voulez-vous vraiment mettre cette intervention en attente ?\n\n' +
+        'L\'intervention sera sauvegardée et pourra être reprise plus tard.'
+      );
+      
+      if (!confirmed) return;
+      
+      try {
+        console.log('⏸️ Mise en attente de l\'intervention:', currentIntervention.id_intervention);
+        
+        // Mettre à jour l'état de l'intervention
+        const { error } = await supabase
+          .from('interventions')
+          .update({ 
+            etat_intervention: 'En attente',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id_intervention', currentIntervention.id_intervention);
+        
+        if (error) {
+          console.error('❌ Erreur mise à jour intervention:', error);
+          alert('❌ Erreur lors de la mise en attente');
+          return;
+        }
+        
+        alert('✅ Intervention mise en attente avec succès !');
+        
+        // Rediriger vers la page des interventions en attente (à créer)
+        window.location.href = 'ongoingVerification.html';
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        alert('❌ Erreur lors de la mise en attente');
+      }
+    }
+    
+    // Fonction pour générer le rapport (clôture plus tard dans verificationSummary.html)
+    async function generateReport() {
+      const confirmed = confirm(
+        '📄 Voulez-vous générer le rapport de cette intervention ?\n\n' +
+        'Vous serez redirigé vers la page de génération du rapport.'
+      );
+      
+      if (!confirmed) return;
+      
+      try {
+        console.log('📄 Redirection vers la génération du rapport pour l\'intervention:', currentIntervention.id_intervention);
+        
+        // Rediriger vers la page de génération du rapport (sans clôturer l'intervention)
+        const params = new URLSearchParams({
+          site: currentSite.id_site,
+          intervention: currentIntervention.id_intervention,
+          client: currentClient ? currentClient.id_client : '',
+          siteName: encodeURIComponent(currentSite.nom_site),
+          clientName: currentClient ? encodeURIComponent(currentClient.nom_client) : 'Client inconnu'
+        });
+        
+        window.location.href = `verificationSummary.html?${params.toString()}`;
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        alert('❌ Erreur lors de la redirection vers le rapport');
+      }
+    }
+    
+    // Fonction pour terminer l'intervention (ancienne fonction - gardée pour compatibilité)
+    async function finishIntervention() {
+      try {
+        // Mettre à jour l'état de l'intervention
+        const { error } = await supabase
+          .from('interventions')
+          .update({ etat_intervention: 'Terminé' })
+          .eq('id_intervention', currentIntervention.id_intervention);
+        
+        if (error) {
+          console.error('❌ Erreur mise à jour intervention:', error);
+          alert('❌ Erreur lors de la finalisation');
+          return;
+        }
+        
+        alert('✅ Intervention terminée avec succès !');
+        window.location.href = 'verification.html';
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        alert('❌ Erreur lors de la finalisation');
+      }
+    }
+  </script>
+</body>
+</html> 

@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alarme Incendie - JPSI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+            font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .header-card {
+            background: #f6f7f9;
+            border: 3.5px solid #FFD700;
+            border-radius: 38px;
+            box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .back-button {
+            background: #FFD700;
+            color: #23272b;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .back-button:hover {
+            background: #FFA500;
+        }
+        
+        .header-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #23272b;
+            margin: 0;
+        }
+        
+        .add-button {
+            background: #FFD700;
+            color: #23272b;
+            border: none;
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+        
+        .add-button:hover {
+            background: #FFA500;
+            transform: translateY(-1px);
+        }
+        
+        .content-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .alarme-info {
+            padding: 2rem;
+        }
+        
+        .alarme-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f3f4f6;
+        }
+        
+        .alarme-icon {
+            font-size: 3rem;
+            background: #fef3c7;
+            border: 2px solid #FFD700;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .alarme-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+            margin: 0;
+        }
+        
+        .alarme-subtitle {
+            color: #6b7280;
+            font-size: 1rem;
+            margin-top: 0.25rem;
+        }
+        
+        .alarme-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .detail-group {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .detail-value {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .status-ok {
+            background: #10b981;
+        }
+        
+        .status-warning {
+            background: #f59e0b;
+        }
+        
+        .status-error {
+            background: #ef4444;
+        }
+        
+        .status-gray {
+            background: #6b7280;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.6;
+        }
+        
+        .empty-state-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+        }
+        
+        .empty-state-description {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+        
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            border: 2px solid #e5e7eb;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f3f4f6;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: #f3f4f6;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.95rem;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            background: #f9fafb;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #FFD700;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid #f3f4f6;
+        }
+        
+        .modal-button {
+            padding: 0.875rem 1.75rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .modal-button.primary {
+            background: #FFD700;
+            color: #23272b;
+        }
+        
+        .modal-button.primary:hover {
+            background: #FFA500;
+            transform: translateY(-1px);
+        }
+        
+        .modal-button.secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .modal-button.secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        /* Styles pour le switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #6b7280;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #10b981;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .header-card {
+                border-radius: 18px;
+                padding: 1.5rem;
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .content-card {
+                border-radius: 18px;
+            }
+            
+            .header-title {
+                font-size: 1.8rem;
+            }
+            
+            .add-button {
+                margin-left: 0;
+                margin-top: 1rem;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .alarme-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Card -->
+        <div class="header-card">
+            <button class="back-button" onclick="goBack()" title="Retour">
+                ←
+            </button>
+            <div style="flex: 1;">
+                <h1 class="header-title" id="mainTitle">Alarme Incendie</h1>
+                <div style="color: #6b7280; font-size: 1rem; margin-top: 0.25rem;" id="subTitle">Chargement...</div>
+            </div>
+            <button class="add-button" onclick="addAlarme()">+ Ajouter</button>
+        </div>
+        
+        <!-- Content -->
+        <div class="content-card">
+            <div id="content">
+                <div style="text-align: center; padding: 3rem; color: #6b7280;">
+                    Chargement...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Supabase
+        const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+        
+        // Initialisation de Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Variables globales
+        let currentSite = null;
+        let currentClient = null;
+        let currentIntervention = null;
+        let alarme = null;
+        let peripheriques = [];
+        let verifications = []; // Vérifications de l'intervention
+        
+        // Fonction pour récupérer l'ID du site et de l'intervention depuis l'URL
+        function getSiteIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const siteId = urlParams.get('site');
+            const interventionId = urlParams.get('intervention');
+            
+            if (!siteId) {
+                console.error('❌ Aucun ID de site fourni dans l\'URL');
+                return null;
+            }
+            
+            if (!interventionId) {
+                console.error('❌ Aucun ID d\'intervention fourni dans l\'URL');
+                return null;
+            }
+            
+            console.log(`🔍 ID du site récupéré: ${siteId}`);
+            console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
+            return { siteId: decodeURIComponent(siteId), interventionId: decodeURIComponent(interventionId) };
+        }
+        
+        // Fonction pour charger les données du site et de l'intervention
+        async function loadSiteData(params) {
+            try {
+                console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
+                console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
+                
+                // Charger l'intervention
+                const { data: intervention, error: interventionError } = await supabase
+                    .from('interventions')
+                    .select(`
+                        *,
+                        sites!inner(
+                            *,
+                            clients!inner(*)
+                        )
+                    `)
+                    .eq('id_intervention', params.interventionId)
+                    .single();
+                
+                if (interventionError) {
+                    console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+                    showError('Erreur lors du chargement de l\'intervention');
+                    return;
+                }
+                
+                currentIntervention = intervention;
+                currentSite = intervention.sites;
+                currentClient = intervention.sites.clients;
+                
+                console.log('✅ Intervention chargée:', currentIntervention);
+                console.log('✅ Données du site chargées:', currentSite);
+                console.log('✅ Données du client chargées:', currentClient);
+                
+                // Charger l'alarme
+                await loadAlarme(params.siteId);
+                
+                // Charger les périphériques si l'alarme existe
+                if (alarme) {
+                    await loadPeripheriques(alarme.id_alarme);
+                }
+                
+                // Charger les vérifications de l'intervention
+                await loadVerifications(params.interventionId);
+                
+                // Mettre à jour l'affichage
+                updateDisplay();
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des données:', error);
+                showError('Erreur lors du chargement des données');
+            }
+        }
+        
+        // Fonction pour charger l'alarme
+        async function loadAlarme(siteId) {
+            try {
+                console.log(`📥 Chargement de l'alarme pour le site: ${siteId}`);
+                
+                const { data, error } = await supabase
+                    .from('alarmes')
+                    .select('*')
+                    .eq('id_site', siteId)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') {
+                    console.error('❌ Erreur lors du chargement de l\'alarme:', error);
+                    return;
+                }
+                
+                alarme = data || null;
+                console.log('✅ Alarme chargée:', alarme);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement de l\'alarme:', error);
+            }
+        }
+        
+        // Fonction pour charger les périphériques
+        async function loadPeripheriques(alarmeId) {
+            try {
+                console.log(`📥 Chargement des périphériques pour l'alarme: ${alarmeId}`);
+                
+                const { data, error } = await supabase
+                    .from('peripheriques')
+                    .select('*')
+                    .eq('id_alarme', alarmeId)
+                    .order('id_periph', { ascending: true });
+                
+                if (error) {
+                    console.error('❌ Erreur lors du chargement des périphériques:', error);
+                    return;
+                }
+                
+                peripheriques = data || [];
+                console.log(`✅ ${peripheriques.length} périphériques chargés:`, peripheriques);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des périphériques:', error);
+            }
+        }
+        
+        // Fonction pour mettre à jour l'affichage
+        function updateDisplay() {
+            if (!currentSite || !currentClient || !currentIntervention) {
+                console.log('⏳ Attente du chargement des données...');
+                return;
+            }
+            
+            // Mettre à jour le titre avec le format demandé
+            const mainTitle = `${currentClient.nom_client} - ${currentSite.nom_site}`;
+            const subTitle = `Intervention ${currentIntervention.numero_intervention}`;
+            
+            document.getElementById('mainTitle').textContent = mainTitle;
+            document.getElementById('subTitle').textContent = subTitle;
+            
+            // Créer le contenu
+            const contentContainer = document.getElementById('content');
+            
+            if (!alarme) {
+                contentContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🚨</div>
+                        <div class="empty-state-title">Aucune alarme</div>
+                        <div class="empty-state-description">Aucune alarme incendie n'a été enregistrée pour ce site.</div>
+                        <button class="add-button" onclick="addAlarme()">
+                            + Ajouter l'alarme
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            const statusClass = getStatusClass(alarme);
+            
+            contentContainer.innerHTML = `
+                <div class="alarme-info">
+                    <div class="alarme-header">
+                        <div class="alarme-icon">🚨</div>
+                        <div>
+                            <h2 class="alarme-title">Alarme Incendie</h2>
+                            <div class="alarme-subtitle">
+                                <span class="status-indicator ${statusClass}"></span>
+                                ${getStatusText(alarme)}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alarme-details">
+                        <div class="detail-group">
+                            <div class="detail-label">Type d'Alarme</div>
+                            <div class="detail-value">${alarme.type_alarme || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <div class="detail-label">Marque</div>
+                            <div class="detail-value">${alarme.marque_alarme || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <div class="detail-label">Modèle</div>
+                            <div class="detail-value">${alarme.modele_alarme || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                                                <div class="detail-label">Observations</div>
+                    <div class="detail-value">${alarme.notes_alarme || 'Aucune observation'}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button class="add-button" onclick="editAlarme()" style="margin: 0; margin-right: 1rem;">
+                            ✏️ Modifier l'Alarme
+                        </button>
+                        ${alarme.type_alarme !== 'Type 4 Pile' ? `
+                            <button class="add-button" onclick="addPeripherique()" style="margin: 0;">
+                                🔧 Ajouter un Périphérique
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    ${alarme.type_alarme !== 'Type 4 Pile' ? `
+                        <div style="margin-top: 3rem;">
+                            <h3 style="color: #374151; font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; text-align: center;">
+                                Périphériques (${peripheriques.length})
+                            </h3>
+                            
+                            ${peripheriques.length === 0 ? `
+                                <div style="text-align: center; padding: 2rem; color: #6b7280; background: #f9fafb; border-radius: 12px; border: 2px dashed #e5e7eb;">
+                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔧</div>
+                                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Aucun périphérique</div>
+                                    <div>Aucun périphérique n'a été ajouté à cette alarme.</div>
+                                </div>
+                            ` : `
+                                <div class="table-container">
+                                    <table class="eclairages-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 150px;">Type</th>
+                                                <th style="width: 200px;">Localisation</th>
+                                                <th style="width: 150px;">Marque</th>
+                                                <th style="width: 150px;">Modèle</th>
+                                                <th style="width: 100px;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${peripheriques.map(periph => `
+                                                <tr>
+                                                    <td>${periph.type_periph || 'N/A'}</td>
+                                                    <td>${periph.loc_periph || 'N/A'}</td>
+                                                    <td>${periph.marque_periph || 'N/A'}</td>
+                                                    <td>${periph.modele_periph || 'N/A'}</td>
+                                                    <td>
+                                                        <button onclick="editPeripherique('${periph.id_periph}')" style="background: #FFD700; color: #23272b; border: none; border-radius: 8px; padding: 0.5rem; cursor: pointer; font-size: 0.9rem; margin-right: 0.5rem;">
+                                                            ✏️
+                                                        </button>
+                                                        <button onclick="deletePeripherique('${periph.id_periph}')" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                                                            🗑️
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Fonction pour charger les vérifications de l'intervention
+        async function loadVerifications(interventionId) {
+            try {
+                console.log(`📥 Chargement des vérifications pour l'intervention: ${interventionId}`);
+                
+                const { data, error } = await supabase
+                    .from('verifications')
+                    .select('*')
+                    .eq('id_intervention', interventionId)
+                    .eq('type_equipement', 'alarmes');
+                
+                if (error) {
+                    console.error('❌ Erreur lors du chargement des vérifications:', error);
+                    return;
+                }
+                
+                verifications = data || [];
+                console.log(`✅ ${verifications.length} vérifications chargées:`, verifications);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des vérifications:', error);
+            }
+        }
+        
+        // Fonction pour obtenir la classe CSS du statut selon les vérifications de l'intervention
+        function getStatusClass(alarme) {
+            // Chercher la vérification pour cette alarme dans cette intervention
+            const verification = verifications.find(v => 
+                v.id_equipement === alarme.id_alarme && 
+                v.type_equipement === 'alarmes'
+            );
+            
+            if (!verification) {
+                // Pas de vérification → gris
+                return 'status-gray';
+            }
+            
+            // Vérification trouvée, regarder le statut
+            if (verification.statut === 'OK') {
+                return 'status-ok';
+            } else if (verification.statut === 'Pas OK') {
+                return 'status-error';
+            }
+            
+            // Statut inconnu → gris
+            return 'status-gray';
+        }
+        
+        // Fonction pour obtenir le texte du statut
+        function getStatusText(alarme) {
+            if (alarme.notes_alarme && alarme.notes_alarme.trim() !== '') {
+                return 'Observations présentes';
+            }
+            return 'Aucune observation';
+        }
+        
+        // Fonction pour ajouter une alarme
+        function addAlarme() {
+            if (!currentSite) {
+                alert('⚠️ Site non chargé');
+                return;
+            }
+            
+            if (alarme) {
+                alert('⚠️ Ce site possède déjà une alarme');
+                return;
+            }
+            
+            console.log('➕ Ouverture de la modal d\'ajout d\'alarme');
+            openAddAlarmeModal();
+        }
+        
+        // Fonction pour modifier une alarme
+        function editAlarme() {
+            if (!alarme) {
+                alert('⚠️ Aucune alarme à modifier');
+                return;
+            }
+            
+            console.log('✏️ Ouverture de la modal de modification d\'alarme');
+            openEditAlarmeModal();
+        }
+        
+        // Fonction pour ajouter un périphérique
+        function addPeripherique() {
+            if (!alarme) {
+                alert('⚠️ Aucune alarme sélectionnée');
+                return;
+            }
+            
+            if (alarme.type_alarme === 'Type 4 Pile') {
+                alert('⚠️ Les alarmes Type 4 Pile ne peuvent pas avoir de périphériques');
+                return;
+            }
+            
+            console.log('🔧 Ouverture de la modal d\'ajout de périphérique');
+            openAddPeripheriqueModal();
+        }
+        
+        // Fonction pour ouvrir la modal d'ajout d'alarme
+        function openAddAlarmeModal() {
+            const modalHTML = `
+                <div class="modal-overlay" id="addAlarmeModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Ajouter une alarme</h3>
+                            <button class="modal-close" onclick="closeAddAlarmeModal()">×</button>
+                        </div>
+                        <form id="addAlarmeForm">
+                            <div class="form-group">
+                                <label class="form-label">Type d'Alarme *</label>
+                                <select class="form-select" id="type_alarme" required>
+                                    <option value="">Sélectionner un type</option>
+                                    <option value="Type 4 Pile">Type 4 Pile</option>
+                                    <option value="Type 4 Secteur">Type 4 Secteur</option>
+                                    <option value="Type 4 Radio">Type 4 Radio</option>
+                                    <option value="Type 3">Type 3</option>
+                                    <option value="Type 2a">Type 2a</option>
+                                    <option value="Type 2b">Type 2b</option>
+                                    <option value="Type 1">Type 1</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Marque</label>
+                                    <input type="text" class="form-input" id="marque_alarme">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Modèle</label>
+                                    <input type="text" class="form-input" id="modele_alarme">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Observations</label>
+                                <textarea class="form-input" id="notes_alarme" rows="3" placeholder="Observations sur l'état de l'alarme..."></textarea>
+                            </div>
+                        </form>
+                        <div class="modal-buttons">
+                            <button type="button" class="modal-button secondary" onclick="closeAddAlarmeModal()">Annuler</button>
+                            <button type="button" class="modal-button primary" onclick="submitAddAlarme()">Ajouter</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+
+            
+            // Focus sur le premier champ
+            setTimeout(() => {
+                document.getElementById('type_alarme').focus();
+            }, 100);
+        }
+        
+        // Fonction pour ouvrir la modal de modification d'alarme
+        function openEditAlarmeModal() {
+            const modalHTML = `
+                <div class="modal-overlay" id="editAlarmeModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Modifier l'alarme</h3>
+                            <button class="modal-close" onclick="closeEditAlarmeModal()">×</button>
+                        </div>
+                        <form id="editAlarmeForm">
+                            <div class="form-group">
+                                <label class="form-label">Type d'Alarme *</label>
+                                <select class="form-select" id="edit_type_alarme" required>
+                                    <option value="">Sélectionner un type</option>
+                                    <option value="Type 4 Pile">Type 4 Pile</option>
+                                    <option value="Type 4 Secteur">Type 4 Secteur</option>
+                                    <option value="Type 4 Radio">Type 4 Radio</option>
+                                    <option value="Type 3">Type 3</option>
+                                    <option value="Type 2a">Type 2a</option>
+                                    <option value="Type 2b">Type 2b</option>
+                                    <option value="Type 1">Type 1</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Marque</label>
+                                    <input type="text" class="form-input" id="edit_marque_alarme">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Modèle</label>
+                                    <input type="text" class="form-input" id="edit_modele_alarme">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Observations</label>
+                                <textarea class="form-input" id="edit_notes_alarme" rows="3" placeholder="Observations sur l'état de l'alarme..."></textarea>
+                            </div>
+                        </form>
+                        <div class="modal-buttons">
+                            <button type="button" class="modal-button secondary" onclick="closeEditAlarmeModal()">Annuler</button>
+                            <button type="button" class="modal-button primary" onclick="submitEditAlarme()">Modifier</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Remplir les champs avec les données existantes
+            setTimeout(() => {
+                document.getElementById('edit_type_alarme').value = alarme.type_alarme || '';
+                document.getElementById('edit_marque_alarme').value = alarme.marque_alarme || '';
+                document.getElementById('edit_modele_alarme').value = alarme.modele_alarme || '';
+                document.getElementById('edit_notes_alarme').value = alarme.notes_alarme || '';
+            }, 100);
+            
+            // Gérer la soumission du formulaire
+            document.getElementById('editAlarmeForm').addEventListener('submit', handleEditAlarme);
+        }
+        
+        // Fonction pour fermer la modal d'ajout
+        function closeAddAlarmeModal() {
+            const modal = document.getElementById('addAlarmeModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Fonction pour fermer la modal de modification
+        function closeEditAlarmeModal() {
+            const modal = document.getElementById('editAlarmeModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Fonction pour soumettre l'ajout d'alarme
+        async function submitAddAlarme() {
+            if (!currentSite) {
+                alert('⚠️ Site non chargé');
+                return;
+            }
+            
+            const formData = {
+                type_alarme: document.getElementById('type_alarme').value,
+                marque_alarme: document.getElementById('marque_alarme').value.trim(),
+                modele_alarme: document.getElementById('modele_alarme').value.trim(),
+                notes_alarme: document.getElementById('notes_alarme').value.trim(),
+                id_site: currentSite.id_site
+            };
+            
+            // Validation
+            if (!formData.type_alarme) {
+                alert('⚠️ Le type d\'alarme est obligatoire');
+                return;
+            }
+            
+            try {
+                console.log('📥 Ajout de l\'alarme:', formData);
+                
+                const { data, error } = await supabase
+                    .from('alarmes')
+                    .insert([formData])
+                    .select();
+                
+                if (error) {
+                    console.error('❌ Erreur lors de l\'ajout:', error);
+                    alert('Erreur lors de l\'ajout de l\'alarme');
+                    return;
+                }
+                
+                console.log('✅ Alarme ajoutée avec succès:', data);
+                
+                // Fermer la modal
+                closeAddAlarmeModal();
+                
+                // Recharger l'alarme et les périphériques
+                await loadAlarme(currentSite.id_site);
+                if (alarme) {
+                    await loadPeripheriques(alarme.id_alarme);
+                }
+                updateDisplay();
+                
+                alert('✅ Alarme ajoutée avec succès');
+                
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+                alert('Erreur de connexion à la base de données');
+            }
+        }
+        
+
+        
+        // Fonction pour soumettre la modification d'alarme
+        async function submitEditAlarme() {
+            if (!currentSite || !alarme) {
+                alert('⚠️ Site ou alarme non chargé');
+                return;
+            }
+            
+            const formData = {
+                type_alarme: document.getElementById('edit_type_alarme').value,
+                marque_alarme: document.getElementById('edit_marque_alarme').value.trim(),
+                modele_alarme: document.getElementById('edit_modele_alarme').value.trim(),
+                notes_alarme: document.getElementById('edit_notes_alarme').value.trim()
+            };
+            
+            // Validation
+            if (!formData.type_alarme) {
+                alert('⚠️ Le type d\'alarme est obligatoire');
+                return;
+            }
+            
+            try {
+                console.log('📥 Modification de l\'alarme:', formData);
+                
+                const { data, error } = await supabase
+                    .from('alarmes')
+                    .update(formData)
+                    .eq('id_alarme', alarme.id_alarme)
+                    .select();
+                
+                if (error) {
+                    console.error('❌ Erreur lors de la modification:', error);
+                    alert('Erreur lors de la modification de l\'alarme');
+                    return;
+                }
+                
+                console.log('✅ Alarme modifiée avec succès:', data);
+                
+                // Fermer la modal
+                closeEditAlarmeModal();
+                
+                // Recharger l'alarme et les périphériques
+                await loadAlarme(currentSite.id_site);
+                if (alarme) {
+                    await loadPeripheriques(alarme.id_alarme);
+                }
+                updateDisplay();
+                
+                alert('✅ Alarme modifiée avec succès');
+                
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+                alert('Erreur de connexion à la base de données');
+            }
+        }
+        
+
+        
+        // Fonction pour ouvrir la modal d'ajout de périphérique
+        function openAddPeripheriqueModal() {
+            const modalHTML = `
+                <div class="modal-overlay" id="addPeripheriqueModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Ajouter un périphérique</h3>
+                            <button class="modal-close" onclick="closeAddPeripheriqueModal()">×</button>
+                        </div>
+                        <form id="addPeripheriqueForm">
+                            <div class="form-group">
+                                <label class="form-label">Type *</label>
+                                <select class="form-select" id="type_periph" required>
+                                    <option value="">Sélectionner un type</option>
+                                    <option value="Détecteur">Détecteur</option>
+                                    <option value="Déclencheur manuel">Déclencheur manuel</option>
+                                    <option value="DSAF">DSAF</option>
+                                    <option value="DVAF">DVAF</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Localisation *</label>
+                                <input type="text" class="form-input" id="loc_periph" required>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Marque</label>
+                                    <input type="text" class="form-input" id="marque_periph">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Modèle</label>
+                                    <input type="text" class="form-input" id="modele_periph">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Observations</label>
+                                <textarea class="form-input" id="obs_periph" rows="3" placeholder="Observations sur l'état du périphérique..."></textarea>
+                            </div>
+                            <div class="modal-buttons">
+                                <button type="button" class="modal-button secondary" onclick="closeAddPeripheriqueModal()">Annuler</button>
+                                <button type="submit" class="modal-button primary">Ajouter</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Gérer la soumission du formulaire
+            document.getElementById('addPeripheriqueForm').addEventListener('submit', handleAddPeripherique);
+            
+            // Focus sur le premier champ
+            setTimeout(() => {
+                document.getElementById('type_periph').focus();
+            }, 100);
+        }
+        
+        // Fonction pour fermer la modal d'ajout de périphérique
+        function closeAddPeripheriqueModal() {
+            const modal = document.getElementById('addPeripheriqueModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+
+        
+        // Fonction pour gérer l'ajout de périphérique
+        async function handleAddPeripherique(event) {
+            event.preventDefault();
+            
+            if (!alarme) {
+                alert('⚠️ Alarme non chargée');
+                return;
+            }
+            
+            const formData = {
+                type_periph: document.getElementById('type_periph').value,
+                loc_periph: document.getElementById('loc_periph').value.trim(),
+                marque_periph: document.getElementById('marque_periph').value.trim(),
+                modele_periph: document.getElementById('modele_periph').value.trim(),
+                note_periph: document.getElementById('obs_periph').value.trim(),
+                id_alarme: alarme.id_alarme
+            };
+            
+            // Validation
+            if (!formData.type_periph || !formData.loc_periph) {
+                alert('⚠️ Le type et la localisation sont obligatoires');
+                return;
+            }
+            
+            try {
+                console.log('📥 Ajout du périphérique:', formData);
+                
+                const { data, error } = await supabase
+                    .from('peripheriques')
+                    .insert([formData])
+                    .select();
+                
+                if (error) {
+                    console.error('❌ Erreur lors de l\'ajout:', error);
+                    alert('Erreur lors de l\'ajout du périphérique');
+                    return;
+                }
+                
+                console.log('✅ Périphérique ajouté avec succès:', data);
+                
+                // Fermer la modal
+                closeAddPeripheriqueModal();
+                
+                // Recharger les périphériques
+                await loadPeripheriques(alarme.id_alarme);
+                updateDisplay();
+                
+                alert('✅ Périphérique ajouté avec succès');
+                
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+                alert('Erreur de connexion à la base de données');
+            }
+        }
+        
+        // Fonction pour modifier un périphérique
+        function editPeripherique(peripheriqueId) {
+            console.log(`✏️ Modification du périphérique: ${peripheriqueId}`);
+            openEditPeripheriqueModal(peripheriqueId);
+        }
+        
+        // Fonction pour ouvrir la modal de modification de périphérique
+        function openEditPeripheriqueModal(peripheriqueId) {
+            // Trouver le périphérique à modifier
+            const peripherique = peripheriques.find(p => p.id_periph === peripheriqueId);
+            if (!peripherique) {
+                alert('⚠️ Périphérique non trouvé');
+                return;
+            }
+            
+            const modalHTML = `
+                <div class="modal-overlay" id="editPeripheriqueModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Modifier le périphérique</h3>
+                            <button class="modal-close" onclick="closeEditPeripheriqueModal()">×</button>
+                        </div>
+                        <form id="editPeripheriqueForm">
+                            <div class="form-group">
+                                <label class="form-label">Type *</label>
+                                    <select class="form-select" id="type_periph" required>
+                                        <option value="">Sélectionner un type</option>
+                                        <option value="Détecteur">Détecteur</option>
+                                        <option value="Déclencheur manuel">Déclencheur manuel</option>
+                                        <option value="DSAF">DSAF</option>
+                                        <option value="DVAF">DVAF</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Localisation *</label>
+                                <input type="text" class="form-input" id="loc_periph" required>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Marque</label>
+                                    <input type="text" class="form-input" id="marque_periph">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Modèle</label>
+                                    <input type="text" class="form-input" id="modele_periph">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Observations</label>
+                                <textarea class="form-input" id="obs_periph" rows="3" placeholder="Observations sur l'état du périphérique..."></textarea>
+                            </div>
+                            <div class="modal-buttons">
+                                <button type="button" class="modal-button secondary" onclick="closeEditPeripheriqueModal()">Annuler</button>
+                                <button type="submit" class="modal-button primary">Modifier</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Remplir les champs avec les données existantes
+            setTimeout(() => {
+                document.getElementById('type_periph').value = peripherique.type_periph || '';
+                document.getElementById('loc_periph').value = peripherique.loc_periph || '';
+                document.getElementById('marque_periph').value = peripherique.marque_periph || '';
+                document.getElementById('modele_periph').value = peripherique.modele_periph || '';
+                document.getElementById('obs_periph').value = peripherique.note_periph || '';
+            }, 100);
+            
+            // Gérer la soumission du formulaire
+            document.getElementById('editPeripheriqueForm').addEventListener('submit', (event) => handleEditPeripherique(event, peripheriqueId));
+        }
+        
+        // Fonction pour fermer la modal de modification de périphérique
+        function closeEditPeripheriqueModal() {
+            const modal = document.getElementById('editPeripheriqueModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Fonction pour gérer la modification de périphérique
+        async function handleEditPeripherique(event, peripheriqueId) {
+            event.preventDefault();
+            
+            if (!alarme) {
+                alert('⚠️ Alarme non chargée');
+                return;
+            }
+            
+            const formData = {
+                type_periph: document.getElementById('type_periph').value,
+                loc_periph: document.getElementById('loc_periph').value.trim(),
+                marque_periph: document.getElementById('marque_periph').value.trim(),
+                modele_periph: document.getElementById('modele_periph').value.trim(),
+                note_periph: document.getElementById('obs_periph').value.trim()
+            };
+            
+            // Validation
+            if (!formData.type_periph || !formData.loc_periph) {
+                alert('⚠️ Le type et la localisation sont obligatoires');
+                return;
+            }
+            
+            try {
+                console.log('📥 Modification du périphérique:', formData);
+                
+                const { data, error } = await supabase
+                    .from('peripheriques')
+                    .update(formData)
+                    .eq('id_periph', peripheriqueId)
+                    .select();
+                
+                if (error) {
+                    console.error('❌ Erreur lors de la modification:', error);
+                    alert('Erreur lors de la modification du périphérique');
+                    return;
+                }
+                
+                console.log('✅ Périphérique modifié avec succès:', data);
+                
+                // Fermer la modal
+                closeEditPeripheriqueModal();
+                
+                // Recharger les périphériques
+                await loadPeripheriques(alarme.id_alarme);
+                updateDisplay();
+                
+                alert('✅ Périphérique modifié avec succès');
+                
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+                alert('Erreur de connexion à la base de données');
+            }
+        }
+        
+        // Ajout d'une modale de confirmation pour la suppression
+        function openDeletePeripheriqueModal(peripheriqueId) {
+            const modalHTML = `
+                <div class="modal-overlay" id="deletePeripheriqueModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Confirmer la suppression</h3>
+                            <button class="modal-close" onclick="closeDeletePeripheriqueModal()">×</button>
+                        </div>
+                        <div style="padding:2rem 1rem;text-align:center;">
+                            <p style="font-size:1.1rem;">⚠️ Voulez-vous vraiment supprimer ce périphérique ?</p>
+                        </div>
+                        <div class="modal-buttons">
+                            <button type="button" class="modal-button secondary" onclick="closeDeletePeripheriqueModal()">Annuler</button>
+                            <button type="button" class="modal-button danger" onclick="confirmDeletePeripherique('${peripheriqueId}')">Supprimer</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+        function closeDeletePeripheriqueModal() {
+            const modal = document.getElementById('deletePeripheriqueModal');
+            if (modal) modal.remove();
+        }
+        async function confirmDeletePeripherique(peripheriqueId) {
+            closeDeletePeripheriqueModal();
+            await deletePeripherique(peripheriqueId, true);
+        }
+        
+        // Fonction pour supprimer un périphérique
+        async function deletePeripherique(peripheriqueId, confirmed) {
+            if (!confirmed) {
+                openDeletePeripheriqueModal(peripheriqueId);
+                return;
+            }
+            try {
+                console.log(`🗑️ Suppression du périphérique: ${peripheriqueId}`);
+                const { error } = await supabase
+                    .from('peripheriques')
+                    .delete()
+                    .eq('id_periph', peripheriqueId);
+                if (error) {
+                    console.error('❌ Erreur lors de la suppression:', error);
+                    alert('Erreur lors de la suppression du périphérique');
+                    return;
+                }
+                console.log('✅ Périphérique supprimé avec succès');
+                // Recharger les périphériques
+                await loadPeripheriques(alarme.id_alarme);
+                updateDisplay();
+                alert('✅ Périphérique supprimé avec succès');
+            } catch (error) {
+                console.error('❌ Erreur de connexion:', error);
+                alert('Erreur de connexion à la base de données');
+            }
+        }
+        
+                // Fonction pour retourner à la page précédente
+        function goBack() {
+          // Retourner vers verifSite.html avec l'ID du site et de l'intervention
+          if (currentSite && currentSite.id_site && currentIntervention && currentIntervention.id_intervention) {
+            window.location.href = `verifSite.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+          } else {
+            // Fallback si pas de données chargées
+            window.location.href = 'verifSite.html';
+          }
+        }
+        
+        // Fonction pour afficher une erreur
+        function showError(message) {
+            document.getElementById('content').innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #ef4444; font-size: 1.1rem;">
+                    ${message}
+                </div>
+            `;
+        }
+        
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Initialisation de la page Alarme Site...');
+            
+            // Récupérer l'ID du site et de l'intervention depuis l'URL
+            const params = getSiteIdFromURL();
+            
+            if (!params) {
+                showError('ID du site ou de l\'intervention manquant dans l\'URL');
+                return;
+            }
+            
+            // Charger les données du site et de l'intervention
+            await loadSiteData(params);
+        });
+    </script>
+</body>
+</html> 

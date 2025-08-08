@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Détail Désenfumage</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .form-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .form-section {
+      margin-bottom: 2rem;
+    }
+    
+    .form-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #23272b;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-label.required::after {
+      content: ' *';
+      color: #ef4444;
+    }
+    
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      background: white;
+    }
+    
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: #9B2423;
+      box-shadow: 0 0 0 3px rgba(155, 36, 35, 0.1);
+    }
+    
+    .form-textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      background: white;
+      resize: vertical;
+      min-height: 100px;
+    }
+    
+    .form-textarea:focus {
+      outline: none;
+      border-color: #9B2423;
+      box-shadow: 0 0 0 3px rgba(155, 36, 35, 0.1);
+    }
+    
+    .grammage-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .grammage-field {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .grammage-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 0.25rem;
+    }
+    
+    .grammage-input {
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    
+    .grammage-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .buttons-container {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid #f3f4f6;
+    }
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+    
+    .btn-primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .error-message {
+      color: #ef4444;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    
+    .success-message {
+      color: #10b981;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        padding: 1.5rem;
+        border-radius: 20px;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .form-card {
+        padding: 1.5rem;
+      }
+      
+      .grammage-fields {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+      
+      .buttons-container {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ‹
+      </button>
+      <div>
+        <h1 class="header-title">
+          <span id="pageTitle">Ajouter un équipement</span>
+          <span class="header-subtitle" id="siteInfo">Chargement...</span>
+        </h1>
+      </div>
+    </div>
+    
+    <!-- Form -->
+    <div class="form-card">
+      <form id="desenfumageForm" onsubmit="saveDesenfumage(event)">
+        <!-- Informations de base -->
+        <div class="form-section">
+          <h2 class="section-title">Informations de base</h2>
+          
+          <div class="form-group">
+            <label for="numDes" class="form-label required">Numéro</label>
+            <input type="text" id="numDes" name="numDes" class="form-input" required placeholder="Ex: 001, 002, 003">
+          </div>
+          
+          <div class="form-group">
+            <label for="localisationDes" class="form-label required">Localisation</label>
+            <input type="text" id="localisationDes" name="localisationDes" class="form-input" required placeholder="Ex: Zone A, Secteur Nord, R+1">
+          </div>
+          
+          <div class="form-group">
+            <label for="equipementDesenfumage" class="form-label required">Type de commande</label>
+            <select id="equipementDesenfumage" name="equipementDesenfumage" class="form-select" required>
+              <option value="">Sélectionnez un type</option>
+              <option value="Treuil mécanique à relâchement de câble">Treuil mécanique à relâchement de câble</option>
+              <option value="Tirez-lâchez">Tirez-lâchez</option>
+              <option value="Commande ouverture-fermeture pneumatique">Commande ouverture-fermeture pneumatique</option>
+              <option value="Commande pneumatique">Commande pneumatique</option>
+              <option value="Commande électrique">Commande électrique</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="descouvrDes" class="form-label required">Type d'ouvrant</label>
+            <select id="descouvrDes" name="descouvrDes" class="form-select" required>
+              <option value="">Sélectionnez un type</option>
+              <option value="Ouvrant en façade intérieur">Ouvrant en façade intérieur</option>
+              <option value="Ouvrant en façade extérieur">Ouvrant en façade extérieur</option>
+              <option value="Exutoire en toiture">Exutoire en toiture</option>
+              <option value="Fenêtre de toit">Fenêtre de toit</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Observations -->
+        <div class="form-section">
+          <h2 class="section-title">Observations</h2>
+          
+          <div class="form-group">
+            <label for="obsDes" class="form-label">Observations</label>
+            <textarea id="obsDes" name="obsDes" class="form-textarea" placeholder="Observations, remarques, détails techniques..."></textarea>
+          </div>
+        </div>
+        
+        <!-- Boutons -->
+        <div class="buttons-container">
+          <button type="button" class="btn btn-secondary" onclick="goBack()">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-primary" id="saveButton">
+            <span id="saveButtonText">Enregistrer</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentSite = null;
+    let currentClient = null;
+    let currentEquipment = null;
+    let isEditMode = false;
+    
+    // Fonction pour récupérer les paramètres de l'URL
+    function getURLParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return {
+        site: urlParams.get('site'),
+        equipment: urlParams.get('equipment'),
+        action: urlParams.get('action')
+      };
+    }
+    
+    // Fonction pour charger les données du site
+    async function loadSiteData(siteId) {
+      try {
+        console.log(`📥 Chargement des données pour le site: ${siteId}`);
+        
+        const { data: site, error } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('id_site', siteId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du site:', error);
+          showError('Erreur lors du chargement du site');
+          return;
+        }
+        
+        if (!site) {
+          console.error('❌ Site non trouvé');
+          showError('Site non trouvé');
+          return;
+        }
+        
+        console.log('✅ Données du site chargées:', site);
+        currentSite = site;
+        
+        // Charger les informations du client
+        await loadClientInfo(site.id_client);
+        
+        // Mettre à jour l'interface
+        updateDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour charger les informations du client
+    async function loadClientInfo(clientId) {
+      try {
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id_client', clientId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du client:', error);
+          return;
+        }
+        
+        console.log('✅ Données du client chargées:', client);
+        currentClient = client;
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement du client:', error);
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage
+    function updateDisplay() {
+      if (!currentSite) return;
+      
+      // Mettre à jour les informations du site
+      const clientName = currentClient ? currentClient.nom_client : 'Client inconnu';
+      const clientCode = currentClient ? currentClient.code_client : 'N/A';
+      const siteNumber = currentSite.num_site || 'N/A';
+      
+      document.getElementById('siteInfo').textContent = `${clientName} - ${currentSite.nom_site} (${clientCode} - ${siteNumber})`;
+    }
+    
+    // Fonction pour charger les données d'un équipement existant
+    async function loadEquipmentData(equipmentId) {
+      try {
+        console.log(`📥 Chargement des données de l'équipement: ${equipmentId}`);
+        
+        const { data: equipment, error } = await supabase
+          .from('desenfumages')
+          .select('*')
+          .eq('id_desenfumage', equipmentId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement de l\'équipement:', error);
+          showError('Erreur lors du chargement de l\'équipement');
+          return;
+        }
+        
+        if (!equipment) {
+          console.error('❌ Équipement non trouvé');
+          showError('Équipement non trouvé');
+          return;
+        }
+        
+        console.log('✅ Données de l\'équipement chargées:', equipment);
+        currentEquipment = equipment;
+        
+        // Remplir le formulaire
+        fillForm(equipment);
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour remplir le formulaire
+    function fillForm(equipment) {
+      console.log('📋 Équipement à éditer:', equipment);
+      
+      // Remplir les champs avec les données existantes
+      if (equipment.num_des) {
+        document.getElementById('numDes').value = equipment.num_des;
+      }
+      
+      if (equipment.localisation_des) {
+        document.getElementById('localisationDes').value = equipment.localisation_des;
+      }
+      
+      if (equipment.equipement_desenfumage) {
+        document.getElementById('equipementDesenfumage').value = equipment.equipement_desenfumage;
+      }
+      
+      if (equipment.descouvr_des) {
+        document.getElementById('descouvrDes').value = equipment.descouvr_des;
+      }
+      
+      if (equipment.obs_des) {
+        document.getElementById('obsDes').value = equipment.obs_des;
+      }
+    }
+    
+
+    
+    // Fonction pour sauvegarder l'équipement
+    async function saveDesenfumage(event) {
+      event.preventDefault();
+      
+      if (!currentSite) {
+        alert('❌ Site non chargé');
+        return;
+      }
+      
+      // Récupérer les données du formulaire
+      const formData = new FormData(event.target);
+      
+      const numDes = formData.get('numDes');
+      const localisationDes = formData.get('localisationDes');
+      const equipementDesenfumage = formData.get('equipementDesenfumage');
+      const descouvrDes = formData.get('descouvrDes');
+      
+      if (!numDes || !localisationDes || !equipementDesenfumage || !descouvrDes) {
+        alert('Veuillez remplir tous les champs obligatoires');
+        return;
+      }
+      
+      // Données pour la table desenfumages (nouvelle structure)
+      const equipmentData = {
+        id_site: currentSite.id_site,
+        num_des: numDes,
+        localisation_des: localisationDes,
+        equipement_desenfumage: equipementDesenfumage,
+        descouvr_des: descouvrDes,
+        obs_des: formData.get('obsDes') || null,
+        created_at: new Date().toISOString()
+      };
+      
+      console.log('💾 Données à sauvegarder:', equipmentData);
+      
+      // Afficher le loading
+      const saveButton = document.getElementById('saveButton');
+      const saveButtonText = document.getElementById('saveButtonText');
+      saveButton.disabled = true;
+      saveButtonText.textContent = 'Enregistrement...';
+      document.getElementById('desenfumageForm').classList.add('loading');
+      
+      try {
+        let result;
+        
+        if (isEditMode && currentEquipment) {
+          // Mode édition
+          console.log('✏️ Mode édition - Mise à jour de l\'équipement');
+          result = await supabase
+            .from('desenfumages')
+            .update(equipmentData)
+            .eq('id_desenfumage', currentEquipment.id_desenfumage);
+        } else {
+          // Mode création
+          console.log('➕ Mode création - Ajout d\'un nouvel équipement');
+          result = await supabase
+            .from('desenfumages')
+            .insert([equipmentData]);
+        }
+        
+        if (result.error) {
+          console.error('❌ Erreur lors de la sauvegarde:', result.error);
+          alert(`❌ Erreur lors de la sauvegarde: ${result.error.message}`);
+          return;
+        }
+        
+        console.log('✅ Équipement sauvegardé avec succès:', result.data);
+        alert('✅ Équipement sauvegardé avec succès !');
+        
+        // Rediriger vers la liste
+        goBack();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('❌ Erreur de connexion à la base de données');
+      } finally {
+        // Restaurer le bouton
+        saveButton.disabled = false;
+        saveButtonText.textContent = 'Enregistrer';
+        document.getElementById('desenfumageForm').classList.remove('loading');
+      }
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      const params = getURLParams();
+      if (params.site) {
+        window.location.href = `desenfumageList.html?site=${encodeURIComponent(params.site)}`;
+      } else {
+        window.location.href = 'desenfumageList.html';
+      }
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      alert(`❌ ${message}`);
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Détail Désenfumage...');
+      
+      // Récupérer les paramètres de l'URL
+      const params = getURLParams();
+      
+      if (!params.site) {
+        showError('ID du site manquant dans l\'URL');
+        return;
+      }
+      
+      // Déterminer le mode (création ou édition)
+      if (params.equipment) {
+        isEditMode = true;
+        document.getElementById('pageTitle').textContent = 'Modifier l\'équipement';
+        document.getElementById('saveButtonText').textContent = 'Mettre à jour';
+        
+        // Charger les données de l'équipement
+        await loadEquipmentData(params.equipment);
+      } else {
+        isEditMode = false;
+        document.getElementById('pageTitle').textContent = 'Ajouter un équipement';
+        document.getElementById('saveButtonText').textContent = 'Enregistrer';
+      }
+      
+      // Charger les données du site
+      await loadSiteData(params.site);
+    });
+  </script>
+</body>
+</html> 

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mise à jour PWA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Mise à jour PWA - Nouvelle icône</h1>
+        
+        <p>Cette page vous aide à forcer la mise à jour de l'icône PWA sur votre iPad.</p>
+        
+        <h2>📋 Instructions :</h2>
+        <ol>
+            <li>Cliquez sur "Vider le cache" pour supprimer l'ancien cache</li>
+            <li>Cliquez sur "Mettre à jour le Service Worker"</li>
+            <li>Désinstallez l'application PWA de votre iPad</li>
+            <li>Rechargez cette page</li>
+            <li>Réinstallez la PWA - la nouvelle icône devrait apparaître</li>
+        </ol>
+        
+        <div id="status"></div>
+        
+        <button class="button" onclick="clearCache()">🗑️ Vider le cache</button>
+        <button class="button" onclick="updateServiceWorker()">🔄 Mettre à jour le Service Worker</button>
+        <button class="button" onclick="checkIcons()">👁️ Vérifier les icônes</button>
+        
+        <h2>📱 Test des icônes :</h2>
+        <div id="iconTest"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.innerHTML = `<p class="${type}">${message}</p>`;
+        }
+
+        async function clearCache() {
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    showStatus('✅ Cache vidé avec succès !', 'success');
+                } else {
+                    showStatus('❌ Cache API non disponible', 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Erreur lors du vidage du cache: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateServiceWorker() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        await registration.update();
+                        showStatus('✅ Service Worker mis à jour !', 'success');
+                    } else {
+                        showStatus('❌ Aucun Service Worker trouvé', 'error');
+                    }
+                } else {
+                    showStatus('❌ Service Worker non supporté', 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Erreur lors de la mise à jour: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkIcons() {
+            const iconTest = document.getElementById('iconTest');
+            iconTest.innerHTML = '<h3>🔍 Test des icônes :</h3>';
+            
+            const icons = [
+                'icons/icobm.png',
+                'icons/icon-48x48.png',
+                'icons/icon-72x72.png',
+                'icons/icon-96x96.png',
+                'icons/icon-128x128.png',
+                'icons/icon-144x144.png',
+                'icons/icon-152x152.png',
+                'icons/icon-180x180.png',
+                'icons/icon-192x192.png',
+                'icons/icon-256x256.png',
+                'icons/icon-384x384.png',
+                'icons/icon-512x512.png'
+            ];
+            
+            for (const icon of icons) {
+                try {
+                    const response = await fetch(icon);
+                    if (response.ok) {
+                        iconTest.innerHTML += `<p class="success">✅ ${icon} - OK</p>`;
+                    } else {
+                        iconTest.innerHTML += `<p class="error">❌ ${icon} - Erreur ${response.status}</p>`;
+                    }
+                } catch (error) {
+                    iconTest.innerHTML += `<p class="error">❌ ${icon} - Erreur: ${error.message}</p>`;
+                }
+            }
+        }
+
+        // Vérifier automatiquement les icônes au chargement
+        window.addEventListener('load', checkIcons);
+    </script>
+</body>
+</html> 

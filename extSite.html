@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPSI - Extincteurs Site</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .add-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-left: auto;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
+    }
+    
+    .add-button:hover {
+      background: #7a1d1c;
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(155, 36, 35, 0.4);
+    }
+    
+    .extincteurs-table {
+      width: 100%;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 2px solid #e5e7eb;
+    }
+    
+    .extincteurs-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .extincteurs-table th {
+      background: #f9fafb;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+    
+    .extincteurs-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+    
+    /* Styles pour les colonnes spécifiques */
+    .extincteurs-table th:nth-child(1), /* Numéro */
+    .extincteurs-table td:nth-child(1) {
+      width: 10%;
+    }
+    
+    .extincteurs-table th:nth-child(2), /* Niveau */
+    .extincteurs-table td:nth-child(2) {
+      width: 8%;
+    }
+    
+    .extincteurs-table th:nth-child(3), /* Localisation */
+    .extincteurs-table td:nth-child(3) {
+      width: 25%;
+    }
+    
+    .extincteurs-table th:nth-child(4), /* Marque */
+    .extincteurs-table td:nth-child(4) {
+      width: 12%;
+    }
+    
+    .extincteurs-table th:nth-child(5), /* Court-Agent */
+    .extincteurs-table td:nth-child(5) {
+      width: 12%;
+    }
+    
+    .extincteurs-table th:nth-child(6), /* Modèle */
+    .extincteurs-table td:nth-child(6) {
+      width: 12%;
+    }
+    
+    .extincteurs-table th:nth-child(7), /* Année */
+    .extincteurs-table td:nth-child(7) {
+      width: 8%;
+    }
+    
+    .extincteurs-table tr:hover {
+      background: #f9fafb;
+    }
+    
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 0.5rem;
+      border: 1px solid #d1d5db;
+      cursor: help;
+    }
+    
+    .status-ok {
+      background: #10b981;
+      border-color: #059669;
+    }
+    
+    .status-warning {
+      background: #f59e0b;
+      border-color: #d97706;
+    }
+    
+    .status-error {
+      background: #ef4444;
+      border-color: #dc2626;
+    }
+    
+    .status-gray {
+      background: #9ca3af;
+      border-color: #6b7280;
+    }
+    
+    /* Styles pour la modal d'ajout d'extincteur */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #374151;
+      margin: 0;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .form-select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      background: white;
+    }
+    
+    .form-select:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: flex-end;
+    }
+    
+    .modal-button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-button.primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .modal-button.primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .modal-button.secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .modal-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    /* Styles pour le switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #6b7280;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #10b981;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #374151;
+    }
+    
+    .empty-state-description {
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .dates-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .dates-row .form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    .form-input[disabled] {
+      background: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    @media (max-width: 900px) {
+      .container {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .header-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .header-subtitle {
+        font-size: 0.8rem;
+      }
+      
+      .add-button {
+        margin-left: 0;
+        margin-top: 1rem;
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
+      }
+      
+      .extincteurs-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .extincteurs-table {
+        overflow-x: auto;
+      }
+      
+      .extincteurs-table table {
+        min-width: 600px;
+      }
+      
+      .extincteurs-table th,
+      .extincteurs-table td {
+        padding: 0.75rem;
+        font-size: 0.9rem;
+      }
+    }
+    .modal-button.add-green {
+      background: #10b981;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 1.1rem 2.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 8px rgba(16,185,129,0.08);
+    }
+    .modal-button.add-green:hover {
+      background: #059669;
+      box-shadow: 0 4px 16px rgba(16,185,129,0.18);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Card -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()" title="Retour">
+        ←
+      </button>
+      <h1 class="header-title" id="pageTitle">
+        <span id="mainTitle">Chargement...</span>
+        <span class="header-subtitle" id="subTitle"></span>
+      </h1>
+      <button class="add-button" onclick="addExtincteur()" title="Ajouter un extincteur">
+        +
+      </button>
+    </div>
+    
+    <!-- Content -->
+    <div id="content">
+      <div class="loading">Chargement des extincteurs...</div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let currentSite = null;
+    let currentClient = null;
+    let extincteurs = [];
+    let verifications = []; // Vérifications de l'intervention
+    let newCertAdded = false;
+    
+    // Variables globales pour l'intervention
+    let currentIntervention = null;
+    
+    // Fonction pour récupérer l'ID du site et de l'intervention depuis l'URL
+    function getSiteIdFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const siteId = urlParams.get('site');
+      const interventionId = urlParams.get('intervention');
+      
+      if (!siteId) {
+        console.error('❌ Aucun ID de site fourni dans l\'URL');
+        return null;
+      }
+      
+      if (!interventionId) {
+        console.error('❌ Aucun ID d\'intervention fourni dans l\'URL');
+        return null;
+      }
+      
+      console.log(`🔍 ID du site récupéré: ${siteId}`);
+      console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
+      return { siteId: decodeURIComponent(siteId), interventionId: decodeURIComponent(interventionId) };
+    }
+    
+    // Fonction pour charger les données du site et de l'intervention
+    async function loadSiteData(params) {
+      try {
+        console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
+        console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
+        
+        // Charger l'intervention
+        const { data: intervention, error: interventionError } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            sites!inner(
+              *,
+              clients!inner(*)
+            )
+          `)
+          .eq('id_intervention', params.interventionId)
+          .single();
+        
+        if (interventionError) {
+          console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+          showError('Erreur lors du chargement de l\'intervention');
+          return;
+        }
+        
+        currentIntervention = intervention;
+        currentSite = intervention.sites;
+        currentClient = intervention.sites.clients;
+        
+        console.log('✅ Intervention chargée:', currentIntervention);
+        console.log('✅ Données du site chargées:', currentSite);
+        console.log('✅ Données du client chargées:', currentClient);
+        
+        // Charger les extincteurs
+        await loadExtincteurs(params.siteId);
+        
+        // Charger les vérifications de l'intervention
+        await loadVerifications(params.interventionId);
+        
+        // Mettre à jour l'interface
+        updateDisplay();
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour charger les informations du client
+    async function loadClientInfo(clientId) {
+      try {
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id_client', clientId)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement du client:', error);
+          return;
+        }
+        
+        currentClient = client;
+        console.log('✅ Informations du client chargées:', client);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement du client:', error);
+      }
+    }
+    
+    // Fonction pour charger les extincteurs
+    async function loadExtincteurs(siteId) {
+      try {
+        console.log(`📥 Chargement des extincteurs pour le site: ${siteId}`);
+        
+        const { data, error } = await supabase
+          .from('extincteurs')
+          .select('*')
+          .eq('id_site', siteId)
+          .order('num_ext', { ascending: true });
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des extincteurs:', error);
+          return;
+        }
+        
+        // Trier les extincteurs par numéro de manière numérique
+        const sortedData = (data || []).sort((a, b) => {
+          const numA = parseInt(a.num_ext) || 0;
+          const numB = parseInt(b.num_ext) || 0;
+          return numA - numB;
+        });
+        
+        // Charger les agents pour récupérer les noms courts
+        const { data: agentsData, error: agentsError } = await supabase
+          .from('AgentExtincteur')
+          .select('id_agt, court_agt');
+        
+        if (agentsError) {
+          console.error('❌ Erreur lors du chargement des agents:', agentsError);
+        }
+        
+        // Créer un map des agents pour un accès rapide
+        const agentsMap = {};
+        if (agentsData) {
+          agentsData.forEach(agent => {
+            agentsMap[agent.id_agt] = agent.court_agt;
+          });
+        }
+        
+        // Ajouter le court_agent aux données
+        const extincteursWithAgent = sortedData.map(ext => ({
+          ...ext,
+          court_agent: agentsMap[ext.agent_ext] || 'N/A'
+        }));
+        
+        extincteurs = extincteursWithAgent;
+        console.log(`✅ ${extincteurs.length} extincteurs chargés et triés avec agents:`, extincteurs);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des extincteurs:', error);
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage
+    function updateDisplay() {
+      if (!currentSite || !currentClient || !currentIntervention) {
+        console.log('⏳ Attente du chargement des données...');
+        return;
+      }
+      
+      // Mettre à jour le titre avec le format demandé
+      const mainTitle = `${currentClient.nom_client} - ${currentSite.nom_site}`;
+      const subTitle = `Intervention ${currentIntervention.numero_intervention}`;
+      
+      document.getElementById('mainTitle').textContent = mainTitle;
+      document.getElementById('subTitle').textContent = subTitle;
+      
+      // Créer le contenu
+      const contentContainer = document.getElementById('content');
+      
+      if (extincteurs.length === 0) {
+        contentContainer.innerHTML = `
+          <div class="empty-state empty-state-card">
+            <img src="icons/appicon/ext.png" alt="Extincteurs" class="empty-state-icon" style="width: 72px; height: 72px; color:#9B2423;">
+            <div class="empty-state-title" style="font-size:1.7rem; font-weight:700; color:#23272b; margin-bottom:0.7rem;">Aucun extincteur</div>
+            <div class="empty-state-description" style="color:#6b7280; font-size:1.08rem; margin-bottom:2.2rem;">Aucun extincteur de sécurité n'a été enregistré pour ce site.<br>Ajoutez le premier extincteur pour commencer le suivi.</div>
+            <button class="modal-button add-green" onclick="addExtincteur()" style="margin-top:0.5rem; font-size:1.15rem;">
+              <span style="font-size:1.3em;">+</span> Ajouter le premier extincteur
+            </button>
+          </div>
+        `;
+        return;
+      }
+      
+                    const extincteursRows = extincteurs.map(ext => {
+         const statusClass = getStatusClass(ext);
+         const statusText = getStatusText(ext);
+         const year = ext.mes_ext ? new Date(ext.mes_ext).getFullYear() : 'N/A';
+         
+         return `
+           <tr onclick="editExtincteur('${ext.id_ext}')" style="cursor: pointer;">
+             <td>
+               <span class="status-indicator ${statusClass}" title="${statusText}"></span>
+               ${ext.num_ext || 'N/A'}
+             </td>
+             <td>${ext.niv_ext || 'N/A'}</td>
+             <td>${ext.loc_ext || 'N/A'}</td>
+             <td>${ext.marque_ext || 'N/A'}</td>
+             <td>${ext.court_agent || 'N/A'}</td>
+             <td>${ext.modele_ext || 'N/A'}</td>
+             <td>${year}</td>
+           </tr>
+         `;
+       }).join('');
+       
+       contentContainer.innerHTML = `
+         <div class="extincteurs-table">
+           <table>
+             <thead>
+               <tr>
+                 <th>Numéro</th>
+                 <th>Niveau</th>
+                 <th>Localisation</th>
+                 <th>Marque</th>
+                 <th>Agent</th>
+                 <th>Modèle</th>
+                 <th>Année</th>
+               </tr>
+             </thead>
+             <tbody>
+               ${extincteursRows}
+             </tbody>
+           </table>
+         </div>
+       `;
+    }
+    
+    // Fonction pour charger les vérifications de l'intervention
+    async function loadVerifications(interventionId) {
+      try {
+        console.log(`📥 Chargement des vérifications pour l'intervention: ${interventionId}`);
+        
+        const { data, error } = await supabase
+          .from('verifications')
+          .select('*')
+          .eq('id_intervention', interventionId)
+          .eq('type_equipement', 'extincteurs');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des vérifications:', error);
+          return;
+        }
+        
+        verifications = data || [];
+        console.log(`✅ ${verifications.length} vérifications chargées:`, verifications);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des vérifications:', error);
+      }
+    }
+    
+    // Fonction pour obtenir la classe CSS du statut selon les vérifications de l'intervention
+    function getStatusClass(extincteur) {
+      // Chercher la vérification pour cet extincteur dans cette intervention
+      const verification = verifications.find(v => 
+        v.id_equipement === extincteur.id_ext && 
+        v.type_equipement === 'extincteurs'
+      );
+      
+      if (!verification) {
+        // Pas de vérification → gris
+        return 'status-gray';
+      }
+      
+      // Vérification trouvée, regarder les observations
+      const hasObservations = verification.observations && verification.observations.trim() !== '';
+      
+      if (hasObservations) {
+        // Vérifié avec observations → rouge
+        return 'status-error';
+      } else {
+        // Vérifié sans observations → vert
+        return 'status-ok';
+      }
+    }
+    
+    // Fonction pour obtenir le texte du statut
+    function getStatusText(extincteur) {
+      // Chercher la vérification pour cet extincteur dans cette intervention
+      const verification = verifications.find(v => 
+        v.id_equipement === extincteur.id_ext && 
+        v.type_equipement === 'extincteurs'
+      );
+      
+      if (!verification) {
+        return '❓ Non vérifié';
+      }
+      
+      // Vérification trouvée, regarder les observations
+      const hasObservations = verification.observations && verification.observations.trim() !== '';
+      
+      if (hasObservations) {
+        return '⚠️ Vérifié avec observations';
+      } else {
+        return '✅ Vérifié sans observations';
+      }
+    }
+    
+    // Fonction pour formater une date
+    function formatDate(dateString) {
+      if (!dateString) return null;
+      
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      } catch (error) {
+        return dateString;
+      }
+    }
+    
+    // Fonction pour ajouter un extincteur
+    function addExtincteur() {
+      if (!currentSite) {
+        alert('⚠️ Site non chargé');
+        return;
+      }
+      
+      console.log('➕ Ouverture de la modal d\'ajout d\'extincteur');
+      openAddExtincteurModal();
+    }
+    
+    // Fonction pour ouvrir la modal d'ajout d'extincteur
+    function openAddExtincteurModal() {
+      const modalHTML = `
+        <div class="modal-overlay" id="addExtincteurModal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 class="modal-title">Ajouter un extincteur</h3>
+              <button class="modal-close" onclick="closeAddExtincteurModal()">×</button>
+            </div>
+            <form id="addExtincteurForm">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Numéro *</label>
+                  <input type="text" class="form-input" id="num_ext" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Niveau</label>
+                  <input type="text" class="form-input" id="niv_ext">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Localisation *</label>
+                <input type="text" class="form-input" id="loc_ext" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Certification</label>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <input type="text" class="form-input" id="cert_ext" onblur="searchCertification()" style="flex: 1;">
+                  <button type="button" class="modal-button" style="padding: 0.75rem; background: #9B2423; color: white; border-radius: 8px; border: none; cursor: pointer;" onclick="searchCertification()" title="Rechercher la certification">
+                    🔍
+                  </button>
+                </div>
+              </div>
+              <div class="form-grid" style="grid-template-columns: 140px 180px 1fr; align-items: center; gap: 16px; margin-bottom: 1.2rem;">
+                <div class="form-group" style="width: 140px;">
+                  <label class="form-label" style="margin-bottom: 0.5rem;">Marque</label>
+                  <input type="text" class="form-input" id="marque_ext" style="width: 100%;">
+                </div>
+                <div class="form-group" style="width: 180px;">
+                  <label class="form-label" style="margin-bottom: 0.5rem;">Modèle</label>
+                  <input type="text" class="form-input" id="modele_ext" style="width: 100%;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                  <label class="form-label" style="margin-bottom: 0.5rem;">PAPP</label>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: center;">
+                    <span style="font-size: 0.9rem; color: #6b7280;">PA</span>
+                    <label class="switch" style="vertical-align: middle;">
+                      <input type="checkbox" id="papp_ext">
+                      <span class="slider"></span>
+                    </label>
+                    <span style="font-size: 0.9rem; color: #10b981;">PP</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: flex-end; margin-bottom: 1.5rem;">
+                <div style="flex: 1 1 0; min-width: 0;">
+                  <label class="form-label">Agent</label>
+                  <select class="form-input" id="agent_ext">
+                    <option value="">Sélectionner un agent</option>
+                  </select>
+                </div>
+                <div style="width: 120px;">
+                  <label class="form-label">Capacité</label>
+                  <select class="form-input" id="capa_ext">
+                    <option value="">Sélectionner</option>
+                  </select>
+                </div>
+                <div style="width: 110px;">
+                  <label class="form-label">Année MES</label>
+                  <input type="text" class="form-input" id="mes_ext" placeholder="AAAA">
+                </div>
+              </div>
+              <div class="dates-row">
+                <div class="form-group">
+                  <label class="form-label">RCM</label>
+                  <input type="text" class="form-input" id="rcm_ext" placeholder="AAAA">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">MAA</label>
+                  <input type="text" class="form-input" id="maa_ext" placeholder="AAAA">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">EIE</label>
+                  <input type="text" class="form-input" id="eie_ext" placeholder="AAAA">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Panneau</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.9rem; color: #6b7280;">Non</span>
+                  <label class="switch">
+                    <input type="checkbox" id="pcf_ext" onchange="updatePanneau()">
+                    <span class="slider"></span>
+                  </label>
+                  <span style="font-size: 0.9rem; color: #10b981;">Oui</span>
+                </div>
+              </div>
+              <div class="modal-buttons" style="justify-content: flex-end;">
+                <button type="submit" class="modal-button add-green">Ajouter</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      
+      // Insérer la modale dans le DOM
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      console.log('🟢 Modale insérée dans le DOM');
+
+      // Charger les agents une fois la modale insérée
+      setTimeout(async () => {
+        await loadAgents();
+        console.log('🟢 Agents chargés après insertion de la modale');
+        const agentSelect = document.getElementById('agent_ext');
+        if (agentSelect) {
+          agentSelect.addEventListener('change', updateCapaOptions);
+        } else {
+          console.error('❌ Impossible d\'ajouter l\'écouteur : agent_ext non trouvé');
+        }
+        await suggestNextExtincteurNumber();
+        document.getElementById('num_ext').focus();
+      }, 0);
+
+      // Gérer la soumission du formulaire
+      document.getElementById('addExtincteurForm').addEventListener('submit', handleAddExtincteur);
+
+      // Désactiver maa/eie selon l'agent sélectionné
+      const agentSelect = document.getElementById('agent_ext');
+      function updateMaaEieDisabled() {
+        const selectedOption = agentSelect.options[agentSelect.selectedIndex];
+        const agentText = selectedOption ? selectedOption.textContent.toLowerCase() : '';
+        const disable = agentText.includes('co2') || agentText.includes('dioxyde');
+        document.getElementById('maa_ext').disabled = disable;
+        document.getElementById('eie_ext').disabled = disable;
+        
+        if (disable) {
+          console.log('⚠️ MAA et EIE désactivés pour l\'agent CO2');
+        }
+      }
+      agentSelect.addEventListener('change', updateMaaEieDisabled);
+      updateMaaEieDisabled();
+    }
+    
+    // Fonction pour fermer la modal
+    function closeAddExtincteurModal() {
+      const modal = document.getElementById('addExtincteurModal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+    
+    // Fonction pour définir l'année courante
+    function setCurrentYear() {
+      const currentYear = new Date().getFullYear();
+      document.getElementById('mes_ext').value = currentYear;
+      console.log(`✅ Année courante définie: ${currentYear}`);
+    }
+    
+    // Fonction pour mettre à jour le statut du panneau via le switch
+    function updatePanneau() {
+      const checkbox = document.getElementById('pcf_ext');
+      checkbox.value = checkbox.checked;
+      console.log(checkbox.checked ? '✅ Panneau: Oui' : '❌ Panneau: Non');
+    }
+    
+    // Fonction pour suggérer le prochain numéro d'extincteur
+    async function suggestNextExtincteurNumber() {
+      if (!currentSite || !currentSite.id_site) {
+        console.log('⚠️ Site non chargé, impossible de suggérer le numéro');
+        return;
+      }
+      
+      try {
+        console.log('🔍 Recherche du dernier numéro d\'extincteur...');
+        
+        const { data, error } = await supabase
+          .from('extincteurs')
+          .select('num_ext')
+          .eq('id_site', currentSite.id_site);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la recherche du dernier numéro:', error);
+          return;
+        }
+        
+        let nextNumber = 1;
+        
+        if (data && data.length > 0) {
+          // Trier les numéros de manière numérique pour trouver le plus grand
+          const sortedNumbers = data
+            .map(item => parseInt(item.num_ext) || 0)
+            .sort((a, b) => a - b);
+          
+          const lastNumber = sortedNumbers[sortedNumbers.length - 1];
+          console.log('📊 Dernier numéro trouvé:', lastNumber);
+          
+          if (lastNumber > 0) {
+            nextNumber = lastNumber + 1;
+          }
+        }
+        
+        console.log('✅ Numéro suggéré:', nextNumber);
+        document.getElementById('num_ext').value = nextNumber;
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+      }
+    }
+    
+    // Fonction pour rechercher une certification
+    async function searchCertification() {
+      const certValue = document.getElementById('cert_ext').value.trim();
+      
+      if (!certValue) return;
+      
+      try {
+        console.log(`🔍 Recherche de certification: ${certValue}`);
+        
+        const { data, error } = await supabase
+          .from('fire_extinguisher_certification_registry')
+          .select('*')
+          .eq('certification', certValue)
+          .single();
+        
+        console.log('Résultat brut de la recherche certification :', { data, error, certValue });
+        
+        if (error) {
+          console.error('❌ Erreur lors de la recherche:', error);
+          return;
+        }
+        
+        if (data) {
+          // Certification trouvée, remplir automatiquement les champs
+          document.getElementById('marque_ext').value = data.marque || '';
+          document.getElementById('modele_ext').value = data.modele || '';
+          
+          // Sélection directe de l'agent par id_agent
+          if (data.id_agent) {
+            const agentSelect = document.getElementById('agent_ext');
+            agentSelect.value = data.id_agent;
+            console.log('✅ Agent défini depuis la certification (id):', data.id_agent);
+            updateCapaOptions();
+          } else {
+            console.log('⚠️ id_agent non trouvé dans la certification');
+          }
+          // Correspondance capacité améliorée
+          if (data.capacit) {
+            const capaSelect = document.getElementById('capa_ext');
+            const capaOptions = Array.from(capaSelect.options);
+            const capacitValue = data.capacit.toString();
+            const matchingCapa = capaOptions.find(option => {
+              const optionValue = option.value;
+              // Correspondance exacte
+              if (optionValue === capacitValue) return true;
+              // Correspondance numérique au début (ex : 6 → 6kg ou 6Lt)
+              if (optionValue.startsWith(capacitValue)) return true;
+              return false;
+            });
+            if (matchingCapa) {
+              capaSelect.value = matchingCapa.value;
+              console.log('✅ Capacité définie depuis la certification:', data.capacit, '→', matchingCapa.value);
+            } else {
+              console.log('⚠️ Capacité non trouvée dans la liste:', data.capacit);
+            }
+          }
+          
+          console.log('✅ Certification trouvée, champs remplis automatiquement:', {
+            marque: data.marque,
+            modele: data.modele,
+            agent: data.agent,
+            capacit: data.capacit
+          });
+        } else {
+          // Certification non trouvée
+          alert('Non répertorié');
+          console.log('❌ Certification non trouvée');
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+      }
+    }
+    
+    // Fonction pour gérer l'ajout d'extincteur
+    async function handleAddExtincteur(event) {
+      event.preventDefault();
+
+      if (!currentSite) {
+        alert('⚠️ Site non chargé');
+        return;
+      }
+
+      // Récupérer les valeurs du formulaire
+      const mesYear = document.getElementById('mes_ext').value;
+      let mes_ext = null;
+      if (mesYear && mesYear.trim() !== '') {
+        mes_ext = `${mesYear}-01-01`;
+      }
+      let rcm_ext = document.getElementById('rcm_ext').value.trim();
+      let maa_ext = document.getElementById('maa_ext').value.trim();
+      let eie_ext = document.getElementById('eie_ext').value.trim();
+      rcm_ext = (/^\d{4}$/.test(rcm_ext)) ? `${rcm_ext}-01-01` : null;
+      maa_ext = (/^\d{4}$/.test(maa_ext)) ? `${maa_ext}-01-01` : null;
+      eie_ext = (/^\d{4}$/.test(eie_ext)) ? `${eie_ext}-01-01` : null;
+
+      const formData = {
+        num_ext: document.getElementById('num_ext').value.trim(),
+        niv_ext: document.getElementById('niv_ext').value.trim(),
+        loc_ext: document.getElementById('loc_ext').value.trim(),
+        marque_ext: document.getElementById('marque_ext').value.trim(),
+        modele_ext: document.getElementById('modele_ext').value.trim(),
+        agent_ext: document.getElementById('agent_ext').value,
+        capa_ext: document.getElementById('capa_ext').value,
+        mes_ext: mes_ext,
+        cert_ext: document.getElementById('cert_ext').value.trim(),
+        pcf_ext: document.getElementById('pcf_ext').value === 'true' ? true : 
+                 document.getElementById('pcf_ext').value === 'false' ? false : null,
+        papp_ext: document.getElementById('papp_ext') ? document.getElementById('papp_ext').checked : false,
+        rcm_ext: rcm_ext,
+        maa_ext: maa_ext,
+        eie_ext: eie_ext,
+        id_site: currentSite.id_site
+      };
+
+      // Validation
+      if (!formData.num_ext || !formData.loc_ext) {
+        alert('⚠️ Le numéro et la localisation sont obligatoires');
+        return;
+      }
+
+      try {
+        // Vérifier si la certification existe déjà
+        const certValue = formData.cert_ext;
+        let certExists = false;
+        if (certValue) {
+          const { data: certData, error: certError } = await supabase
+            .from('fire_extinguisher_certification_registry')
+            .select('id')
+            .eq('certification', certValue)
+            .maybeSingle();
+          if (certError) {
+            console.error('❌ Erreur lors de la vérification de la certification:', certError);
+          }
+          certExists = !!certData;
+        }
+        // Si la certification n'existe pas, l'ajouter
+        if (certValue && !certExists) {
+          const newCert = {
+            marque: formData.marque_ext,
+            modele: formData.modele_ext,
+            id_agent: formData.agent_ext ? parseInt(formData.agent_ext) : null,
+            capacit: formData.capa_ext ? (parseInt(formData.capa_ext) || formData.capa_ext) : null,
+            certification: certValue
+          };
+          const { error: insertCertError } = await supabase
+            .from('fire_extinguisher_certification_registry')
+            .insert([newCert]);
+          if (insertCertError) {
+            console.error('❌ Erreur lors de l\'ajout de la certification:', insertCertError);
+          } else {
+            console.log('✅ Nouvelle certification ajoutée au référentiel:', newCert);
+            newCertAdded = true;
+          }
+        }
+
+        // Ajout de l'extincteur comme avant
+        console.log('📥 Ajout de l\'extincteur:', formData);
+        const { data, error } = await supabase
+          .from('extincteurs')
+          .insert([formData])
+          .select();
+        if (error) {
+          console.error('❌ Erreur lors de l\'ajout:', error);
+          alert('Erreur lors de l\'ajout de l\'extincteur');
+          return;
+        }
+        console.log('✅ Extincteur ajouté avec succès:', data);
+        closeAddExtincteurModal();
+        await loadExtincteurs(currentSite.id_site);
+        updateDisplay();
+        if (newCertAdded) {
+          alert('✅ La certification a été ajoutée au référentiel !');
+        }
+        alert('✅ Extincteur ajouté au parc avec succès !');
+      } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
+        alert('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour ouvrir la fiche détaillée d'un extincteur
+    function editExtincteur(extincteurId) {
+      console.log(`📋 Ouverture de la fiche extincteur: ${extincteurId}`);
+      
+      if (!currentSite || !currentSite.id_site) {
+        console.error('❌ Site non chargé');
+        alert('⚠️ Impossible d\'ouvrir la fiche : site non chargé');
+        return;
+      }
+      
+      // Rediriger vers la page de fiche détaillée
+      const params = new URLSearchParams({
+        extincteur: extincteurId,
+        site: currentSite.id_site,
+        intervention: currentIntervention.id_intervention
+      });
+      
+      window.location.href = `extDetail.html?${params.toString()}`;
+    }
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      // Retourner vers verifSite.html avec l'ID du site et de l'intervention
+      if (currentSite && currentSite.id_site && currentIntervention && currentIntervention.id_intervention) {
+        window.location.href = `verifSite.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+      } else {
+        // Fallback si pas de données chargées
+        window.location.href = 'verifSite.html';
+      }
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      document.getElementById('content').innerHTML = `
+        <div style="text-align: center; padding: 3rem; color: #ef4444; font-size: 1.1rem;">
+          ${message}
+        </div>
+      `;
+    }
+    
+    // Chargement dynamique des agents
+    async function loadAgents() {
+      console.log('🔄 Chargement des agents...');
+
+      const select = document.getElementById('agent_ext');
+
+      // Vérifier si l'élément existe
+      if (!select) {
+        console.error('❌ Élément agent_ext non trouvé dans le DOM (loadAgents)');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('AgentExtincteur')
+          .select('*')
+          .order('long_agt');
+
+        if (error) {
+          console.error('❌ Erreur lors du chargement des agents:', error);
+          select.innerHTML = '<option value="">Erreur chargement</option>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          console.log('⚠️ Aucun agent trouvé dans la base de données');
+          select.innerHTML = '<option value="">Aucun agent disponible</option>';
+          return;
+        }
+
+        console.log(`✅ ${data.length} agents chargés:`, data.map(a => a.court_agt || a.long_agt));
+
+        select.innerHTML = '<option value="">Sélectionner un agent</option>' +
+          data.map(agent => {
+            const displayText = agent.long_agt;
+            return `<option value="${agent.id_agt}" data-agent="${agent.long_agt.toLowerCase()}" data-agent-court="${agent.court_agt ? agent.court_agt.toLowerCase() : ''}">${displayText}</option>`;
+          }).join('');
+
+      } catch (error) {
+        console.error('❌ Erreur JavaScript lors du chargement des agents:', error);
+        if (select) {
+          select.innerHTML = '<option value="">Erreur JavaScript</option>';
+        }
+      }
+    }
+    // Capacité selon famille
+    const optionsPoudre = ['1kg','2kg','3kg','4kg','6kg','9kg','25kg','50kg','100kg','150kg'];
+    const optionsCO2 = ['2kg','5kg','10kg','20kg'];
+    const optionsEau = ['2Lt','6Lt','9Lt','45Lt','50Lt','100Lt','150Lt'];
+    function updateCapaOptions() {
+      const agentSelect = document.getElementById('agent_ext');
+      const capaSelect = document.getElementById('capa_ext');
+      const selectedOption = agentSelect.options[agentSelect.selectedIndex];
+      
+      if (!selectedOption || !selectedOption.value) {
+        capaSelect.innerHTML = '<option value="">Sélectionner</option>';
+        return;
+      }
+      
+      let agentText = selectedOption.textContent.toLowerCase();
+      let opts = [];
+      
+      // Déterminer les capacités selon l'agent sélectionné
+      if (agentText.includes('poudre')) {
+        opts = optionsPoudre;
+        console.log('📦 Capacités Poudre chargées');
+      } else if (agentText.includes('dioxyde') || agentText.includes('co2')) {
+        opts = optionsCO2;
+        console.log('💨 Capacités CO2 chargées');
+      } else if (agentText.includes('eau')) {
+        opts = optionsEau;
+        console.log('💧 Capacités Eau chargées');
+      } else {
+        console.log('⚠️ Agent non reconnu pour les capacités:', agentText);
+      }
+      
+      capaSelect.innerHTML = '<option value="">Sélectionner</option>' + opts.map(v => `<option value="${v}">${v}</option>`).join('');
+    }
+    // Fonction pour tester la connexion Supabase
+    async function testSupabaseConnection() {
+      try {
+        console.log('🔍 Test de connexion Supabase...');
+        
+        // Test 1: Vérifier que la table AgentExtincteur existe
+        const { data: tableTest, error: tableError } = await supabase
+          .from('AgentExtincteur')
+          .select('id_agt')
+          .limit(1);
+        
+        if (tableError) {
+          console.error('❌ Erreur d\'accès à la table AgentExtincteur:', tableError);
+          return false;
+        }
+        
+        console.log('✅ Table AgentExtincteur accessible');
+        
+        // Test 2: Vérifier qu'il y a des données
+        const { data: countData, error: countError } = await supabase
+          .from('AgentExtincteur')
+          .select('*', { count: 'exact', head: true });
+        
+        if (countError) {
+          console.error('❌ Erreur lors du comptage:', countError);
+          return false;
+        }
+        
+        console.log('✅ Connexion Supabase OK');
+        return true;
+        
+      } catch (error) {
+        console.error('❌ Erreur JavaScript lors du test de connexion:', error);
+        return false;
+      }
+    }
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initialisation de la page Extincteurs Site...');
+      
+      // Tester la connexion Supabase
+      const connectionOk = await testSupabaseConnection();
+      if (!connectionOk) {
+        showError('Erreur de connexion à la base de données');
+        return;
+      }
+      
+      // Récupérer l'ID du site et de l'intervention depuis l'URL
+      const params = getSiteIdFromURL();
+      
+      if (!params) {
+        showError('ID du site ou de l\'intervention manquant dans l\'URL');
+        return;
+      }
+      
+      // Charger les données du site et de l'intervention
+      await loadSiteData(params);
+      
+      // Les agents seront chargés quand la modal s'ouvrira
+      console.log('✅ Page initialisée, agents à charger lors de l\'ouverture de la modal');
+    });
+  </script>
+</body>
+</html> 
