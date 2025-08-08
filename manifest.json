@@ -1,6 +1,6 @@
 {
-  "name": "JPSI v1.3.19",
-  "short_name": "JPSI v1.3.19",
+  "name": "JPSI v1.3.20",
+  "short_name": "JPSI v1.3.20",
   "description": "Application de gestion et de vérification des équipements (extincteurs, éclairages, etc.)",
   "start_url": "index.html",
   "display": "standalone",

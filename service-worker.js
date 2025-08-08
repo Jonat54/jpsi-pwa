@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.19';
+const CACHE_NAME = 'jpsi-cache-v1.3.20';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',

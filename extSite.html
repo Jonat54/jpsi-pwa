@@ -539,8 +539,8 @@
     // Fonction pour récupérer l'ID du site et de l'intervention depuis l'URL
     function getSiteIdFromURL() {
       const urlParams = new URLSearchParams(window.location.search);
-      const siteId = urlParams.get('site');
-      const interventionId = urlParams.get('intervention');
+      const siteId = urlParams.get('siteId') || urlParams.get('site');
+      const interventionId = urlParams.get('interventionId') || urlParams.get('intervention');
       
       if (!siteId) {
         console.error('❌ Aucun ID de site fourni dans l\'URL');
