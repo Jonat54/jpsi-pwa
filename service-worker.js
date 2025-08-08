@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.29';
+const CACHE_NAME = 'jpsi-cache-v1.3.30';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
@@ -51,7 +51,7 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener('install', (evt) => {
-  console.log('🔄 Service Worker: Installation v1.3.29...');
+  console.log('🔄 Service Worker: Installation v1.3.30...');
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('📦 Service Worker: Mise en cache des fichiers...');
@@ -66,7 +66,7 @@ self.addEventListener('install', (evt) => {
 });
 
 self.addEventListener('activate', (evt) => {
-  console.log('🔄 Service Worker: Activation v1.3.29...');
+  console.log('🔄 Service Worker: Activation v1.3.30...');
   evt.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -92,7 +92,7 @@ self.addEventListener('fetch', (evt) => {
   if (url.host.includes('supabase.co')) return;
   if (url.protocol === 'blob:' || url.protocol === 'data:') return;
 
-  // 1) Navigations (HTML) - Solution GPT 5 pour Safari iOS 18
+  // 1) Navigations (HTML) - Solution GPT 5 modifiée pour Safari iOS 18
   if (evt.request.mode === 'navigate') {
     evt.respondWith((async () => {
       try {
@@ -104,10 +104,11 @@ self.addEventListener('fetch', (evt) => {
           const res = await caches.match(path);
           if (!res) continue;
 
-          // 2) Safari iOS: rejeter toute réponse "redirected"/30x/opaqueredirect
-          const bad = res.redirected || res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400);
+          // 2) Safari iOS: rejeter UNIQUEMENT les vraies redirections 30x
+          //    Accepter les réponses avec flag redirected (normal sur iOS)
+          const bad = res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400);
           if (bad) {
-            console.log('❌ Réponse rejetée (redirected):', path);
+            console.log('❌ Réponse rejetée (vraie redirection):', path);
             continue;
           }
 
