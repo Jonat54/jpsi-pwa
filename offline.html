@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JPSI - Hors ligne</title>
+    <style>
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+        }
+        
+        .offline-container {
+            background: linear-gradient(135deg, #fff 80%, #f3f4f6 100%);
+            border: 2.5px solid #d1d5db;
+            border-radius: 22px;
+            box-shadow: 0 6px 24px 0 rgba(30,32,36,0.18), 0 1.5px 0 #e5e7eb inset;
+            padding: 2.5rem 2.2rem 2.2rem 2.2rem;
+            max-width: 400px;
+            width: 90vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .offline-icon {
+            width: 80px;
+            height: 80px;
+            background: #f44336;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            color: white;
+        }
+        
+        .offline-title {
+            font-size: 1.5rem;
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .offline-message {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+        
+        .offline-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #9B2423;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #7a1d1c;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .sync-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .sync-status h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+        
+        .sync-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+        }
+        
+        .sync-count {
+            font-weight: 600;
+            color: #9B2423;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📶</div>
+        <h1 class="offline-title">Hors ligne</h1>
+        <p class="offline-message">
+            Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées, 
+            mais vous pouvez continuer à utiliser l'application avec les données en cache.
+        </p>
+        
+        <div class="offline-actions">
+            <button class="btn btn-primary" onclick="retryConnection()">
+                🔄 Réessayer
+            </button>
+            <a href="accueil.html" class="btn btn-secondary">
+                🏠 Accueil
+            </a>
+        </div>
+        
+        <div class="sync-status">
+            <h4>📊 Données en attente</h4>
+            <div class="sync-item">
+                <span>Vérifications :</span>
+                <span class="sync-count" id="pendingVerifications">0</span>
+            </div>
+            <div class="sync-item">
+                <span>Nouveaux équipements :</span>
+                <span class="sync-count" id="pendingEquipments">0</span>
+            </div>
+            <div class="sync-item">
+                <span>Modifications :</span>
+                <span class="sync-count" id="pendingModifications">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Vérifier la connexion
+        function retryConnection() {
+            if (navigator.onLine) {
+                window.location.reload();
+            } else {
+                alert('Pas de connexion internet détectée');
+            }
+        }
+        
+        // Mettre à jour les compteurs de données en attente
+        async function updatePendingCounts() {
+            try {
+                // Vérifier si IndexedDB est disponible
+                if (window.indexedDBManager) {
+                    const verifications = await indexedDBManager.getData('pendingVerifications');
+                    const newEquipments = await indexedDBManager.getData('newEquipments');
+                    const modifiedEquipments = await indexedDBManager.getData('modifiedEquipments');
+                    
+                    document.getElementById('pendingVerifications').textContent = verifications.length;
+                    document.getElementById('pendingEquipments').textContent = newEquipments.length;
+                    document.getElementById('pendingModifications').textContent = modifiedEquipments.length;
+                } else {
+                    // Fallback localStorage
+                    const verifications = JSON.parse(localStorage.getItem('jpsi_pendingVerifications') || '[]');
+                    const newEquipments = JSON.parse(localStorage.getItem('jpsi_newEquipments') || '[]');
+                    const modifiedEquipments = JSON.parse(localStorage.getItem('jpsi_modifiedEquipments') || '[]');
+                    
+                    document.getElementById('pendingVerifications').textContent = verifications.length;
+                    document.getElementById('pendingEquipments').textContent = newEquipments.length;
+                    document.getElementById('pendingModifications').textContent = modifiedEquipments.length;
+                }
+            } catch (error) {
+                console.error('❌ Erreur mise à jour compteurs:', error);
+            }
+        }
+        
+        // Écouter les changements de connexion
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+        
+        // Mettre à jour les compteurs au chargement
+        document.addEventListener('DOMContentLoaded', updatePendingCounts);
+        
+        // Mettre à jour périodiquement
+        setInterval(updatePendingCounts, 5000);
+    </script>
+</body>
+</html>
