@@ -33,7 +33,9 @@ function initializeSupabase() {
 }
 
 // Initialiser immédiatement
-supabase = initializeSupabase();
+if (!supabase) {
+  supabase = initializeSupabase();
+}
 
 // Fonctions utilitaires globales
 window.JPSI = {
