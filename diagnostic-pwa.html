@@ -110,11 +110,25 @@
 <body>
     <div class="network-indicator" id="networkIndicator">🌐 En ligne</div>
     
-    <div class="container">
-        <div class="header">
-            <h1>🔧 Diagnostic PWA - JPSI</h1>
-            <p>Vérification du Service Worker et du cache</p>
-        </div>
+         <div class="container">
+         <div class="header">
+             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                 <button onclick="window.location.href='parametres.html'" style="
+                     background: #6c757d; 
+                     color: white; 
+                     border: none; 
+                     padding: 8px 16px; 
+                     border-radius: 6px; 
+                     cursor: pointer;
+                     font-size: 12px;
+                 ">
+                     ← Retour
+                 </button>
+                 <h1 style="margin: 0;">🔧 Diagnostic PWA - JPSI</h1>
+                 <div style="width: 80px;"></div>
+             </div>
+             <p>Vérification du Service Worker et du cache</p>
+         </div>
 
         <div class="test-section">
             <h3>📱 Informations du navigateur</h3>
@@ -248,19 +262,21 @@
                 if ('caches' in window) {
                     addLog('✅ Cache API supportée');
                     
-                    const cache = await caches.open('jpsi-cache-v1.3.16');
+                                         const cache = await caches.open('jpsi-cache-v1.3.17');
                     const keys = await cache.keys();
                     
                     addLog(`✅ Cache ouvert: ${keys.length} fichiers`);
                     
-                    if (keys.length > 0) {
-                        addLog('📋 Fichiers en cache:');
-                        for (const request of keys.slice(0, 10)) {
-                            addLog(`  📄 ${request.url.split('/').pop()}`);
-                        }
-                        
-                        showStatus('cacheStatus', `✅ Cache fonctionne (${keys.length} fichiers)`, 'success');
-                    } else {
+                                         if (keys.length > 0) {
+                         addLog('📋 Fichiers en cache:');
+                         for (const request of keys) {
+                             const fileName = request.url.split('/').pop();
+                             const fileType = fileName.split('.').pop();
+                             addLog(`  📄 ${fileName} (${fileType})`);
+                         }
+                         
+                         showStatus('cacheStatus', `✅ Cache fonctionne (${keys.length} fichiers)`, 'success');
+                     } else {
                         addLog('⚠️ Cache vide');
                         showStatus('cacheStatus', '⚠️ Cache vide - Service Worker non installé', 'warning');
                     }

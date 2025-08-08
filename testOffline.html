@@ -267,15 +267,17 @@
         if ('caches' in window) {
           addLog('✅ Cache API supportée');
           
-          const cache = await caches.open('jpsi-cache-v1.3.16');
+                     const cache = await caches.open('jpsi-cache-v1.3.17');
           const keys = await cache.keys();
           
           addLog('✅ Cache ouvert');
           addLog('📋 Nombre de fichiers en cache: ' + keys.length);
           
-          for (const request of keys.slice(0, 5)) {
-            addLog('📄 ' + request.url.split('/').pop());
-          }
+                     for (const request of keys) {
+             const fileName = request.url.split('/').pop();
+             const fileType = fileName.split('.').pop();
+             addLog('📄 ' + fileName + ' (' + fileType + ')');
+           }
           
           showResult('serviceWorkerResult', '✅ Cache fonctionne (' + keys.length + ' fichiers)', 'success');
         } else {

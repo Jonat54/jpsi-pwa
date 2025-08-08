@@ -233,19 +233,21 @@
                 if ('caches' in window) {
                     addLog('✅ Cache API supportée');
                     
-                    const cache = await caches.open('jpsi-cache-v1.3.16');
+                                         const cache = await caches.open('jpsi-cache-v1.3.17');
                     const keys = await cache.keys();
                     
                     addLog(`✅ Cache ouvert: ${keys.length} fichiers`);
                     
-                    if (keys.length > 0) {
-                        addLog('📋 Fichiers en cache:');
-                        for (const request of keys.slice(0, 10)) {
-                            addLog(`  📄 ${request.url.split('/').pop()}`);
-                        }
-                        
-                        showStatus('cacheStatus', `✅ Cache fonctionne (${keys.length} fichiers)`, 'success');
-                    } else {
+                                         if (keys.length > 0) {
+                         addLog('📋 Fichiers en cache:');
+                         for (const request of keys) {
+                             const fileName = request.url.split('/').pop();
+                             const fileType = fileName.split('.').pop();
+                             addLog(`  📄 ${fileName} (${fileType})`);
+                         }
+                         
+                         showStatus('cacheStatus', `✅ Cache fonctionne (${keys.length} fichiers)`, 'success');
+                     } else {
                         addLog('⚠️ Cache vide');
                         showStatus('cacheStatus', '⚠️ Cache vide', 'warning');
                     }

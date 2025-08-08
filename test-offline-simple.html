@@ -130,17 +130,19 @@
             
             try {
                 if ('caches' in window) {
-                    const cache = await caches.open('jpsi-cache-v1.3.16');
+                                         const cache = await caches.open('jpsi-cache-v1.3.17');
                     const keys = await cache.keys();
                     
                     addLog(`📋 Fichiers en cache: ${keys.length}`);
                     
-                    if (keys.length > 0) {
-                        addLog('✅ Cache fonctionnel');
-                        for (const request of keys.slice(0, 5)) {
-                            addLog(`  📄 ${request.url.split('/').pop()}`);
-                        }
-                    } else {
+                                         if (keys.length > 0) {
+                         addLog('✅ Cache fonctionnel');
+                         for (const request of keys) {
+                             const fileName = request.url.split('/').pop();
+                             const fileType = fileName.split('.').pop();
+                             addLog(`  📄 ${fileName} (${fileType})`);
+                         }
+                     } else {
                         addLog('⚠️ Cache vide');
                     }
                 } else {
