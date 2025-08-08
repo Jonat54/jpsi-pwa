@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.21';
+const CACHE_NAME = 'jpsi-cache-v1.3.23';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
@@ -92,45 +92,60 @@ self.addEventListener('fetch', (evt) => {
   if (url.host.includes('supabase.co')) return;
   if (url.protocol === 'blob:' || url.protocol === 'data:') return;
 
-  // 1) Navigations (HTML) - Compatible Safari iOS
+  // 1) Navigations (HTML) - Cache First avec mise à jour silencieuse
   if (evt.request.mode === 'navigate') {
     evt.respondWith((async () => {
-      try {
-        const net = await fetch(evt.request);
-        // Safari iOS gère différemment les redirections
-        // On évite de manipuler la propriété 'redirected'
-        return net;
-      } catch (error) {
-        console.log('❌ Erreur réseau, utilisation du cache (Safari iOS)');
-        
-        // Essayer de trouver la page dans le cache en ignorant les paramètres
-        const urlWithoutParams = new URL(evt.request.url);
-        urlWithoutParams.search = ''; // Supprime les paramètres d'URL
-        
-        // Chercher d'abord la page exacte sans paramètres
-        let cached = await caches.match(urlWithoutParams.pathname);
-        
-        // Si pas trouvé, essayer avec le chemin complet sans paramètres
-        if (!cached) {
-          cached = await caches.match(urlWithoutParams.pathname + urlWithoutParams.pathname);
+      // Chercher d'abord dans le cache
+      const urlWithoutParams = new URL(evt.request.url);
+      urlWithoutParams.search = ''; // Supprime les paramètres d'URL
+      
+      let cached = await caches.match(urlWithoutParams.pathname);
+      
+      // Si pas trouvé, essayer avec le chemin complet sans paramètres
+      if (!cached) {
+        cached = await caches.match(urlWithoutParams.href);
+      }
+      
+      // Si toujours pas trouvé, essayer les pages principales
+      if (!cached) {
+        const mainPages = ['/index.html', '/accueil.html', '/extSite.html', '/verifSite.html', '/verification.html'];
+        for (const page of mainPages) {
+          cached = await caches.match(page);
+          if (cached) {
+            console.log(`✅ Page de fallback trouvée: ${page}`);
+            break;
+          }
         }
+      }
+      
+      // Retourner immédiatement le cache si trouvé
+      if (cached) {
+        console.log('✅ Navigation depuis cache');
         
-        // Si toujours pas trouvé, essayer les pages principales
-        if (!cached) {
-          const mainPages = ['/index.html', '/extSite.html', '/verifSite.html', '/verification.html'];
-          for (const page of mainPages) {
-            cached = await caches.match(page);
-            if (cached) break;
+        // Mise à jour silencieuse en arrière-plan (seulement si en ligne)
+        if (navigator.onLine) {
+          try {
+            const net = await fetch(evt.request);
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(evt.request, net.clone());
+            console.log('🔄 Cache mis à jour silencieusement');
+          } catch (error) {
+            console.log('⚠️ Échec mise à jour silencieuse');
           }
         }
         
-        if (cached) {
-          console.log('✅ Page trouvée en cache (Safari iOS)');
-          return cached;
-        }
-        
-        // Fallback simple pour Safari iOS
-        return new Response('Mode hors ligne - Reconnectez-vous', { 
+        return cached;
+      }
+      
+      // Si pas en cache, essayer le réseau
+      try {
+        const net = await fetch(evt.request);
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(evt.request, net.clone());
+        return net;
+      } catch (error) {
+        console.log('❌ Erreur réseau, page non trouvée');
+        return new Response('Page non disponible hors ligne', { 
           status: 503,
           headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
