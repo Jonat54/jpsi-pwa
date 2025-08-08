@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hors Ligne - JPSI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f6f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        .online {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .offline {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        .button {
+            background: #9B2423;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 5px;
+            width: 100%;
+        }
+        .button:hover {
+            background: #7a1d1c;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Test Mode Hors Ligne</h1>
+        
+        <div id="networkStatus" class="status online">
+            🌐 En ligne
+        </div>
+        
+        <button class="button" onclick="testOffline()">🔌 Tester Mode Hors Ligne</button>
+        <button class="button" onclick="testCache()">🗄️ Tester Cache</button>
+        <button class="button" onclick="navigateToIndex()">🏠 Aller à l'Accueil</button>
+        
+        <div class="log" id="logs"></div>
+    </div>
+
+    <script>
+        let logs = [];
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${message}`);
+            document.getElementById('logs').textContent = logs.join('\n');
+            console.log(message);
+        }
+
+        function updateNetworkStatus() {
+            const statusDiv = document.getElementById('networkStatus');
+            const isOnline = navigator.onLine;
+            
+            if (isOnline) {
+                statusDiv.textContent = '🌐 En ligne';
+                statusDiv.className = 'status online';
+            } else {
+                statusDiv.textContent = '❌ Hors ligne';
+                statusDiv.className = 'status offline';
+            }
+        }
+
+        async function testOffline() {
+            addLog('🔌 Test mode hors ligne...');
+            
+            // Simuler la perte de connexion
+            Object.defineProperty(navigator, 'onLine', {
+                writable: true,
+                value: false
+            });
+            
+            // Déclencher l'événement offline
+            window.dispatchEvent(new Event('offline'));
+            
+            updateNetworkStatus();
+            addLog('✅ Mode hors ligne activé');
+            
+            // Tester la navigation
+            setTimeout(() => {
+                addLog('🧪 Test navigation en mode hors ligne...');
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+
+        async function testCache() {
+            addLog('🗄️ Test du cache...');
+            
+            try {
+                if ('caches' in window) {
+                    const cache = await caches.open('jpsi-cache-v1.3.16');
+                    const keys = await cache.keys();
+                    
+                    addLog(`📋 Fichiers en cache: ${keys.length}`);
+                    
+                    if (keys.length > 0) {
+                        addLog('✅ Cache fonctionnel');
+                        for (const request of keys.slice(0, 5)) {
+                            addLog(`  📄 ${request.url.split('/').pop()}`);
+                        }
+                    } else {
+                        addLog('⚠️ Cache vide');
+                    }
+                } else {
+                    addLog('❌ Cache API non supportée');
+                }
+            } catch (error) {
+                addLog(`❌ Erreur cache: ${error.message}`);
+            }
+        }
+
+        function navigateToIndex() {
+            addLog('🏠 Navigation vers l\'accueil...');
+            window.location.href = 'index.html';
+        }
+
+        // Écouter les événements réseau
+        window.addEventListener('online', () => {
+            addLog('🌐 Connexion rétablie');
+            updateNetworkStatus();
+        });
+
+        window.addEventListener('offline', () => {
+            addLog('❌ Connexion perdue');
+            updateNetworkStatus();
+        });
+
+        // Enregistrer le Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js', {
+                scope: '/'
+            }).then(function(registration) {
+                addLog('✅ Service Worker enregistré');
+            }).catch(function(err) {
+                addLog('❌ Erreur Service Worker: ' + err.message);
+            });
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            addLog('🚀 Test hors ligne démarré');
+            updateNetworkStatus();
+        });
+    </script>
+</body>
+</html>

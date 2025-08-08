@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Cache - JPSI</title>
+    <title>Diagnostic PWA - JPSI</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -29,8 +29,8 @@
             margin: 0;
         }
         .test-section {
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             background: #fafafa;
@@ -60,19 +60,6 @@
             color: #856404;
             border: 1px solid #ffeaa7;
         }
-        .button {
-            background: #9B2423;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            margin: 5px;
-        }
-        .button:hover {
-            background: #7a1d1c;
-        }
         .log {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -83,6 +70,23 @@
             max-height: 300px;
             overflow-y: auto;
             white-space: pre-wrap;
+        }
+        .button {
+            background: #9B2423;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #7a1d1c;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
         .network-indicator {
             position: fixed;
@@ -108,15 +112,19 @@
     
     <div class="container">
         <div class="header">
-            <h1>🗄️ Test Cache - JPSI</h1>
-            <p>Diagnostic du cache et du mode hors ligne</p>
+            <h1>🔧 Diagnostic PWA - JPSI</h1>
+            <p>Vérification du Service Worker et du cache</p>
         </div>
 
         <div class="test-section">
-            <h3>📱 Service Worker</h3>
+            <h3>📱 Informations du navigateur</h3>
+            <div id="browserInfo"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 Service Worker</h3>
             <div id="serviceWorkerStatus"></div>
             <button class="button" onclick="testServiceWorker()">Tester Service Worker</button>
-            <button class="button" onclick="updateServiceWorker()">Forcer Mise à Jour</button>
         </div>
 
         <div class="test-section">
@@ -131,12 +139,6 @@
             <div id="networkStatus"></div>
             <button class="button" onclick="testNetwork()">Tester Réseau</button>
             <button class="button" onclick="simulateOffline()">Simuler Hors Ligne</button>
-        </div>
-
-        <div class="test-section">
-            <h3>🧪 Test Navigation</h3>
-            <button class="button" onclick="testNavigation()">Tester Navigation</button>
-            <button class="button" onclick="testOfflineNavigation()">Test Navigation Hors Ligne</button>
         </div>
 
         <div class="test-section">
@@ -173,6 +175,26 @@
             indicator.className = `network-indicator ${isOnline ? 'network-online' : 'network-offline'}`;
         }
 
+        // Informations du navigateur
+        function showBrowserInfo() {
+            const info = {
+                'User Agent': navigator.userAgent,
+                'HTTPS': location.protocol === 'https:',
+                'Localhost': location.hostname === 'localhost' || location.hostname === '127.0.0.1',
+                'Service Worker Support': 'serviceWorker' in navigator,
+                'Cache API Support': 'caches' in window,
+                'IndexedDB Support': 'indexedDB' in window
+            };
+
+            let html = '<div class="status success">';
+            for (const [key, value] of Object.entries(info)) {
+                html += `<strong>${key}:</strong> ${value}<br>`;
+            }
+            html += '</div>';
+            
+            document.getElementById('browserInfo').innerHTML = html;
+        }
+
         // Test Service Worker
         async function testServiceWorker() {
             addLog('🔧 Test Service Worker...');
@@ -195,33 +217,26 @@
                         }
                     } else {
                         addLog('❌ Service Worker non enregistré');
-                        showStatus('serviceWorkerStatus', '❌ Service Worker non enregistré', 'error');
+                        addLog('🔄 Tentative d\'enregistrement...');
+                        
+                        try {
+                            const newRegistration = await navigator.serviceWorker.register('service-worker.js', {
+                                scope: '/'
+                            });
+                            addLog('✅ Service Worker enregistré avec succès');
+                            showStatus('serviceWorkerStatus', '✅ Service Worker enregistré', 'success');
+                        } catch (regError) {
+                            addLog(`❌ Erreur enregistrement: ${regError.message}`);
+                            showStatus('serviceWorkerStatus', `❌ Erreur enregistrement: ${regError.message}`, 'error');
+                        }
                     }
                 } else {
                     addLog('❌ Service Worker non supporté');
-                    showStatus('serviceWorkerStatus', '❌ Service Worker non supporté', 'error');
+                    showStatus('serviceWorkerStatus', '❌ Service Worker non supporté par le navigateur', 'error');
                 }
             } catch (error) {
                 addLog(`❌ Erreur Service Worker: ${error.message}`);
                 showStatus('serviceWorkerStatus', `❌ Erreur: ${error.message}`, 'error');
-            }
-        }
-
-        // Forcer la mise à jour du Service Worker
-        async function updateServiceWorker() {
-            addLog('🔄 Forcer mise à jour Service Worker...');
-            
-            try {
-                const registration = await navigator.serviceWorker.getRegistration();
-                if (registration) {
-                    await registration.update();
-                    addLog('✅ Mise à jour Service Worker déclenchée');
-                    showStatus('serviceWorkerStatus', '✅ Mise à jour déclenchée', 'success');
-                } else {
-                    addLog('❌ Service Worker non trouvé');
-                }
-            } catch (error) {
-                addLog(`❌ Erreur mise à jour: ${error.message}`);
             }
         }
 
@@ -247,7 +262,7 @@
                         showStatus('cacheStatus', `✅ Cache fonctionne (${keys.length} fichiers)`, 'success');
                     } else {
                         addLog('⚠️ Cache vide');
-                        showStatus('cacheStatus', '⚠️ Cache vide', 'warning');
+                        showStatus('cacheStatus', '⚠️ Cache vide - Service Worker non installé', 'warning');
                     }
                 } else {
                     addLog('❌ Cache API non supportée');
@@ -312,33 +327,6 @@
             addLog('✅ Mode hors ligne activé');
         }
 
-        // Test navigation
-        function testNavigation() {
-            addLog('🧪 Test navigation...');
-            addLog('🔄 Redirection vers extSite.html...');
-            
-            setTimeout(() => {
-                window.location.href = 'extSite.html';
-            }, 1000);
-        }
-
-        // Test navigation hors ligne
-        function testOfflineNavigation() {
-            addLog('🧪 Test navigation hors ligne...');
-            
-            // Simuler hors ligne
-            Object.defineProperty(navigator, 'onLine', {
-                writable: true,
-                value: false
-            });
-            
-            addLog('🔄 Redirection vers extSite.html (hors ligne)...');
-            
-            setTimeout(() => {
-                window.location.href = 'extSite.html';
-            }, 1000);
-        }
-
         // Écouter les événements réseau
         window.addEventListener('online', () => {
             addLog('🌐 Connexion rétablie');
@@ -350,20 +338,10 @@
             updateNetworkIndicator();
         });
 
-        // Enregistrer le Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js', {
-                scope: '/'
-            }).then(function(registration) {
-                addLog('✅ Service Worker enregistré');
-            }).catch(function(err) {
-                addLog('❌ Erreur Service Worker: ' + err.message);
-            });
-        }
-
         // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
-            addLog('🚀 Test cache démarré');
+            addLog('🚀 Diagnostic PWA démarré');
+            showBrowserInfo();
             updateNetworkIndicator();
         });
     </script>
