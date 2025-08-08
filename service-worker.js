@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.24';
+const CACHE_NAME = 'jpsi-cache-v1.3.25';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
@@ -92,7 +92,7 @@ self.addEventListener('fetch', (evt) => {
   if (url.host.includes('supabase.co')) return;
   if (url.protocol === 'blob:' || url.protocol === 'data:') return;
 
-  // 1) Navigations (HTML) - Cache Only pour éviter les redirections
+  // 1) Navigations (HTML) - Cache First avec fallback réseau
   if (evt.request.mode === 'navigate') {
     evt.respondWith((async () => {
       // Chercher d'abord dans le cache
@@ -124,12 +124,21 @@ self.addEventListener('fetch', (evt) => {
         return cached;
       }
       
-      // Si pas en cache, retourner une page d'erreur simple
-      console.log('❌ Page non trouvée en cache');
-      return new Response('Page non disponible hors ligne', { 
-        status: 503,
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-      });
+      // Si pas en cache, essayer le réseau
+      try {
+        console.log('🔄 Tentative réseau...');
+        const net = await fetch(evt.request);
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(evt.request, net.clone());
+        console.log('✅ Page chargée depuis réseau et mise en cache');
+        return net;
+      } catch (error) {
+        console.log('❌ Erreur réseau, page non disponible');
+        return new Response('Page non disponible hors ligne', { 
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+      }
     })());
     return;
   }
