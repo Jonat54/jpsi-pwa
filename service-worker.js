@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.20';
+const CACHE_NAME = 'jpsi-cache-v1.3.21';
 const FILES_TO_CACHE = [
   // ⚠️ PAS de '/' ici
   '/index.html',
@@ -102,11 +102,33 @@ self.addEventListener('fetch', (evt) => {
         return net;
       } catch (error) {
         console.log('❌ Erreur réseau, utilisation du cache (Safari iOS)');
-        // Hors ligne → renvoie toujours la page finale depuis le cache
-        const cached = await caches.match('/index.html');
+        
+        // Essayer de trouver la page dans le cache en ignorant les paramètres
+        const urlWithoutParams = new URL(evt.request.url);
+        urlWithoutParams.search = ''; // Supprime les paramètres d'URL
+        
+        // Chercher d'abord la page exacte sans paramètres
+        let cached = await caches.match(urlWithoutParams.pathname);
+        
+        // Si pas trouvé, essayer avec le chemin complet sans paramètres
+        if (!cached) {
+          cached = await caches.match(urlWithoutParams.pathname + urlWithoutParams.pathname);
+        }
+        
+        // Si toujours pas trouvé, essayer les pages principales
+        if (!cached) {
+          const mainPages = ['/index.html', '/extSite.html', '/verifSite.html', '/verification.html'];
+          for (const page of mainPages) {
+            cached = await caches.match(page);
+            if (cached) break;
+          }
+        }
+        
         if (cached) {
+          console.log('✅ Page trouvée en cache (Safari iOS)');
           return cached;
         }
+        
         // Fallback simple pour Safari iOS
         return new Response('Mode hors ligne - Reconnectez-vous', { 
           status: 503,
