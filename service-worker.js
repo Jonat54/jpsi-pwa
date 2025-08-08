@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.12';
+const CACHE_NAME = 'jpsi-cache-v1.3.13';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
@@ -51,7 +51,7 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener('install', (evt) => {
-  console.log('🔄 Service Worker: Installation...');
+  console.log('🔄 Service Worker: Installation v1.3.13...');
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('📦 Service Worker: Mise en cache des fichiers...');
@@ -66,7 +66,7 @@ self.addEventListener('install', (evt) => {
 });
 
 self.addEventListener('activate', (evt) => {
-  console.log('🔄 Service Worker: Activation...');
+  console.log('🔄 Service Worker: Activation v1.3.13...');
   evt.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -102,9 +102,25 @@ self.addEventListener('fetch', (evt) => {
   
   evt.respondWith(
     caches.match(evt.request).then((cachedResponse) => {
-      // Stratégie Network First pour les pages HTML
+      // Stratégie Cache First pour toutes les requêtes en mode hors ligne
+      if (!navigator.onLine) {
+        console.log('❌ Service Worker: Mode hors ligne détecté');
+        if (cachedResponse) {
+          console.log('💾 Service Worker: Ressource depuis le cache (hors ligne)');
+          return cachedResponse;
+        } else {
+          console.log('⚠️ Service Worker: Ressource non trouvée en cache');
+          // Retourner la page d'accueil si c'est une page HTML
+          if (evt.request.destination === 'document') {
+            return caches.match('/index.html');
+          }
+          return new Response('Ressource non disponible hors ligne', { status: 404 });
+        }
+      }
+      
+      // Stratégie Network First pour les pages HTML en ligne
       if (evt.request.destination === 'document') {
-        console.log('📄 Service Worker: Page HTML détectée');
+        console.log('📄 Service Worker: Page HTML détectée (en ligne)');
         
         return fetch(evt.request)
           .then((networkResponse) => {
@@ -118,13 +134,10 @@ self.addEventListener('fetch', (evt) => {
           })
           .catch((error) => {
             console.log('❌ Service Worker: Erreur réseau, utilisation du cache');
-            console.log('📋 Service Worker: Cache disponible:', !!cachedResponse);
-            
             if (cachedResponse) {
               return cachedResponse;
             } else {
               console.error('❌ Service Worker: Aucun cache disponible');
-              // Retourner une page d'erreur hors ligne
               return caches.match('/index.html');
             }
           });
@@ -146,7 +159,6 @@ self.addEventListener('fetch', (evt) => {
         return networkResponse;
       }).catch((error) => {
         console.error('❌ Service Worker: Erreur réseau pour ressource:', error);
-        // Retourner une réponse d'erreur
         return new Response('Erreur réseau', { status: 503 });
       });
     })
