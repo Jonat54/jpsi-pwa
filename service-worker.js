@@ -1,6 +1,5 @@
-const CACHE_NAME = 'jpsi-cache-v1.3.32';
+const CACHE_NAME = 'jpsi-cache-v1.3.33';
 const FILES_TO_CACHE = [
-  // ⚠️ PAS de '/' ici
   '/index.html',
   '/login.html',
   '/accueil.html',
@@ -30,203 +29,101 @@ const FILES_TO_CACHE = [
   '/auditDetail.html',
   '/inventairePDF.html',
   '/manifest.json',
-  // ⚠️ PAS de '/service-worker.js' ici
   '/img/logo.png',
-  '/img/entete.png',
-  '/img/logobon.png',
-  '/img/coordo.png',
-  '/img/filigran.png',
-  '/img/Disclaimer.png',
-  '/icons/icobm.png',
-  '/icons/icon-48x48.png',
-  '/icons/icon-72x72.png',
-  '/icons/icon-96x96.png',
-  '/icons/icon-128x128.png',
-  '/icons/icon-144x144.png',
-  '/icons/icon-152x152.png',
-  '/icons/icon-180x180.png',
-  '/icons/icon-192x192.png',
-  '/icons/icon-256x256.png',
-  '/icons/icon-384x384.png',
-  '/icons/icon-512x512.png'
+  '/img/icon-192x192.png',
+  '/img/icon-512x512.png',
+  '/styles.css',
+  '/js/indexedDB.js',
+  '/js/syncManager.js',
+  '/supabase-config.js'
 ];
 
+// Installation - Mettre en cache les fichiers essentiels
 self.addEventListener('install', (evt) => {
-  console.log('🔄 Service Worker: Installation v1.3.32...');
+  console.log('🔄 Service Worker: Installation v1.3.33...');
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('📦 Service Worker: Mise en cache des fichiers...');
+      console.log('✅ Cache ouvert');
       return cache.addAll(FILES_TO_CACHE);
-    }).then(() => {
-      console.log('✅ Service Worker: Installation terminée');
-    }).catch((error) => {
-      console.error('❌ Service Worker: Erreur installation:', error);
     })
   );
-  self.skipWaiting();
 });
 
+// Activation - Nettoyer les anciens caches
 self.addEventListener('activate', (evt) => {
-  console.log('🔄 Service Worker: Activation v1.3.32...');
+  console.log('🔄 Service Worker: Activation v1.3.33...');
   evt.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
         if (key !== CACHE_NAME) {
-          console.log('🗑️ Service Worker: Suppression ancien cache:', key);
+          console.log('🗑️ Suppression ancien cache:', key);
           return caches.delete(key);
         }
       }));
-    }).then(() => {
-      console.log('✅ Service Worker: Activation terminée');
     })
   );
-  self.clients.claim();
 });
 
+// Interception des requêtes
 self.addEventListener('fetch', (evt) => {
   const url = new URL(evt.request.url);
-
-  // Laisse passer le SW lui-même
+  
+  // Ignorer les requêtes non-GET
+  if (evt.request.method !== 'GET') return;
+  
+  // Ignorer les requêtes vers le Service Worker lui-même
   if (url.pathname.endsWith('/service-worker.js')) return;
-
-  // Ne gère pas Supabase ni blob/data
+  
+  // Ignorer les requêtes Supabase
   if (url.host.includes('supabase.co')) return;
+  
+  // Ignorer les blobs et data URLs
   if (url.protocol === 'blob:' || url.protocol === 'data:') return;
 
-  // 1) Navigations (HTML) - Solution simplifiée pour Safari iOS 18
+  // Navigation - Cache First simple
   if (evt.request.mode === 'navigate') {
-    evt.respondWith((async () => {
-      try {
-        // Essayer les pages candidates dans l'ordre
-        const candidates = ['/index.html', '/login.html', '/accueil.html'];
-
-        for (const path of candidates) {
-          const res = await caches.match(path);
-          if (res) {
-            // Accepter TOUTES les réponses du cache (sans filtrage strict)
-            console.log('✅ Navigation depuis cache (Safari iOS 18):', path);
-            
-            // Re-construire une Response "propre" pour éviter les problèmes Safari
-            const buf = await res.arrayBuffer();
-            return new Response(buf, {
-              status: 200,
-              headers: { 'Content-Type': 'text/html; charset=utf-8' }
-            });
-          }
+    evt.respondWith(
+      caches.match(evt.request).then((response) => {
+        if (response) {
+          console.log('✅ Navigation depuis cache:', evt.request.url);
+          return response;
         }
-
-        // Si aucune page trouvée, retourner une page d'erreur
-        console.log('❌ Aucune page trouvée en cache');
-        return new Response(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Hors ligne</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-                text-align: center;
-                padding: 50px;
-                background: #f6f7f9;
-                color: #333;
-              }
-              .container {
-                max-width: 400px;
-                margin: 0 auto;
-                background: white;
-                border-radius: 12px;
-                padding: 40px 20px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-              }
-              h1 { color: #9B2423; margin-bottom: 20px; }
-              p { margin-bottom: 15px; line-height: 1.6; }
-              .btn {
-                background: #9B2423;
-                color: white;
-                border: none;
-                padding: 12px 24px;
-                border-radius: 8px;
-                cursor: pointer;
-                text-decoration: none;
-                display: inline-block;
-                margin: 10px;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h1>Mode hors ligne</h1>
-              <p>Cette page n'est pas disponible hors ligne.</p>
-              <p>Veuillez vous reconnecter pour accéder à cette fonctionnalité.</p>
-              <a href="/index.html" class="btn">Retour à l'accueil</a>
-            </div>
-          </body>
-          </html>
-        `, {
-          status: 503,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        });
         
-      } catch (error) {
-        console.log('❌ Erreur navigation (Safari iOS 18):', error);
-        
-        // Retourner une page d'erreur simple
-        return new Response(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Erreur</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-          </head>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h1>Erreur</h1>
-            <p>Une erreur est survenue lors du chargement de la page.</p>
-            <p>Veuillez réessayer.</p>
-          </body>
-          </html>
-        `, {
-          status: 503,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        console.log('🔄 Navigation depuis réseau:', evt.request.url);
+        return fetch(evt.request).then((networkResponse) => {
+          // Mettre en cache pour la prochaine fois
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(evt.request, responseClone);
+          });
+          return networkResponse;
+        }).catch(() => {
+          // Fallback vers index.html si erreur réseau
+          console.log('❌ Erreur réseau, fallback vers index.html');
+          return caches.match('/index.html');
         });
-      }
-    })());
+      })
+    );
     return;
   }
 
-  // 2) Assets (cache-first + maj silencieuse) - Compatible Safari iOS
-  evt.respondWith((async () => {
-    try {
-      const cached = await caches.match(evt.request);
-      if (cached) {
-        console.log('💾 Ressource depuis le cache (Safari iOS)');
-        return cached;
+  // Assets - Cache First
+  evt.respondWith(
+    caches.match(evt.request).then((response) => {
+      if (response) {
+        console.log('✅ Asset depuis cache:', evt.request.url);
+        return response;
       }
       
-      const net = await fetch(evt.request);
-      // Mise en cache silencieuse pour Safari iOS
-      try {
-        const cache = await caches.open(CACHE_NAME);
-        await cache.put(evt.request, net.clone());
-      } catch (cacheError) {
-        console.log('⚠️ Erreur mise en cache (Safari iOS):', cacheError);
-      }
-      return net;
-    } catch (error) {
-      console.log('❌ Erreur réseau pour ressource (Safari iOS):', error);
-      return new Response('Ressource non disponible', { 
-        status: 404,
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      console.log('🔄 Asset depuis réseau:', evt.request.url);
+      return fetch(evt.request).then((networkResponse) => {
+        // Mettre en cache pour la prochaine fois
+        const responseClone = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(evt.request, responseClone);
+        });
+        return networkResponse;
       });
-    }
-  })());
-});
-
-// Écouter les messages du client
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+    })
+  );
 }); 
