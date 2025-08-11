@@ -453,7 +453,7 @@
               clients!inner(nom_client)
             )
           `)
-          .eq('etat_intervention', 'En cours')
+           .in('etat_intervention', ['En cours', 'En attente'])
           .order('date_debut', { ascending: false });
       
         if (interError) throw interError;
@@ -486,8 +486,8 @@
         const row = document.createElement('tr');
         row.onclick = () => viewIntervention(intervention.id_intervention);
         
-        const statusClass = getStatusClass(intervention.etat_intervention);
-        const statusText = getStatusText(intervention.etat_intervention);
+         const statusClass = getStatusClass(intervention.etat_intervention);
+         const statusText = getStatusText(intervention.etat_intervention);
         
         // Accéder aux données via la relation sites -> clients
         const siteName = intervention.sites?.nom_site || 'N/A';
@@ -512,18 +512,20 @@
       emptyState.style.display = 'none';
     }
     
-    function getStatusClass(status) {
+     function getStatusClass(status) {
       switch (status) {
         case 'En cours': return 'status-pending';
+        case 'En attente': return 'status-pending';
         case 'Terminé': return 'status-completed';
         case 'Annulé': return 'status-cancelled';
         default: return 'status-pending';
       }
     }
     
-    function getStatusText(status) {
+     function getStatusText(status) {
       switch (status) {
         case 'En cours': return 'En cours';
+        case 'En attente': return 'En attente';
         case 'Terminé': return 'Terminée';
         case 'Annulé': return 'Annulée';
         default: return 'En cours';
