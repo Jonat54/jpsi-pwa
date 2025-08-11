@@ -58,9 +58,7 @@
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
     .form-grid .full { grid-column: 1 / -1; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
-    /* Mode discret: masquer prix */
-    .hide-prices .price-header, .hide-prices .price-col { display: none; }
-    .unlock-hint { font-size: 0.85rem; color: #6b7280; margin-left: 0.5rem; }
+    /* Mode discret: aucun prix affiché dans la version mobile */
   </style>
 </head>
 <body>
@@ -71,12 +69,6 @@
       <div class="actions">
         <button class="btn btn-secondary" onclick="openAddProduct()">➕ Produit</button>
         <button class="btn btn-primary" onclick="openAddMovement()">↕ Mouvement</button>
-        <button id="unlockBtn" class="btn btn-secondary" title="Appui long pour ouvrir la vue Prix"
-                onmousedown="startUnlockPress(event)" ontouchstart="startUnlockPress(event)"
-                onmouseup="endUnlockPress()" onmouseleave="endUnlockPress()" ontouchend="endUnlockPress()">
-          🔒 Vue Prix
-        </button>
-        
       </div>
     </div>
 
@@ -118,7 +110,7 @@
               <th style="width: 140px;">Catégorie</th>
               <th class="sortable" style="width: 120px;" onclick="sortBy('stock')">Stock <span class="caret" id="caret-stock">↕</span></th>
               <th style="width: 120px;">Min.</th>
-              <th class="sortable price-header" style="width: 130px;" onclick="sortBy('price')">Prix (€) <span class="caret" id="caret-price">↕</span></th>
+              
               <th style="width: 160px;">Actions</th>
             </tr>
           </thead>
@@ -219,9 +211,8 @@
   <script>
     const STORAGE_KEY = 'jpsi_stocks_v1';
     const UI_KEY = 'jpsi_stocks_ui_v1';
-    const PIN_KEY = 'jpsi_stocks_pin_v1';
     let state = { categories: [], products: [], movements: [] };
-    let ui = { search: '', category: '', sortKey: 'label', sortDir: 'asc', showPrices: false };
+    let ui = { search: '', category: '', sortKey: 'label', sortDir: 'asc' };
 
     // Données de test (seed)
     const seed = {
@@ -255,7 +246,7 @@
     function loadUI() {
       try { const saved = localStorage.getItem(UI_KEY); if (saved) ui = { ...ui, ...JSON.parse(saved) }; } catch {}
     }
-    function persistUI() { localStorage.setItem(UI_KEY, JSON.stringify({ search: ui.search, category: ui.category, sortKey: ui.sortKey, sortDir: ui.sortDir, showPrices: ui.showPrices })); }
+    function persistUI() { localStorage.setItem(UI_KEY, JSON.stringify({ search: ui.search, category: ui.category, sortKey: ui.sortKey, sortDir: ui.sortDir })); }
 
     function formatCurrency(v) { return (v || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }); }
     function byId(id) { return document.getElementById(id); }
@@ -301,8 +292,7 @@
           <td>${p.label}</td>
           <td>${getCategoryName(p.categoryId)}</td>
           <td>${p.stock} ${isAlert(p) ? '<span class="pill pill-warn">Bas</span>' : '<span class="pill pill-ok">OK</span>'}</td>
-          <td>${p.min ?? 0}</td>
-           <td class="price-col">${p.price?.toFixed(2) ?? '0.00'}</td>
+           <td>${p.min ?? 0}</td>
           <td class="actions">
             <button class="btn btn-secondary" onclick="quickOut('${p.id}')">-1</button>
             <button class="btn btn-secondary" onclick="quickIn('${p.id}')">+1</button>
@@ -314,7 +304,7 @@
     }
 
     function updateSortCarets() {
-      ['ref','label','stock','price'].forEach(k => {
+      ['ref','label','stock'].forEach(k => {
         const el = byId(`caret-${k}`);
         if (!el) return;
         if (ui.sortKey !== k) el.textContent = '↕';
@@ -329,38 +319,7 @@
       renderProducts();
     }
 
-    // Verrouillage / déverrouillage prix
-    let unlockTimer = null;
-    function startUnlockPress(e) {
-      e.preventDefault();
-      endUnlockPress();
-      unlockTimer = setTimeout(async () => {
-        const ok = await requestPinAndUnlock();
-        if (ok) openPriceView();
-      }, 800); // appui long 800ms
-    }
-    function endUnlockPress() { if (unlockTimer) { clearTimeout(unlockTimer); unlockTimer = null; } }
-
-    async function requestPinAndUnlock() {
-      try {
-        let pin = localStorage.getItem(PIN_KEY);
-        if (!pin) {
-          const setPin = prompt('Définissez un code PIN (4-8 chiffres) pour afficher les prix:');
-          if (!setPin || !/^\d{4,8}$/.test(setPin)) { alert('PIN invalide'); return false; }
-          localStorage.setItem(PIN_KEY, setPin);
-          pin = setPin;
-        }
-        const input = prompt('Entrez votre PIN pour afficher les prix:');
-        if (input === pin) { return true; }
-        alert('PIN incorrect');
-        return false;
-      } catch (e) { console.error(e); return false; }
-    }
-
-    function togglePriceVisibility(show) { /* plus utilisé — conservé pour compat */ }
-    function updatePriceUIState() { document.body.classList.add('hide-prices'); }
-    function lockPrices() { /* noop */ }
-    function openPriceView() { window.location.href = 'stocks-prix.html'; }
+    // Pas d'accès aux prix en mobile
 
     function renderMovements() {
       const tbody = byId('movementsTbody');
