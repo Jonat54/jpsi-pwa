@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JPSI - Vue Prix</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { font-family: 'SF Pro Display','Segoe UI',Arial,sans-serif; background:#f3f4f6; margin:0; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#9B2423; color:#fff; }
+    .btn { border:none; border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer; }
+    .btn-light { background:#fff; color:#9B2423; }
+    .container { max-width:1200px; margin: 16px auto; background:#fff; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1); overflow:hidden; }
+    table { width:100%; border-collapse:collapse; }
+    thead { background:#f9fafb; }
+    th, td { border-bottom:1px solid #e5e7eb; padding:10px; font-size:0.95rem; }
+    tfoot td { font-weight:800; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>💶 Vue Prix</div>
+    <div>
+      <button class="btn btn-light" onclick="window.location.href='stocks.html'">← Retour (mode discret)</button>
+    </div>
+  </div>
+  <div class="container">
+    <table>
+      <thead>
+        <tr>
+          <th>Réf</th>
+          <th>Libellé</th>
+          <th>Catégorie</th>
+          <th>Stock</th>
+          <th>Prix (€)</th>
+          <th>Valeur (€)</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5" style="text-align:right;">Total</td>
+          <td id="total">0 €</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'jpsi_stocks_v1';
+    const PIN_KEY = 'jpsi_stocks_pin_v1';
+
+    function formatCurrency(v){ return (v||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'}); }
+
+    function ensurePin(){
+      let pin = localStorage.getItem(PIN_KEY);
+      if (!pin) return false;
+      const input = prompt('Entrez votre PIN pour accéder à la vue Prix:');
+      if (input === pin) return true;
+      alert('PIN incorrect');
+      return false;
+    }
+
+    function loadState(){
+      try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : { categories:[], products:[], movements:[] }; }
+      catch { return { categories:[], products:[], movements:[] }; }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!ensurePin()) { window.location.href = 'stocks.html'; return; }
+      const state = loadState();
+      const tbody = document.getElementById('tbody');
+      let total = 0;
+      tbody.innerHTML = state.products.map(p => {
+        const value = (p.price||0)*(p.stock||0);
+        total += value;
+        const cat = state.categories.find(c=>c.id===p.categoryId)?.name || '—';
+        return `<tr><td>${p.ref}</td><td>${p.label}</td><td>${cat}</td><td>${p.stock||0}</td><td>${(p.price||0).toFixed(2)}</td><td>${value.toFixed(2)}</td></tr>`;
+      }).join('');
+      document.getElementById('total').textContent = formatCurrency(total);
+    });
+  </script>
+</body>
+</html>
+
+
