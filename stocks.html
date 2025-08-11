@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JPSI - Gestion des Stocks</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box; overflow-x: hidden; overflow-y: auto;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+    .card { background: #f6f7f9; border: 3.5px solid #9B2423; border-radius: 28px; box-shadow: 0 6px 24px rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset; }
+    .header-card { padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .title { margin: 0; color: #23272b; font-size: 1.8rem; font-weight: 800; }
+    .back-button { background: #9B2423; color: white; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-size: 1.6rem; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center; }
+    .back-button:hover { background: #7a1d1c; }
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding: 1rem; }
+    .summary-item { background: white; border-radius: 16px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 0.25rem; }
+    .summary-label { font-size: 0.9rem; color: #6b7280; }
+    .summary-value { font-size: 1.4rem; font-weight: 800; color: #23272b; }
+    .filters { padding: 1rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; }
+    .filter-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .filter-label { font-weight: 600; font-size: 0.9rem; color: #374151; }
+    .input, .select { padding: 0.6rem 0.8rem; border: 2px solid #e5e7eb; border-radius: 10px; background: white; font-size: 0.95rem; min-width: 200px; }
+    .btn { border: none; border-radius: 10px; padding: 0.6rem 1rem; font-weight: 700; cursor: pointer; }
+    .btn-primary { background: #9B2423; color: white; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .content { display: grid; grid-template-columns: 280px 1fr; gap: 1rem; }
+    .list { background: white; border-radius: 16px; padding: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .list-title { font-weight: 800; color: #9B2423; margin: 0 0 0.5rem 0; font-size: 1rem; }
+    .category-item { padding: 0.6rem 0.75rem; border-radius: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .category-item.active { background: #fef2f2; border: 1px solid #f3c2c2; }
+    .category-badge { font-size: 0.8rem; background: #f3f4f6; color: #6b7280; border-radius: 10px; padding: 0.1rem 0.5rem; }
+    .table-card { background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #9B2423; color: white; }
+    th, td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; font-size: 0.95rem; }
+    tr:hover { background: #f9fafb; }
+    .pill { padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; display: inline-block; }
+    .pill-ok { background: #dcfce7; color: #166534; }
+    .pill-warn { background: #fef3c7; color: #92400e; }
+    .actions { display: flex; gap: 0.5rem; }
+    .empty { text-align: center; padding: 1rem; color: #6b7280; }
+    @media (max-width: 900px) { .content { grid-template-columns: 1fr; } .summary { grid-template-columns: 1fr; } }
+    /* Simple modal */
+    .modal-backdrop { position: fixed; inset: 0; background: #0008; display: none; align-items: center; justify-content: center; z-index: 50; }
+    .modal { background: #fff; width: min(600px, 92vw); border-radius: 16px; padding: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .modal h3 { margin: 0 0 0.5rem 0; color: #9B2423; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card header-card">
+      <button class="back-button" onclick="window.location.href='accueil.html'" title="Retour">‹</button>
+      <h1 class="title">Gestion des Stocks</h1>
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="openAddProduct()">➕ Produit</button>
+        <button class="btn btn-primary" onclick="openAddMovement()">↕ Mouvement</button>
+      </div>
+    </div>
+
+    <div class="card summary">
+      <div class="summary-item">
+        <div class="summary-label">Produits</div>
+        <div class="summary-value" id="summaryProducts">0</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Valorisation (estimée)</div>
+        <div class="summary-value" id="summaryValue">0 €</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Alertes stock</div>
+        <div class="summary-value" id="summaryAlerts">0</div>
+      </div>
+    </div>
+
+    <div class="card filters">
+      <div class="filter-group">
+        <label class="filter-label">Recherche</label>
+        <input id="searchInput" class="input" type="text" placeholder="Référence ou libellé..." oninput="renderProducts()" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Catégorie</label>
+        <select id="categoryFilter" class="select" onchange="renderProducts()"></select>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn btn-secondary" onclick="resetFilters()">Réinitialiser</button>
+    </div>
+
+    <div class="content">
+      <div class="list">
+        <h3 class="list-title">Catégories</h3>
+        <div id="categoriesList"></div>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 140px;">Référence</th>
+              <th>Libellé</th>
+              <th style="width: 140px;">Catégorie</th>
+              <th style="width: 120px;">Stock</th>
+              <th style="width: 120px;">Min.</th>
+              <th style="width: 130px;">Prix (€)</th>
+              <th style="width: 160px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="productsTbody">
+            <tr><td colspan="7" class="empty">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-card" style="margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 140px;">Date</th>
+            <th style="width: 120px;">Type</th>
+            <th>Produit</th>
+            <th style="width: 100px;">Qté</th>
+            <th>Commentaire</th>
+          </tr>
+        </thead>
+        <tbody id="movementsTbody">
+          <tr><td colspan="5" class="empty">Aucun mouvement</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Ajouter Produit -->
+  <div id="modalProduct" class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>Ajouter un produit</h3>
+      <div class="form-grid">
+        <div class="full">
+          <label>Libellé</label>
+          <input id="pLabel" class="input" placeholder="Extincteur CO2 2kg" />
+        </div>
+        <div>
+          <label>Référence</label>
+          <input id="pRef" class="input" placeholder="CO2-2KG" />
+        </div>
+        <div>
+          <label>Prix (€)</label>
+          <input id="pPrice" class="input" type="number" step="0.01" placeholder="45.00" />
+        </div>
+        <div>
+          <label>Catégorie</label>
+          <select id="pCategory" class="select"></select>
+        </div>
+        <div>
+          <label>Stock initial</label>
+          <input id="pStock" class="input" type="number" step="1" placeholder="10" />
+        </div>
+        <div>
+          <label>Stock minimum</label>
+          <input id="pMin" class="input" type="number" step="1" placeholder="5" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="hideModal('modalProduct')">Annuler</button>
+        <button class="btn btn-primary" onclick="saveNewProduct()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Mouvement -->
+  <div id="modalMovement" class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>Nouveau mouvement</h3>
+      <div class="form-grid">
+        <div>
+          <label>Type</label>
+          <select id="mType" class="select">
+            <option value="IN">Entrée</option>
+            <option value="OUT">Sortie</option>
+          </select>
+        </div>
+        <div class="full">
+          <label>Produit</label>
+          <select id="mProduct" class="select"></select>
+        </div>
+        <div>
+          <label>Quantité</label>
+          <input id="mQty" class="input" type="number" step="1" value="1" />
+        </div>
+        <div class="full">
+          <label>Commentaire</label>
+          <input id="mComment" class="input" placeholder="Commande fournisseur / Utilisation intervention..." />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="hideModal('modalMovement')">Annuler</button>
+        <button class="btn btn-primary" onclick="saveNewMovement()">Valider</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'jpsi_stocks_v1';
+    let state = { categories: [], products: [], movements: [] };
+    let ui = { search: '', category: '' };
+
+    // Données de test (seed)
+    const seed = {
+      categories: [
+        { id: 'ext', name: 'Extincteurs' },
+        { id: 'baes', name: 'Éclairages (BAES)' },
+        { id: 'ria', name: 'RIA' },
+        { id: 'sign', name: 'Signalétique' }
+      ],
+      products: [
+        { id: 'P-CO2-2', ref: 'CO2-2KG', label: 'Extincteur CO2 2 kg', categoryId: 'ext', price: 45.00, stock: 12, min: 5 },
+        { id: 'P-PP-6', ref: 'POUDRE-6KG', label: 'Extincteur poudre 6 kg', categoryId: 'ext', price: 28.90, stock: 3, min: 6 },
+        { id: 'P-BAES-1', ref: 'BAES-BLOC', label: 'Bloc autonome de sécurité', categoryId: 'baes', price: 19.50, stock: 15, min: 5 },
+        { id: 'P-RIA-1', ref: 'RIA-25', label: 'Lance RIA 25mm', categoryId: 'ria', price: 64.00, stock: 2, min: 2 },
+        { id: 'P-SIGN-1', ref: 'SIGN-ISSUE', label: 'Panneau Issue de secours', categoryId: 'sign', price: 3.50, stock: 40, min: 10 }
+      ],
+      movements: [
+        { id: 'M-1', date: new Date().toISOString(), type: 'IN', productId: 'P-CO2-2', qty: 5, comment: 'Réception fournisseur' },
+        { id: 'M-2', date: new Date().toISOString(), type: 'OUT', productId: 'P-PP-6', qty: 2, comment: 'Pose site Client X' }
+      ]
+    };
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) state = JSON.parse(saved);
+        else { state = JSON.parse(JSON.stringify(seed)); persist(); }
+      } catch (e) { console.error('Erreur chargement stockage', e); state = JSON.parse(JSON.stringify(seed)); persist(); }
+    }
+    function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+    function formatCurrency(v) { return (v || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }); }
+    function byId(id) { return document.getElementById(id); }
+    function getCategoryName(id) { return state.categories.find(c => c.id === id)?.name || '—'; }
+    function isAlert(p) { return p.stock <= (p.min ?? 0); }
+
+    function resetFilters() { ui.search = ''; ui.category = ''; byId('searchInput').value=''; byId('categoryFilter').value=''; renderProducts(); }
+
+    function renderFilters() {
+      const sel = byId('categoryFilter');
+      sel.innerHTML = '<option value="">Toutes</option>' + state.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+      sel.value = ui.category;
+    }
+
+    function renderCategories() {
+      const container = byId('categoriesList');
+      container.innerHTML = state.categories.map(c => {
+        const count = state.products.filter(p => p.categoryId === c.id).length;
+        const active = ui.category === c.id ? 'active' : '';
+        return `<div class="category-item ${active}" onclick="selectCategory('${c.id}')">${c.name}<span class="category-badge">${count}</span></div>`;
+      }).join('');
+    }
+    function selectCategory(id) { ui.category = (ui.category === id ? '' : id); byId('categoryFilter').value = ui.category; renderProducts(); }
+
+    function renderProducts() {
+      ui.search = byId('searchInput').value.trim().toLowerCase();
+      const tbody = byId('productsTbody');
+      let items = [...state.products];
+      if (ui.category) items = items.filter(p => p.categoryId === ui.category);
+      if (ui.search) items = items.filter(p => p.label.toLowerCase().includes(ui.search) || p.ref.toLowerCase().includes(ui.search));
+      if (items.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="empty">Aucun produit</td></tr>`; return; }
+      tbody.innerHTML = items.map(p => `
+        <tr>
+          <td>${p.ref}</td>
+          <td>${p.label}</td>
+          <td>${getCategoryName(p.categoryId)}</td>
+          <td>${p.stock} ${isAlert(p) ? '<span class="pill pill-warn">Bas</span>' : '<span class="pill pill-ok">OK</span>'}</td>
+          <td>${p.min ?? 0}</td>
+          <td>${p.price?.toFixed(2) ?? '0.00'}</td>
+          <td class="actions">
+            <button class="btn btn-secondary" onclick="quickOut('${p.id}')">-1</button>
+            <button class="btn btn-secondary" onclick="quickIn('${p.id}')">+1</button>
+          </td>
+        </tr>
+      `).join('');
+      renderSummary();
+      renderCategories();
+      renderMovements();
+    }
+
+    function renderMovements() {
+      const tbody = byId('movementsTbody');
+      if (state.movements.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Aucun mouvement</td></tr>'; return; }
+      const rows = state.movements.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0, 25).map(m => {
+        const p = state.products.find(x => x.id === m.productId);
+        const date = new Date(m.date).toLocaleString('fr-FR');
+        const type = m.type === 'IN' ? 'Entrée' : 'Sortie';
+        return `<tr>
+          <td>${date}</td>
+          <td>${type}</td>
+          <td>${p ? p.label : '—'}</td>
+          <td>${m.qty}</td>
+          <td>${m.comment || ''}</td>
+        </tr>`;
+      }).join('');
+      tbody.innerHTML = rows;
+    }
+
+    function renderSummary() {
+      byId('summaryProducts').textContent = state.products.length;
+      const value = state.products.reduce((acc, p) => acc + (p.price || 0) * (p.stock || 0), 0);
+      byId('summaryValue').textContent = formatCurrency(value);
+      const alerts = state.products.filter(isAlert).length;
+      byId('summaryAlerts').textContent = alerts;
+    }
+
+    // Actions rapides
+    function quickIn(productId) { addMovement(productId, 'IN', 1, 'Entrée rapide'); }
+    function quickOut(productId) { addMovement(productId, 'OUT', 1, 'Sortie rapide'); }
+
+    // Modals
+    function openAddProduct() {
+      renderCategoryOptions('pCategory');
+      showModal('modalProduct');
+    }
+    function openAddMovement() {
+      const sel = byId('mProduct');
+      sel.innerHTML = state.products.map(p => `<option value="${p.id}">${p.ref} — ${p.label}</option>`).join('');
+      byId('mQty').value = 1; byId('mComment').value = '';
+      byId('mType').value = 'IN';
+      showModal('modalMovement');
+    }
+    function renderCategoryOptions(selectId) {
+      const sel = byId(selectId);
+      sel.innerHTML = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+    function showModal(id) { byId(id).style.display = 'flex'; }
+    function hideModal(id) { byId(id).style.display = 'none'; }
+    function closeModal(e) { if (e.target.classList.contains('modal-backdrop')) e.target.style.display = 'none'; }
+
+    // Enregistrements
+    function saveNewProduct() {
+      const label = byId('pLabel').value.trim();
+      const ref = byId('pRef').value.trim();
+      const price = parseFloat(byId('pPrice').value || '0');
+      const categoryId = byId('pCategory').value;
+      const stock = parseInt(byId('pStock').value || '0');
+      const min = parseInt(byId('pMin').value || '0');
+      if (!label || !ref || !categoryId) { alert('Veuillez renseigner Libellé, Référence et Catégorie'); return; }
+      const id = `P-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+      state.products.push({ id, ref, label, categoryId, price, stock, min });
+      persist(); hideModal('modalProduct'); renderProducts();
+    }
+
+    function saveNewMovement() {
+      const productId = byId('mProduct').value; if (!productId) return;
+      const type = byId('mType').value;
+      const qty = Math.max(1, parseInt(byId('mQty').value || '1'));
+      const comment = byId('mComment').value.trim();
+      addMovement(productId, type, qty, comment);
+      hideModal('modalMovement');
+    }
+
+    function addMovement(productId, type, qty, comment) {
+      const p = state.products.find(x => x.id === productId); if (!p) return;
+      const delta = type === 'IN' ? qty : -qty;
+      p.stock = Math.max(0, (p.stock || 0) + delta);
+      state.movements.push({ id: `M-${Date.now()}`, date: new Date().toISOString(), type, productId, qty, comment });
+      persist(); renderProducts();
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      renderFilters();
+      renderCategories();
+      renderProducts();
+    });
+  </script>
+</body>
+</html>
+
+

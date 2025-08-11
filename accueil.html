@@ -170,7 +170,7 @@
         </span>
         <span class="tile-label">Inventaire PDF</span>
       </div>
-      <div class="tile">
+      <div class="tile" onclick="navigateToStocks()" style="cursor: pointer;">
         <span class="tile-icon">
           <img src="icons/appicon/stocks.png" alt="Gestion Stocks" class="icon-img" />
         </span>
@@ -287,6 +287,11 @@
     // Fonction de navigation vers Paramètres
     function navigateToParametres() {
       window.location.href = 'parametres.html';
+    }
+
+    // Fonction de navigation vers Stocks (toujours accessible pour test)
+    function navigateToStocks() {
+      window.location.href = 'stocks.html';
     }
     
     // Fonction de navigation vers Test PWA
