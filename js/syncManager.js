@@ -110,14 +110,14 @@ class SyncManager {
 
             if (bvError) throw bvError;
 
-            // Sauvegarder dans IndexedDB
-            await indexedDBManager.saveData('extincteurs', extincteurs || []);
-            await indexedDBManager.saveData('eclairages', eclairages || []);
-            await indexedDBManager.saveData('alarmes', alarmes || []);
-            await indexedDBManager.saveData('desenfumages', desenfumages || []);
-            await indexedDBManager.saveData('rias', rias || []);
-            await indexedDBManager.saveData('plans', plans || []);
-            await indexedDBManager.saveData('bvs', bvs || []);
+            // Sauvegarder dans IndexedDB (bulk, remplacement du contenu)
+            await indexedDBManager.saveBulk('extincteurs', extincteurs || [], { clearBefore: true });
+            await indexedDBManager.saveBulk('eclairages', eclairages || [], { clearBefore: true });
+            await indexedDBManager.saveBulk('alarmes', alarmes || [], { clearBefore: true });
+            await indexedDBManager.saveBulk('desenfumages', desenfumages || [], { clearBefore: true });
+            await indexedDBManager.saveBulk('rias', rias || [], { clearBefore: true });
+            await indexedDBManager.saveBulk('plans', plans || [], { clearBefore: true });
+            await indexedDBManager.saveBulk('bvs', bvs || [], { clearBefore: true });
 
             console.log('✅ Données du site chargées dans IndexedDB');
             return true;

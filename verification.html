@@ -179,6 +179,32 @@
       background: #7a1d1c;
       transform: scale(1.05);
     }
+    /* Bouton de préchargement offline */
+    .preload-button {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 0.7rem 1rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .preload-button:hover {
+      background: #1e40af;
+      transform: translateY(-1px);
+    }
+    .preload-button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
     
 
     
@@ -357,7 +383,72 @@
       
       // Mettre à jour l'état des tuiles
       updateTilesState();
+
+      // Créer le bouton de préchargement hors ligne
+      const preloadBtn = document.createElement('button');
+      preloadBtn.className = 'preload-button';
+      preloadBtn.id = 'preloadButton';
+      preloadBtn.textContent = 'Télécharger pour usage hors ligne';
+      preloadBtn.onclick = preloadVerificationData;
+      document.body.appendChild(preloadBtn);
     });
+
+    // Préchargement des données nécessaires au mode hors ligne (catalogues + sites du client)
+    async function preloadVerificationData() {
+      const btn = document.getElementById('preloadButton');
+      try {
+        if (!navigator.onLine) {
+          alert('Vous êtes hors ligne. Veuillez vous connecter pour télécharger les données.');
+          return;
+        }
+
+        const clientId = localStorage.getItem('jpsi_client_id');
+        if (!clientId) {
+          alert('Client non identifié. Connectez-vous d\'abord.');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Téléchargement des catalogues...';
+
+        // Catalogues (éclairages, extincteurs)
+        await syncManager.loadCatalogues();
+
+        btn.textContent = 'Récupération des sites...';
+        const { data: sites, error } = await supabase
+          .from('sites')
+          .select('id_site')
+          .eq('id_client', clientId);
+
+        if (error) throw error;
+
+        const siteList = Array.isArray(sites) ? sites : [];
+        let idx = 0;
+        for (const s of siteList) {
+          idx += 1;
+          btn.textContent = `Téléchargement site ${idx}/${siteList.length} (id ${s.id_site})...`;
+          await syncManager.loadSiteData(s.id_site);
+        }
+
+        btn.textContent = 'Finalisation...';
+        await syncManager.updateSyncStatus();
+
+        btn.textContent = 'Données disponibles hors ligne ✔';
+        setTimeout(() => {
+          btn.textContent = 'Télécharger pour usage hors ligne';
+          btn.disabled = false;
+        }, 1500);
+
+        alert('Préchargement terminé. Les données de vérification sont disponibles hors ligne.');
+      } catch (e) {
+        console.error(e);
+        alert('Erreur lors du préchargement: ' + (e?.message || e));
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Télécharger pour usage hors ligne';
+        }
+      }
+    }
   </script>
 </body>
 </html> 

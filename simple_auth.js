@@ -138,6 +138,35 @@ class SimpleAuth {
             return true;
         } catch (error) {
             console.error('Erreur vérification connexion:', error);
+            // Mode hors ligne toléré pour la branche Vérification
+            const pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
+            const VERIF_ALLOW_LIST = [
+                'verification',
+                'newVerification.html',
+                'ongoingVerification.html',
+                'verificationDetail.html',
+                'verificationSummary.html',
+                'verificationHistory.html',
+                'verifSite.html',
+                'verifDes.html',
+                // Adjacent confirmés
+                'extSite.html',
+                'extDetail.html',
+                'eclairageSite.html',
+                'eclairageDetail.html',
+                'alarmeSite.html',
+                'desenfumageList.html',
+                'desenfumageDetail.html',
+                'desenfumageInstallation.html',
+                'desenfumageHierarchie.html'
+            ];
+            const isVerificationScope = VERIF_ALLOW_LIST.some(p => pathname.includes(p));
+
+            if (!navigator.onLine && isVerificationScope) {
+                console.log('✅ Hors ligne: accès autorisé à la branche Vérification avec token local');
+                return true;
+            }
+
             this.logout();
             return false;
         }

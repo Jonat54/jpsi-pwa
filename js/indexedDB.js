@@ -137,6 +137,43 @@ class IndexedDBManager {
         });
     }
 
+    // 📥 Sauvegarde en lot (tableaux d'objets)
+    async saveBulk(storeName, items, options = { clearBefore: false }) {
+        if (!this.isInitialized) await this.init();
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => {
+                console.error(`❌ Erreur transaction bulk ${storeName}:`, transaction.error);
+                reject(transaction.error);
+            };
+
+            const putAll = (array) => {
+                (array || []).forEach((item) => {
+                    try {
+                        store.put(item);
+                    } catch (err) {
+                        console.error(`❌ Erreur put dans ${storeName}:`, err, item);
+                    }
+                });
+            };
+
+            if (options?.clearBefore) {
+                const clearReq = store.clear();
+                clearReq.onsuccess = () => putAll(items);
+                clearReq.onerror = () => {
+                    console.error(`❌ Erreur clear ${storeName}:`, clearReq.error);
+                    reject(clearReq.error);
+                };
+            } else {
+                putAll(items);
+            }
+        });
+    }
+
     // 📤 Récupérer des données
     async getData(storeName, key = null) {
         if (!this.isInitialized) await this.init();
