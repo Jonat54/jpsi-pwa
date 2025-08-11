@@ -6,25 +6,35 @@
   <title>JPSI - Vue Prix</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
-    body { font-family: 'SF Pro Display','Segoe UI',Arial,sans-serif; background:#f3f4f6; margin:0; }
-    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#9B2423; color:#fff; }
+    html, body { height:100%; margin:0; padding:0; }
+    body {
+      min-height:100vh; min-width:100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display','Segoe UI',Arial,sans-serif;
+      box-sizing: border-box; overflow-x:hidden; overflow-y:auto;
+    }
+    .container { max-width:1200px; margin: 16px auto; display:flex; flex-direction:column; gap:1rem; padding: 1rem; }
+    .card { background:#f6f7f9; border:3.5px solid #9B2423; border-radius:28px; box-shadow:0 6px 24px rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset; }
+    .header-card { padding:1.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .title { margin:0; color:#23272b; font-size:1.8rem; font-weight:800; }
     .btn { border:none; border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer; }
-    .btn-light { background:#fff; color:#9B2423; }
-    .container { max-width:1200px; margin: 16px auto; background:#fff; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1); overflow:hidden; }
+    .btn-primary { background:#9B2423; color:#fff; }
+    .table-card { background:#fff; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1); overflow:hidden; }
     table { width:100%; border-collapse:collapse; }
-    thead { background:#f9fafb; }
+    thead { background:#9B2423; color:#fff; }
     th, td { border-bottom:1px solid #e5e7eb; padding:10px; font-size:0.95rem; }
     tfoot td { font-weight:800; }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div>💶 Vue Prix</div>
-    <div>
-      <button class="btn btn-light" onclick="window.location.href='stocks.html'">← Retour (mode discret)</button>
-    </div>
-  </div>
   <div class="container">
+    <div class="card header-card">
+      <h1 class="title">💶 Vue Prix</h1>
+      <div>
+        <button class="btn btn-primary" onclick="window.location.href='stocks.html'">← Retour (mode discret)</button>
+      </div>
+    </div>
+    <div class="table-card">
     <table>
       <thead>
         <tr>
@@ -44,6 +54,7 @@
         </tr>
       </tfoot>
     </table>
+    </div>
   </div>
 
   <script>

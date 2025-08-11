@@ -60,7 +60,6 @@
     .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
     /* Mode discret: masquer prix */
     .hide-prices .price-header, .hide-prices .price-col { display: none; }
-    .hide-prices #summaryValue { filter: blur(6px); }
     .unlock-hint { font-size: 0.85rem; color: #6b7280; margin-left: 0.5rem; }
   </style>
 </head>
@@ -85,10 +84,6 @@
       <div class="summary-item">
         <div class="summary-label">Produits</div>
         <div class="summary-value" id="summaryProducts">0</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">Valorisation (estimée)</div>
-        <div class="summary-value" id="summaryValue">0 €</div>
       </div>
       <div class="summary-item">
         <div class="summary-label">Alertes stock</div>
@@ -386,11 +381,11 @@
     }
 
     function renderSummary() {
-      byId('summaryProducts').textContent = state.products.length;
-      const value = state.products.reduce((acc, p) => acc + (p.price || 0) * (p.stock || 0), 0);
-      byId('summaryValue').textContent = formatCurrency(value);
+      const prodEl = byId('summaryProducts');
+      if (prodEl) prodEl.textContent = state.products.length;
       const alerts = state.products.filter(isAlert).length;
-      byId('summaryAlerts').textContent = alerts;
+      const alertEl = byId('summaryAlerts');
+      if (alertEl) alertEl.textContent = alerts;
     }
 
     // Actions rapides
