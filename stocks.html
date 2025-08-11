@@ -58,6 +58,10 @@
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
     .form-grid .full { grid-column: 1 / -1; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
+    /* Mode discret: masquer prix */
+    .hide-prices .price-header, .hide-prices .price-col { display: none; }
+    .hide-prices #summaryValue { filter: blur(6px); }
+    .unlock-hint { font-size: 0.85rem; color: #6b7280; margin-left: 0.5rem; }
   </style>
 </head>
 <body>
@@ -68,6 +72,13 @@
       <div class="actions">
         <button class="btn btn-secondary" onclick="openAddProduct()">➕ Produit</button>
         <button class="btn btn-primary" onclick="openAddMovement()">↕ Mouvement</button>
+        <button id="unlockBtn" class="btn btn-secondary" title="Appui long pour afficher les prix"
+                onmousedown="startUnlockPress(event)" ontouchstart="startUnlockPress(event)"
+                onmouseup="endUnlockPress()" onmouseleave="endUnlockPress()" ontouchend="endUnlockPress()">
+          🔒 Afficher prix
+        </button>
+        <button id="hideBtn" class="btn btn-secondary" onclick="lockPrices()" style="display:none;">🙈 Masquer prix</button>
+        <button id="priceViewBtn" class="btn btn-primary" onclick="openPriceView()" style="display:none;">💶 Vue Prix</button>
       </div>
     </div>
 
@@ -113,7 +124,7 @@
               <th style="width: 140px;">Catégorie</th>
               <th class="sortable" style="width: 120px;" onclick="sortBy('stock')">Stock <span class="caret" id="caret-stock">↕</span></th>
               <th style="width: 120px;">Min.</th>
-              <th class="sortable" style="width: 130px;" onclick="sortBy('price')">Prix (€) <span class="caret" id="caret-price">↕</span></th>
+              <th class="sortable price-header" style="width: 130px;" onclick="sortBy('price')">Prix (€) <span class="caret" id="caret-price">↕</span></th>
               <th style="width: 160px;">Actions</th>
             </tr>
           </thead>
@@ -214,8 +225,9 @@
   <script>
     const STORAGE_KEY = 'jpsi_stocks_v1';
     const UI_KEY = 'jpsi_stocks_ui_v1';
+    const PIN_KEY = 'jpsi_stocks_pin_v1';
     let state = { categories: [], products: [], movements: [] };
-    let ui = { search: '', category: '', sortKey: 'label', sortDir: 'asc' };
+    let ui = { search: '', category: '', sortKey: 'label', sortDir: 'asc', showPrices: false };
 
     // Données de test (seed)
     const seed = {
@@ -249,7 +261,7 @@
     function loadUI() {
       try { const saved = localStorage.getItem(UI_KEY); if (saved) ui = { ...ui, ...JSON.parse(saved) }; } catch {}
     }
-    function persistUI() { localStorage.setItem(UI_KEY, JSON.stringify({ search: ui.search, category: ui.category, sortKey: ui.sortKey, sortDir: ui.sortDir })); }
+    function persistUI() { localStorage.setItem(UI_KEY, JSON.stringify({ search: ui.search, category: ui.category, sortKey: ui.sortKey, sortDir: ui.sortDir, showPrices: ui.showPrices })); }
 
     function formatCurrency(v) { return (v || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }); }
     function byId(id) { return document.getElementById(id); }
@@ -296,7 +308,7 @@
           <td>${getCategoryName(p.categoryId)}</td>
           <td>${p.stock} ${isAlert(p) ? '<span class="pill pill-warn">Bas</span>' : '<span class="pill pill-ok">OK</span>'}</td>
           <td>${p.min ?? 0}</td>
-          <td>${p.price?.toFixed(2) ?? '0.00'}</td>
+           <td class="price-col">${p.price?.toFixed(2) ?? '0.00'}</td>
           <td class="actions">
             <button class="btn btn-secondary" onclick="quickOut('${p.id}')">-1</button>
             <button class="btn btn-secondary" onclick="quickIn('${p.id}')">+1</button>
@@ -321,6 +333,59 @@
       else { ui.sortKey = key; ui.sortDir = 'asc'; }
       persistUI();
       renderProducts();
+    }
+
+    // Verrouillage / déverrouillage prix
+    let unlockTimer = null;
+    function startUnlockPress(e) {
+      e.preventDefault();
+      endUnlockPress();
+      unlockTimer = setTimeout(async () => {
+        const ok = await requestPinAndUnlock();
+        if (ok) togglePriceVisibility(true);
+      }, 800); // appui long 800ms
+    }
+    function endUnlockPress() { if (unlockTimer) { clearTimeout(unlockTimer); unlockTimer = null; } }
+
+    async function requestPinAndUnlock() {
+      try {
+        let pin = localStorage.getItem(PIN_KEY);
+        if (!pin) {
+          const setPin = prompt('Définissez un code PIN (4-8 chiffres) pour afficher les prix:');
+          if (!setPin || !/^\d{4,8}$/.test(setPin)) { alert('PIN invalide'); return false; }
+          localStorage.setItem(PIN_KEY, setPin);
+          pin = setPin;
+        }
+        const input = prompt('Entrez votre PIN pour afficher les prix:');
+        if (input === pin) { return true; }
+        alert('PIN incorrect');
+        return false;
+      } catch (e) { console.error(e); return false; }
+    }
+
+    function togglePriceVisibility(show) {
+      ui.showPrices = !!show;
+      persistUI();
+      updatePriceUIState();
+      renderProducts();
+    }
+
+    function updatePriceUIState() {
+      const hide = !ui.showPrices;
+      document.body.classList.toggle('hide-prices', hide);
+      byId('unlockBtn').style.display = hide ? '' : 'none';
+      byId('hideBtn').style.display = hide ? 'none' : '';
+      byId('priceViewBtn').style.display = hide ? 'none' : '';
+    }
+
+    function lockPrices() { togglePriceVisibility(false); }
+
+    function openPriceView() {
+      // Vue simple: tableau des prix et valorisation
+      const rows = state.products.map(p => `<tr><td>${p.ref}</td><td>${p.label}</td><td>${getCategoryName(p.categoryId)}</td><td>${p.stock}</td><td>${(p.price||0).toFixed(2)}</td><td>${((p.price||0)*(p.stock||0)).toFixed(2)}</td></tr>`).join('');
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html><html><head><meta charset='utf-8'><title>Vue Prix</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px}th{background:#eee}</style></head><body><h2>Vue Prix</h2><table><thead><tr><th>Réf</th><th>Libellé</th><th>Catégorie</th><th>Stock</th><th>Prix</th><th>Valeur</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
+      win.document.close();
     }
 
     function renderMovements() {
@@ -417,6 +482,7 @@
       renderCategories();
       renderProducts();
       renderMovements();
+      updatePriceUIState();
       const debounced = debounce(()=>{ ui.search = byId('searchInput').value.trim().toLowerCase(); persistUI(); renderProducts(); }, 200);
       byId('searchInput').oninput = debounced;
       byId('categoryFilter').onchange = () => { ui.category = byId('categoryFilter').value; persistUI(); renderProducts(); };
