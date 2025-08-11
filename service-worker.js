@@ -1,8 +1,8 @@
 // Service Worker pour JPSI PWA
-// Version v1.3.36 - Offline ciblé pour la branche Vérification uniquement
+// Version v1.3.37 - Offline ciblé pour la branche Vérification uniquement
 
-const STATIC_CACHE = 'jpsi-verif-static-v1.3.36';
-const DYNAMIC_CACHE = 'jpsi-verif-dynamic-v1.3.36';
+const STATIC_CACHE = 'jpsi-verif-static-v1.3.37';
+const DYNAMIC_CACHE = 'jpsi-verif-dynamic-v1.3.37';
 
 // Pages de la branche Vérification (et adjacentes confirmées)
 const VERIF_PAGES = [
@@ -47,7 +47,7 @@ const STATIC_RESOURCES = [
 
 // Installation - Mettre en cache les ressources statiques
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.3.36 (scope Vérification)...');
+    console.log('🔄 Service Worker: Installation v1.3.37 (scope Vérification)...');
 
     evt.waitUntil(
         caches.open(STATIC_CACHE)
@@ -67,7 +67,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyer les anciens caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.3.36 (scope Vérification)...');
+    console.log('🔄 Service Worker: Activation v1.3.37 (scope Vérification)...');
 
     evt.waitUntil(
         caches.keys()
@@ -184,7 +184,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.3.36' });
+        event.ports[0].postMessage({ version: 'v1.3.37' });
     }
 });
-console.log('✅ Service Worker chargé v1.3.36 (scope Vérification)');
+console.log('✅ Service Worker chargé v1.3.37 (scope Vérification)');
