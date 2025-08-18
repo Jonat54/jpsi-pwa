@@ -1,10 +1,11 @@
-// Service Worker pour JPSI PWA
-// Version v1.3.39 - Offline complet pour toute l'application
+// Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
+// Version v1.4.0 - Cache First simple et robuste
 
-const STATIC_CACHE = 'jpsi-static-v1.3.39';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.3.39';
+const STATIC_CACHE = 'jpsi-static-v1.4.0';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.0';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.0';
 
-// Toutes les pages de l'application
+// Pages principales de l'application (liste explicite)
 const ALL_PAGES = [
     '/',
     '/index.html',
@@ -46,9 +47,8 @@ const ALL_PAGES = [
     '/offline.html'
 ];
 
-// Ressources à pré-cacher pour toute l'application
+// Ressources statiques critiques
 const STATIC_RESOURCES = [
-    ...ALL_PAGES,
     '/styles.css',
     '/app.js',
     '/supabase-config.js',
@@ -64,151 +64,207 @@ const STATIC_RESOURCES = [
     '/img/entete.png'
 ];
 
-// Installation - Mettre en cache les ressources statiques
+// Pages de fallback en ordre de priorité
+const FALLBACK_PAGES = [
+    '/accueil.html',
+    '/offline.html',
+    '/index.html'
+];
+
+// Utilitaires
+const utils = {
+    // Vérifier si c'est une page de l'app
+    isAppPage: (pathname) => ALL_PAGES.includes(pathname),
+    
+    // Vérifier si c'est une ressource statique
+    isStaticResource: (url) => {
+        const staticExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf'];
+        return staticExtensions.some(ext => url.includes(ext)) || 
+               STATIC_RESOURCES.some(res => url.endsWith(res));
+    },
+    
+    // Vérifier si c'est une requête Supabase (à ignorer)
+    isSupabaseRequest: (url) => url.hostname.includes('supabase.co'),
+    
+    // Gestion d'erreur du cache.addAll avec retry individuel
+    async cacheAddAllWithRetry(cache, resources) {
+        const results = [];
+        for (const resource of resources) {
+            try {
+                await cache.add(resource);
+                results.push({ resource, success: true });
+            } catch (error) {
+                console.warn(`⚠️ Échec cache pour ${resource}:`, error);
+                results.push({ resource, success: false, error });
+            }
+        }
+        return results;
+    },
+    
+    // Fallback en chaîne pour les pages
+    async getFallbackPage() {
+        for (const fallbackPage of FALLBACK_PAGES) {
+            try {
+                const response = await caches.match(fallbackPage);
+                if (response) return response;
+            } catch (error) {
+                console.warn(`⚠️ Fallback ${fallbackPage} non disponible:`, error);
+            }
+        }
+        return new Response('Page non disponible', { status: 404 });
+    },
+    
+    // Vérifier le quota de stockage (iPadOS)
+    async checkStorageQuota() {
+        if ('storage' in navigator && 'estimate' in navigator.storage) {
+            try {
+                const estimate = await navigator.storage.estimate();
+                const usagePercent = (estimate.usage / estimate.quota) * 100;
+                console.log(`💾 Stockage: ${usagePercent.toFixed(1)}% utilisé`);
+                return usagePercent < 90; // Garder 10% de marge
+            } catch (error) {
+                console.warn('⚠️ Impossible de vérifier le quota:', error);
+                return true; // Continuer par défaut
+            }
+        }
+        return true;
+    }
+};
+
+// Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.3.39 (scope complet)...');
-
+    console.log('🔄 Service Worker: Installation v1.4.0...');
+    
     evt.waitUntil(
-        caches.open(STATIC_CACHE)
-            .then(cache => {
-                console.log('📦 Mise en cache de toutes les ressources...');
-                return cache.addAll(STATIC_RESOURCES);
-            })
-            .then(() => {
-                console.log('✅ Cache statique complet créé');
-                return self.skipWaiting();
-            })
-            .catch(error => {
-                console.error('❌ Erreur installation cache:', error);
-            })
+        (async () => {
+            try {
+                const cache = await caches.open(STATIC_CACHE);
+                const allResources = [...ALL_PAGES, ...STATIC_RESOURCES];
+                
+                console.log('📦 Mise en cache des ressources...');
+                const results = await utils.cacheAddAllWithRetry(cache, allResources);
+                
+                const successCount = results.filter(r => r.success).length;
+                const failCount = results.length - successCount;
+                
+                console.log(`✅ Cache créé: ${successCount} succès, ${failCount} échecs`);
+                
+                // Créer le cache de fallback
+                const fallbackCache = await caches.open(FALLBACK_CACHE);
+                await utils.cacheAddAllWithRetry(fallbackCache, FALLBACK_PAGES);
+                
+                await self.skipWaiting();
+            } catch (error) {
+                console.error('❌ Erreur installation:', error);
+            }
+        })()
     );
 });
 
-// Activation - Nettoyer les anciens caches
+// Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.3.39 (scope complet)...');
-
+    console.log('🔄 Service Worker: Activation v1.4.0...');
+    
     evt.waitUntil(
-        caches.keys()
-            .then(cacheNames => {
-                return Promise.all(
-                    cacheNames.map(cacheName => {
-                        if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-                            console.log('🗑️ Suppression ancien cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }
-                        return null;
-                    })
-                );
-            })
-            .then(() => {
+        (async () => {
+            try {
+                const cacheNames = await caches.keys();
+                const currentCaches = [STATIC_CACHE, DYNAMIC_CACHE, FALLBACK_CACHE];
+                
+                const deletePromises = cacheNames
+                    .filter(name => !currentCaches.includes(name))
+                    .map(name => {
+                        console.log('🗑️ Suppression ancien cache:', name);
+                        return caches.delete(name);
+                    });
+                
+                await Promise.all(deletePromises);
                 console.log('✅ Service Worker activé');
-                return self.clients.claim();
-            })
+                await self.clients.claim();
+            } catch (error) {
+                console.error('❌ Erreur activation:', error);
+            }
+        })()
     );
 });
 
-// Interception des requêtes - Stratégie "Cache First" pour les ressources statiques
+// Interception des requêtes - Cache First simple pour iPadOS
 self.addEventListener('fetch', (evt) => {
     const request = evt.request;
     const url = new URL(request.url);
-
+    
     // Ignorer les requêtes non-GET
     if (request.method !== 'GET') return;
-
-    // Ignorer les requêtes vers Supabase
-    if (url.hostname.includes('supabase.co')) return;
-
-    // RÉACTIVÉ avec stratégie simple pour Safari/iPad
-    // return;
-
-    const pathname = url.pathname;
-
-    const isAppPath = (path) => {
-        // correspond exactement aux pages de l'application
-        return ALL_PAGES.includes(path);
-    };
-
-    const isStaticResource = (reqUrl) => {
-        const staticExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf'];
-        for (const ext of staticExtensions) {
-            if (reqUrl.includes(ext)) return true;
-        }
-        return STATIC_RESOURCES.some(res => reqUrl.endsWith(res));
-    };
-
-    // Ne gérer que les pages et ressources exactes de l'app
-    const isExactAppPage = isAppPath(pathname);
-    const isExactStaticResource = STATIC_RESOURCES.some(p => request.url.endsWith(p));
     
-    if (!isExactAppPage && !isExactStaticResource) return;
-
-    // Documents (pages): Cache First simple pour Safari
-    if (request.destination === 'document') {
-        evt.respondWith(
-            caches.match(request)
-                .then(cachedResponse => {
-                    if (cachedResponse) {
-                        console.log('✅ Page servie depuis le cache:', request.url);
-                        return cachedResponse;
-                    }
-                    return fetch(request)
-                        .then(response => {
-                            if (response && response.status === 200) {
-                                const responseClone = response.clone();
-                                caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, responseClone));
-                                console.log('✅ Page mise en cache:', request.url);
-                            }
-                            return response;
-                        })
-                        .catch(error => {
-                            console.log('❌ Erreur réseau, page non disponible:', request.url);
-                            // Retourner la page d'accueil en cas d'erreur
-                            return caches.match('/accueil.html');
-                        });
-                })
-        );
-        return;
-    }
-
-    // Assets: Cache First avec revalidation
-    if (isStaticResource(request.url)) {
-        evt.respondWith(
-            caches.match(request).then(cachedResponse => {
-                if (cachedResponse) return cachedResponse;
-                return fetch(request)
-                    .then(response => {
-                        if (response && response.status === 200) {
-                            const responseClone = response.clone();
-                            caches.open(STATIC_CACHE).then(cache => cache.put(request, responseClone));
-                        }
-                        return response;
-                    })
-                    .catch(() => caches.match('/offline.html'));
-            })
-        );
-        return;
-    }
-
-    // Autres ressources dans le scope de l'app: Stale-While-Revalidate
+    // Ignorer les requêtes Supabase
+    if (utils.isSupabaseRequest(url)) return;
+    
+    const pathname = url.pathname;
+    
+    // Ne gérer que les pages et ressources exactes de l'app
+    const isAppPage = utils.isAppPage(pathname);
+    const isStaticResource = utils.isStaticResource(request.url);
+    
+    if (!isAppPage && !isStaticResource) return;
+    
     evt.respondWith(
-        caches.match(request).then(cachedResponse => {
-            const fetchPromise = fetch(request)
-                .then(response => {
-                    if (response && response.status === 200) {
-                        const responseClone = response.clone();
-                        caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, responseClone));
+        (async () => {
+            try {
+                // Stratégie Cache First simple
+                const cachedResponse = await caches.match(request);
+                
+                if (cachedResponse) {
+                    console.log('✅ Ressource servie depuis le cache:', request.url);
+                    return cachedResponse;
+                }
+                
+                // Vérifier le quota avant de mettre en cache
+                const hasQuota = await utils.checkStorageQuota();
+                
+                try {
+                    const networkResponse = await fetch(request);
+                    
+                    if (networkResponse && networkResponse.status === 200) {
+                        // Mettre en cache seulement si on a du quota
+                        if (hasQuota) {
+                            const responseClone = networkResponse.clone();
+                            const cacheName = isStaticResource ? STATIC_CACHE : DYNAMIC_CACHE;
+                            const cache = await caches.open(cacheName);
+                            await cache.put(request, responseClone);
+                            console.log('✅ Ressource mise en cache:', request.url);
+                        }
+                        return networkResponse;
                     }
-                    return response;
-                })
-                .catch(() => undefined);
-            return cachedResponse || fetchPromise;
-        })
+                    
+                    // Réponse non-200, essayer le fallback
+                    throw new Error(`HTTP ${networkResponse.status}`);
+                    
+                } catch (networkError) {
+                    console.log('❌ Erreur réseau:', request.url, networkError);
+                    
+                    // Pour les pages, essayer le fallback
+                    if (request.destination === 'document') {
+                        return await utils.getFallbackPage();
+                    }
+                    
+                    // Pour les ressources statiques, essayer offline.html
+                    return await caches.match('/offline.html') || 
+                           new Response('Ressource non disponible', { status: 404 });
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur fetch:', error);
+                
+                // Dernier recours
+                if (request.destination === 'document') {
+                    return await utils.getFallbackPage();
+                }
+                
+                return new Response('Erreur interne', { status: 500 });
+            }
+        })()
     );
 });
-
-// Fonction pour identifier les ressources statiques
-// Note: Détection des ressources statiques intégrée dans l'événement fetch ci-dessus
 
 // Gestion des messages du client
 self.addEventListener('message', (event) => {
@@ -217,7 +273,35 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.3.39' });
+        event.ports[0].postMessage({ version: 'v1.4.0' });
+    }
+    
+    if (event.data && event.data.type === 'GET_STORAGE_INFO') {
+        (async () => {
+            try {
+                const estimate = await navigator.storage.estimate();
+                event.ports[0].postMessage({
+                    usage: estimate.usage,
+                    quota: estimate.quota,
+                    usagePercent: (estimate.usage / estimate.quota) * 100
+                });
+            } catch (error) {
+                event.ports[0].postMessage({ error: 'Impossible de récupérer les infos stockage' });
+            }
+        })();
+    }
+    
+    if (event.data && event.data.type === 'CLEAR_CACHE') {
+        (async () => {
+            try {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                event.ports[0].postMessage({ success: true });
+            } catch (error) {
+                event.ports[0].postMessage({ error: 'Erreur lors du nettoyage du cache' });
+            }
+        })();
     }
 });
-console.log('✅ Service Worker chargé v1.3.39 (scope complet)');
+
+console.log('✅ Service Worker chargé v1.4.0 - Optimisé iPadOS/Safari');
