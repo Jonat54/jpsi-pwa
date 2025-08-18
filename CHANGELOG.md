@@ -1,5 +1,15 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.4 - Correctifs mineurs et incrément version
+
+**Date :** 2024-01-XX  
+**Statut :** ✅ Déployé
+
+### 🔧 Modifications
+- Incrément des versions d'affichage et caches: Service Worker, splash (`index.html`), `manifest.json`.
+- Noms de caches mis à jour pour forcer la prise en compte de la nouvelle version par iPadOS/Safari.
+- Ajustements mineurs de robustesse (aucun impact fonctionnel majeur).
+
 ## 🚀 Version 1.4.0 - Optimisation iPadOS/Safari
 
 **Date :** 2024-01-XX  

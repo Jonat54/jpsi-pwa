@@ -9,31 +9,39 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let supabase = null;
 
 function initializeSupabase() {
-  if (supabase) return supabase;
-  
-  // Attendre que Supabase soit disponible
-  if (!window.supabase) {
+  // Si déjà un client valable (avec .from), le retourner
+  if (supabase && typeof supabase.from === 'function') return supabase;
+
+  // Vérifier la présence de la librairie
+  if (!window.supabase || typeof window.supabase.createClient !== 'function') {
     console.warn('⚠️ Supabase CDN non chargé');
     return null;
   }
-  
+
   try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    window.supabaseClient = supabase;
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Vérifier l'API attendue
+    if (!client || typeof client.from !== 'function') {
+      console.error('❌ Client Supabase invalide (API .from manquante)');
+      return null;
+    }
+    supabase = client;
+    window.supabaseClient = client;
     console.log('✅ Supabase client initialisé');
-    return supabase;
+    return client;
   } catch (error) {
     console.error('❌ Erreur initialisation Supabase:', error);
     return null;
   }
 }
 
+function getSupabaseClient() {
+  return initializeSupabase();
+}
+
 // Configuration simple sans auth complexe
 async function configureSupabaseAuth() {
-  if (!supabase) {
-    supabase = initializeSupabase();
-    if (!supabase) return false;
-  }
+  if (!getSupabaseClient()) return false;
 
   try {
     console.log('✅ Supabase configuré (mode simple)');
@@ -50,20 +58,22 @@ async function authenticatedRequest(table, operation, data = null) {
   await configureSupabaseAuth();
   
   try {
+    const client = getSupabaseClient();
+    if (!client) throw new Error('Client Supabase indisponible');
     let result;
     
     switch (operation) {
       case 'insert':
-        result = await supabase.from(table).insert(data).select();
+        result = await client.from(table).insert(data).select();
         break;
       case 'update':
-        result = await supabase.from(table).update(data).select();
+        result = await client.from(table).update(data).select();
         break;
       case 'delete':
-        result = await supabase.from(table).delete().select();
+        result = await client.from(table).delete().select();
         break;
       case 'select':
-        result = await supabase.from(table).select(data || '*');
+        result = await client.from(table).select(data || '*');
         break;
       default:
         throw new Error(`Opération non supportée: ${operation}`);
@@ -81,13 +91,11 @@ window.JPSI = {
   // Test de connexion Supabase
   async testConnection() {
     try {
-      if (!supabase) {
-        supabase = initializeSupabase();
-        if (!supabase) return false;
-      }
+      const client = getSupabaseClient();
+      if (!client) return false;
       
       // Test simple de connexion
-      const { data, error } = await supabase.from('clients').select('count').limit(1);
+      const { data, error } = await client.from('clients').select('count').limit(1);
       if (error) {
         console.error('❌ Erreur de connexion Supabase:', error);
         return false;
@@ -137,13 +145,11 @@ window.JPSI = {
 // Initialisation automatique
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 Initialisation JPSI PWA...');
-  
-  // Attendre un peu que Supabase se charge
+  // Initialiser immédiatement le client si possible
+  initializeSupabase();
+  // Test non bloquant
   setTimeout(async () => {
     await JPSI.testConnection();
     console.log('✅ JPSI PWA initialisée');
-  }, 1000);
+  }, 500);
 });
-
-// Export pour utilisation dans d'autres fichiers
-window.JPSI = JPSI; 
