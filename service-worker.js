@@ -1,9 +1,9 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
-// Version v1.4.5 - Pré-chargement des données essentielles
+// Version v1.4.6 - Correctif table plans
 
-const STATIC_CACHE = 'jpsi-static-v1.4.5';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.5';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.5';
+const STATIC_CACHE = 'jpsi-static-v1.4.6';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.6';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.6';
 
 // Pages principales de l'application (liste explicite)
 const ALL_PAGES = [

@@ -105,6 +105,17 @@
 
 ---
 
+## 🚀 Version 1.4.6 - Correctif table Plans d'évacuation
+
+**Date :** 2025-08-18  
+**Statut :** ✅ Déployé
+
+### 🔧 Modifications
+- Remplacement des requêtes `plans_evacuation` par `plans` dans `verifSite.html` et `verificationSummary.html`.
+- Compatibilité `type_equipement` pour `plans` ou `plans_evacuation` lors du matching des vérifications.
+- Incrément versions splash/manifest et caches SW → v1.4.6.
+
+
 ## 🚀 Version 1.3.37 - Correction Double Chargement Scripts
 
 **Date :** 2024-01-XX  

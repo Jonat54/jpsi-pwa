@@ -927,7 +927,7 @@
         try {
           // Essayer de charger les Plans (si la table existe)
           const { data: plans, error: plansError } = await supabase
-            .from('plans_evacuation')
+            .from('plans')
             .select('*')
             .eq('id_site', currentSite.id_site);
           
@@ -938,7 +938,7 @@
             // Compter les Plans vérifiés dans cette intervention (équipements uniques)
             const verifiedPlanIds = new Set(
               verifications
-                .filter(v => v.type_equipement === 'plans_evacuation')
+                .filter(v => (v.type_equipement === 'plans' || v.type_equipement === 'plans_evacuation'))
                 .map(v => v.id_equipement)
             );
             

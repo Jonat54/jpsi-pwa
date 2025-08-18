@@ -1841,7 +1841,7 @@
         
         // Charger les plans d'évacuation
         const { data: plans_evacuation, error: planError } = await supabase
-          .from('plans_evacuation')
+          .from('plans')
           .select('*')
           .eq('id_site', siteId);
         
@@ -1968,9 +1968,10 @@
                 typeLabel = 'RIA';
                 break;
                 
+              case 'plans':
               case 'plans_evacuation':
                 const { data: plan } = await supabase
-                  .from('plans_evacuation')
+                  .from('plans')
                   .select('num_plan')
                   .eq('id_plan', id_equipement)
                   .single();
