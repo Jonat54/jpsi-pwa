@@ -15,13 +15,20 @@ window.AppState = {
 };
 
 // 📱 Objet App global avec toutes les méthodes nécessaires
-window.App = {
-    // 🔄 Gestion de la navigation
-    goBack() {
-        if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.location.href = 'accueil.html';
+const App = {
+    isOnline: navigator.onLine,
+    currentSite: null,
+
+    // 📡 Vérifier le statut de connexion
+    async checkConnection() {
+        try {
+            if (window.JPSI && window.JPSI.testConnection) {
+                return await JPSI.testConnection();
+            }
+            return navigator.onLine;
+        } catch (error) {
+            console.error('❌ Erreur vérification connexion:', error);
+            return false;
         }
     },
 
@@ -41,32 +48,22 @@ window.App = {
 
     // 🔄 Synchronisation des données
     async syncData() {
-        try {
-            console.log('🔄 Début synchronisation...');
-            
-            // Vérifier si on est en ligne
-            if (!AppState.isOnline) {
-                throw new Error('Pas de connexion internet');
-            }
+        if (!this.isOnline) {
+            console.log('❌ Hors ligne - Synchronisation impossible');
+            return false;
+        }
 
-            // Utiliser le SyncManager s'il existe
+        try {
+            console.log('🔄 Synchronisation des données...');
+            
             if (window.syncManager) {
                 await syncManager.syncPendingData();
-            } else {
-                // Fallback basique
-                await this.basicSync();
             }
-
-            // Mettre à jour le statut
-            AppState.lastSync = new Date().toISOString();
-            this.updateOnlineStatus(true);
             
-            console.log('✅ Synchronisation terminée');
             return true;
         } catch (error) {
             console.error('❌ Erreur synchronisation:', error);
-            this.updateOnlineStatus(false);
-            throw error;
+            return false;
         }
     },
 
@@ -160,18 +157,45 @@ window.App = {
 
     // 📊 Mettre à jour le statut online/offline
     updateOnlineStatus(isOnline) {
-        AppState.isOnline = isOnline;
+        this.isOnline = isOnline;
+        console.log(`🌐 Statut réseau: ${isOnline ? 'En ligne' : 'Hors ligne'}`);
+        
+        // Mettre à jour l'interface si nécessaire
         this.updateUI();
     },
 
-    // 🎨 Mettre à jour l'interface utilisateur
+    // 📱 Mettre à jour l'interface utilisateur
     updateUI() {
+        // Créer ou mettre à jour l'indicateur de statut réseau
+        let statusIndicator = document.getElementById('networkStatus');
+        if (!statusIndicator) {
+            statusIndicator = document.createElement('div');
+            statusIndicator.id = 'networkStatus';
+            statusIndicator.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: ${this.isOnline ? '#4CAF50' : '#f44336'};
+                color: white;
+                padding: 8px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: bold;
+                z-index: 1000;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            `;
+            document.body.appendChild(statusIndicator);
+        }
+        
+        statusIndicator.textContent = this.isOnline ? '🌐 En ligne' : '❌ Hors ligne';
+        statusIndicator.style.background = this.isOnline ? '#4CAF50' : '#f44336';
+
         // Mettre à jour les indicateurs de statut
         const statusElements = document.querySelectorAll('.status-indicator');
         statusElements.forEach(element => {
             if (element.id === 'connectionStatus') {
-                element.textContent = AppState.isOnline ? 'En ligne' : 'Hors ligne';
-                element.className = `status-indicator ${AppState.isOnline ? 'status-online' : 'status-offline'}`;
+                element.textContent = this.isOnline ? 'En ligne' : 'Hors ligne';
+                element.className = `status-indicator ${this.isOnline ? 'status-online' : 'status-offline'}`;
             }
         });
 
@@ -202,7 +226,7 @@ window.App = {
                 position: fixed;
                 top: 10px;
                 right: 10px;
-                background: ${AppState.isOnline ? '#4CAF50' : '#f44336'};
+                background: ${this.isOnline ? '#4CAF50' : '#f44336'};
                 color: white;
                 padding: 8px 12px;
                 border-radius: 20px;
@@ -214,8 +238,50 @@ window.App = {
             document.body.appendChild(statusIndicator);
         }
         
-        statusIndicator.textContent = AppState.isOnline ? '🌐 En ligne' : '❌ Hors ligne';
-        statusIndicator.style.background = AppState.isOnline ? '#4CAF50' : '#f44336';
+        statusIndicator.textContent = this.isOnline ? '🌐 En ligne' : '❌ Hors ligne';
+        statusIndicator.style.background = this.isOnline ? '#4CAF50' : '#f44336';
+    },
+
+    // 📥 Pré-charger les données essentielles
+    async preloadEssentialData() {
+        if (!this.isOnline) {
+            console.log('❌ Hors ligne - Impossible de pré-charger les données');
+            return false;
+        }
+
+        try {
+            console.log('📥 Pré-chargement des données essentielles...');
+
+            // Charger les catalogues (toujours utiles)
+            if (window.syncManager) {
+                await syncManager.loadCatalogues();
+            }
+
+            // Charger les sites récents si l'utilisateur est connecté
+            if (window.simpleAuth && simpleAuth.isLoggedIn()) {
+                const clientId = localStorage.getItem('jpsi_client_id');
+                if (clientId) {
+                    // Charger les sites du client connecté
+                    const { data: sites, error } = await supabase
+                        .from('sites')
+                        .select('*')
+                        .eq('id_client', clientId)
+                        .limit(5); // Limiter aux 5 sites les plus récents
+
+                    if (!error && sites && sites.length > 0) {
+                        // Sauvegarder les sites dans IndexedDB
+                        await indexedDBManager.saveBulk('sites', sites, { clearBefore: true });
+                        console.log(`✅ ${sites.length} sites pré-chargés`);
+                    }
+                }
+            }
+
+            console.log('✅ Pré-chargement terminé');
+            return true;
+        } catch (error) {
+            console.error('❌ Erreur pré-chargement:', error);
+            return false;
+        }
     },
 
     // 📅 Formater une date
@@ -257,6 +323,11 @@ window.App = {
             try {
                 await indexedDBManager.init();
                 console.log('✅ IndexedDB initialisé');
+                
+                // Pré-charger les données essentielles si en ligne
+                if (this.isOnline) {
+                    await this.preloadEssentialData();
+                }
             } catch (error) {
                 console.error('❌ Erreur IndexedDB:', error);
             }
@@ -273,6 +344,9 @@ window.App = {
         window.addEventListener('online', () => {
             console.log('🌐 Connexion rétablie');
             this.updateOnlineStatus(true);
+            
+            // Pré-charger les données quand on revient en ligne
+            this.preloadEssentialData();
             
             // Synchroniser automatiquement
             if (window.syncManager) {
