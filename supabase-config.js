@@ -13,6 +13,12 @@ function initializeSupabase() {
   if (supabase) return supabase; // Déjà initialisé
   if (isInitializing) return null; // En cours d'initialisation
   
+  // Vérifier que Supabase est disponible
+  if (!window.supabase) {
+    console.warn('⚠️ Supabase CDN non chargé, attente...');
+    return null;
+  }
+  
   isInitializing = true;
   
   try {

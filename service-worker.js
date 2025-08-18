@@ -1,9 +1,9 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
-// Version v1.4.0 - Cache First simple et robuste
+// Version v1.4.1 - Corrections filtrage requêtes
 
-const STATIC_CACHE = 'jpsi-static-v1.4.0';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.0';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.0';
+const STATIC_CACHE = 'jpsi-static-v1.4.1';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.1';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.1';
 
 // Pages principales de l'application (liste explicite)
 const ALL_PAGES = [
@@ -83,8 +83,28 @@ const utils = {
                STATIC_RESOURCES.some(res => url.endsWith(res));
     },
     
-    // Vérifier si c'est une requête Supabase (à ignorer)
-    isSupabaseRequest: (url) => url.hostname.includes('supabase.co'),
+    // Vérifier si c'est une requête à ignorer (Supabase, CDN, etc.)
+    shouldIgnoreRequest: (url) => {
+        // Ignorer Supabase
+        if (url.hostname.includes('supabase.co')) return true;
+        
+        // Ignorer les CDN externes
+        if (url.hostname.includes('cdn.jsdelivr.net')) return true;
+        if (url.hostname.includes('unpkg.com')) return true;
+        if (url.hostname.includes('jsdelivr.net')) return true;
+        
+        // Ignorer les requêtes non-HTTP/HTTPS
+        if (!url.protocol.startsWith('http')) return true;
+        
+        // Ignorer les requêtes vers des domaines externes
+        // (le service worker ne gère que les ressources de son propre domaine)
+        if (url.hostname !== 'jpsi-pwa.pages.dev') return true;
+        
+        // Ignorer les requêtes vers des chemins non gérés
+        if (url.pathname === '/offline') return true;
+        
+        return false;
+    },
     
     // Gestion d'erreur du cache.addAll avec retry individuel
     async cacheAddAllWithRetry(cache, resources) {
@@ -133,7 +153,7 @@ const utils = {
 
 // Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.4.0...');
+    console.log('🔄 Service Worker: Installation v1.4.1...');
     
     evt.waitUntil(
         (async () => {
@@ -163,7 +183,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.4.0...');
+    console.log('🔄 Service Worker: Activation v1.4.1...');
     
     evt.waitUntil(
         (async () => {
@@ -196,8 +216,8 @@ self.addEventListener('fetch', (evt) => {
     // Ignorer les requêtes non-GET
     if (request.method !== 'GET') return;
     
-    // Ignorer les requêtes Supabase
-    if (utils.isSupabaseRequest(url)) return;
+    // Ignorer les requêtes externes et CDN
+    if (utils.shouldIgnoreRequest(url)) return;
     
     const pathname = url.pathname;
     
@@ -273,7 +293,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.4.0' });
+        event.ports[0].postMessage({ version: 'v1.4.1' });
     }
     
     if (event.data && event.data.type === 'GET_STORAGE_INFO') {
@@ -304,4 +324,4 @@ self.addEventListener('message', (event) => {
     }
 });
 
-console.log('✅ Service Worker chargé v1.4.0 - Optimisé iPadOS/Safari');
+console.log('✅ Service Worker chargé v1.4.1 - Optimisé iPadOS/Safari');
