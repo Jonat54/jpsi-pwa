@@ -130,6 +130,17 @@
 
 ---
 
+## 🚀 Version 1.4.7 - Maintenance et tris
+
+**Date :** 2025-08-18  
+**Statut :** ✅ Déployé
+
+### 🔧 Modifications
+- Ajout du tri par en-têtes dans `eclairageSite.html` (numéro, niveau, localisation, famille, marque, modèle).
+- Ajustements RLS (policies) proposés pour s’assurer de la visibilité des données et de la génération des BV.
+- Incrément versions splash/manifest et caches SW → v1.4.7.
+
+
 ## 🚀 Version 1.3.35 - Mode Hors Ligne Complet
 
 **Date :** 2024-01-XX  

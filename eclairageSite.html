@@ -522,6 +522,9 @@
         let currentIntervention = null;
         let eclairages = [];
         let verifications = []; // Vérifications de l'intervention
+        // État de tri
+        let currentSortCol = null;
+        let currentSortDir = 'asc';
         
         // Fonction pour récupérer l'ID du site et de l'intervention depuis l'URL
         function getSiteIdFromURL() {
@@ -654,6 +657,26 @@
                 return;
             }
             
+            // Appliquer le tri si défini
+            if (currentSortCol) {
+                const col = currentSortCol;
+                const dir = currentSortDir;
+                eclairages.sort((a, b) => {
+                    let va = a[col];
+                    let vb = b[col];
+                    if (col === 'num_ecl') {
+                        va = parseInt(va) || 0;
+                        vb = parseInt(vb) || 0;
+                    } else {
+                        va = (va ?? '').toString().toLowerCase();
+                        vb = (vb ?? '').toString().toLowerCase();
+                    }
+                    if (va < vb) return dir === 'asc' ? -1 : 1;
+                    if (va > vb) return dir === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
             const eclairagesRows = eclairages.map(ecl => {
                 const statusClass = getStatusClass(ecl);
                 
@@ -680,12 +703,12 @@
                     <table class="eclairages-table">
                         <thead>
                             <tr>
-                                <th style="width: 60px;">Numéro</th>
-                                <th style="width: 60px;">Niveau</th>
-                                <th style="width: 300px;">Localisation</th>
-                                <th style="width: 120px;">Famille</th>
-                                <th style="width: 120px;">Marque</th>
-                                <th style="width: 120px;">Modèle</th>
+                                <th style="width: 60px; cursor:pointer;" onclick="sortEclairages('num_ecl')">Numéro <span id="sort-icon-num_ecl"></span></th>
+                                <th style="width: 60px; cursor:pointer;" onclick="sortEclairages('niv_ecl')">Niveau <span id="sort-icon-niv_ecl"></span></th>
+                                <th style="width: 300px; cursor:pointer;" onclick="sortEclairages('loc_ecl')">Localisation <span id="sort-icon-loc_ecl"></span></th>
+                                <th style="width: 120px; cursor:pointer;" onclick="sortEclairages('family_ecl')">Famille <span id="sort-icon-family_ecl"></span></th>
+                                <th style="width: 120px; cursor:pointer;" onclick="sortEclairages('marque_ecl')">Marque <span id="sort-icon-marque_ecl"></span></th>
+                                <th style="width: 120px; cursor:pointer;" onclick="sortEclairages('modele_ecl')">Modèle <span id="sort-icon-modele_ecl"></span></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -694,6 +717,9 @@
                     </table>
                 </div>
             `;
+
+            // Mettre à jour les icônes de tri
+            updateSortIcons();
         }
         
         // Fonction pour charger les vérifications de l'intervention
@@ -1294,6 +1320,33 @@
             // Charger les données du site et de l'intervention
             await loadSiteData(params);
         });
+
+        // Tri des éclairages par colonne
+        function sortEclairages(col) {
+            if (currentSortCol === col) {
+                currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortCol = col;
+                currentSortDir = col === 'num_ecl' ? 'asc' : 'asc';
+            }
+            updateDisplay();
+        }
+
+        // Mettre à jour les flèches de tri
+        function updateSortIcons() {
+            const cols = ['num_ecl','niv_ecl','loc_ecl','family_ecl','marque_ecl','modele_ecl'];
+            cols.forEach(c => {
+                const el = document.getElementById('sort-icon-' + c);
+                if (!el) return;
+                if (currentSortCol === c) {
+                    el.textContent = currentSortDir === 'asc' ? '▲' : '▼';
+                    el.style.color = '#0F8558';
+                    el.style.fontSize = '0.9em';
+                } else {
+                    el.textContent = '';
+                }
+            });
+        }
 
         // Fonction de recherche LCIE dans le catalogue
         async function searchLCIECatalogue() {
