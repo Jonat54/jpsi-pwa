@@ -15,6 +15,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="js/indexedDB.js"></script>
   <script src="js/syncManager.js"></script>
   <script>
@@ -1346,8 +1347,30 @@
           observations: ''
         };
 
-        // Utiliser la fonction authentifiée
-        const { data: intervention, error } = await JPSI.authenticatedRequest('interventions', 'insert', interventionData);
+        // Créer l'intervention en base avec authentification
+        let intervention;
+        let error;
+        
+        try {
+          // Configurer l'authentification avant la requête
+          if (window.JPSI && window.JPSI.authenticatedRequest) {
+            const result = await JPSI.authenticatedRequest('interventions', 'insert', interventionData);
+            intervention = result.data;
+            error = result.error;
+          } else {
+            // Fallback vers la méthode directe
+            const result = await supabase
+              .from('interventions')
+              .insert(interventionData)
+              .select()
+              .single();
+            intervention = result.data;
+            error = result.error;
+          }
+        } catch (err) {
+          error = err;
+          console.error('❌ Erreur lors de la création:', err);
+        }
         
         if (error) {
           console.error('❌ Erreur création intervention:', error);
