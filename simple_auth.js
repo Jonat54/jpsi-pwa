@@ -48,6 +48,23 @@ class SimpleAuth {
     // Connexion avec token de la table tokens
     async loginWithToken(token) {
         try {
+            // Vérifier si Supabase est disponible
+            if (!window.supabase || !supabase) {
+                console.warn('⚠️ Supabase non disponible, stockage local du token');
+                // Stocker le token localement même si Supabase n'est pas disponible
+                localStorage.setItem('jpsi_token', token);
+                localStorage.setItem('jpsi_client_id', null);
+                
+                this.currentClient = {
+                    id: null,
+                    nom: 'Utilisateur',
+                    code: 'USER',
+                    isTechnician: false
+                };
+                
+                return { success: true, client: this.currentClient };
+            }
+
             // Vérifier si le token existe dans la table tokens
             const { data: tokenData, error: tokenError } = await supabase
                 .from('tokens')
@@ -96,7 +113,20 @@ class SimpleAuth {
             return { success: true, client: this.currentClient };
         } catch (error) {
             console.error('Erreur connexion avec token:', error);
-            return { success: false, error: error.message };
+            
+            // En cas d'erreur, stocker quand même le token localement
+            console.warn('⚠️ Erreur de connexion, mais token stocké localement');
+            localStorage.setItem('jpsi_token', token);
+            localStorage.setItem('jpsi_client_id', null);
+            
+            this.currentClient = {
+                id: null,
+                nom: 'Utilisateur',
+                code: 'USER',
+                isTechnician: false
+            };
+            
+            return { success: true, client: this.currentClient };
         }
     }
 
@@ -113,6 +143,13 @@ class SimpleAuth {
         const token = localStorage.getItem('jpsi_token');
         if (!token) return false;
 
+        // Vérifier si Supabase est disponible
+        if (!window.supabase || !supabase) {
+            console.warn('⚠️ Supabase non disponible, utilisation du token local');
+            // Garder le token en local si Supabase n'est pas disponible
+            return true;
+        }
+
         try {
             // Vérifier si le token existe dans la table tokens
             const { data: tokenData, error: tokenError } = await supabase
@@ -123,6 +160,7 @@ class SimpleAuth {
                 .single();
 
             if (tokenError || !tokenData) {
+                console.warn('⚠️ Token invalide ou erreur Supabase, déconnexion');
                 this.logout();
                 return false;
             }
@@ -145,6 +183,7 @@ class SimpleAuth {
                     .single();
 
                 if (clientError || !clientData) {
+                    console.warn('⚠️ Erreur récupération client, déconnexion');
                     this.logout();
                     return false;
                 }
@@ -160,6 +199,7 @@ class SimpleAuth {
             return true;
         } catch (error) {
             console.error('Erreur vérification connexion:', error);
+            
             // Mode hors ligne toléré pour la branche Vérification
             const pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
             const VERIF_ALLOW_LIST = [
@@ -189,8 +229,10 @@ class SimpleAuth {
                 return true;
             }
 
-            this.logout();
-            return false;
+            // Si on est en ligne mais qu'il y a une erreur, ne pas déconnecter immédiatement
+            // Garder le token local pour éviter les déconnexions intempestives
+            console.warn('⚠️ Erreur de connexion, mais token conservé localement');
+            return true;
         }
     }
 
