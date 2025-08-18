@@ -28,7 +28,7 @@ function initializeSupabase() {
   }
 }
 
-// Configurer l'authentification avec le token utilisateur
+// Configuration simple sans auth complexe
 async function configureSupabaseAuth() {
   if (!supabase) {
     supabase = initializeSupabase();
@@ -36,26 +36,10 @@ async function configureSupabaseAuth() {
   }
 
   try {
-    // Récupérer le token utilisateur
-    const userToken = localStorage.getItem('jpsi_token');
-    if (!userToken) {
-      console.warn('⚠️ Aucun token utilisateur trouvé');
-      return false;
-    }
-
-    // Configurer les headers d'authentification
-    supabase.auth.setSession({
-      access_token: userToken,
-      refresh_token: userToken
-    });
-
-    // Note: Les intercepteurs ne sont pas disponibles dans cette version de Supabase
-    console.log('✅ Authentification Supabase configurée (sans intercepteurs)');
-
-    console.log('✅ Authentification Supabase configurée');
+    console.log('✅ Supabase configuré (mode simple)');
     return true;
   } catch (error) {
-    console.error('❌ Erreur configuration auth Supabase:', error);
+    console.error('❌ Erreur configuration Supabase:', error);
     return false;
   }
 }
@@ -102,10 +86,8 @@ window.JPSI = {
         if (!supabase) return false;
       }
       
-      // Configurer l'authentification
-      await configureSupabaseAuth();
-      
-      const { data, error } = await supabase.auth.getSession();
+      // Test simple de connexion
+      const { data, error } = await supabase.from('clients').select('count').limit(1);
       if (error) {
         console.error('❌ Erreur de connexion Supabase:', error);
         return false;
