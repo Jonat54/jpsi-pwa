@@ -185,6 +185,24 @@
     </div>
   </div>
 
+  <!-- Bouton de préchargement du cache -->
+  <div id="cacheButton" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+    <button onclick="preloadCache()" style="
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
+      transition: all 0.3s ease;
+    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+      📦 Précharger le cache
+    </button>
+  </div>
+
   <script src="app.js"></script>
   <script>
     
@@ -296,6 +314,121 @@
     // Fonction de navigation vers Test PWA
     function navigateToTestPWA() {
       window.location.href = 'test-pwa.html';
+    }
+
+    // Fonction de préchargement du cache
+    async function preloadCache() {
+      const button = document.querySelector('#cacheButton button');
+      const originalText = button.textContent;
+      
+      try {
+        button.textContent = '⏳ Préchargement...';
+        button.disabled = true;
+        button.style.background = '#6b7280';
+        
+        console.log('🔄 Début du préchargement du cache...');
+        
+        // Liste des pages à précharger
+        const pagesToCache = [
+          '/',
+          '/index.html',
+          '/accueil.html',
+          '/login.html',
+          '/verification.html',
+          '/newVerification.html',
+          '/ongoingVerification.html',
+          '/verificationDetail.html',
+          '/verificationSummary.html',
+          '/verificationHistory.html',
+          '/verifSite.html',
+          '/verifDes.html',
+          '/extSite.html',
+          '/extDetail.html',
+          '/eclairageSite.html',
+          '/eclairageDetail.html',
+          '/alarmeSite.html',
+          '/desenfumageList.html',
+          '/desenfumageDetail.html',
+          '/desenfumageInstallation.html',
+          '/desenfumageHierarchie.html',
+          '/clients.html',
+          '/ListClients.html',
+          '/addClient.html',
+          '/editClient.html',
+          '/client.html',
+          '/sites.html',
+          '/addSite.html',
+          '/editSite.html',
+          '/detailSite.html',
+          '/audits.html',
+          '/newAudit.html',
+          '/auditDetail.html',
+          '/auditHistory.html',
+          '/inventairePDF.html',
+          '/stocks.html',
+          '/parametres.html',
+          '/offline.html'
+        ];
+
+        // Liste des ressources à précharger
+        const resourcesToCache = [
+          '/styles.css',
+          '/app.js',
+          '/supabase-config.js',
+          '/simple_auth.js',
+          '/token_auth.js',
+          '/js/indexedDB.js',
+          '/js/syncManager.js',
+          '/manifest.json',
+          '/icons/icon-192x192.png',
+          '/icons/icon-512x512.png',
+          '/icons/icobm.png',
+          '/img/logo.png',
+          '/img/entete.png'
+        ];
+
+        // Précharger les pages
+        for (const page of pagesToCache) {
+          try {
+            await fetch(page);
+            console.log(`✅ Préchargé: ${page}`);
+          } catch (error) {
+            console.warn(`⚠️ Erreur préchargement ${page}:`, error);
+          }
+        }
+
+        // Précharger les ressources
+        for (const resource of resourcesToCache) {
+          try {
+            await fetch(resource);
+            console.log(`✅ Préchargé: ${resource}`);
+          } catch (error) {
+            console.warn(`⚠️ Erreur préchargement ${resource}:`, error);
+          }
+        }
+
+        button.textContent = '✅ Cache prêt !';
+        button.style.background = '#16a34a';
+        
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+          button.style.background = '#9B2423';
+        }, 3000);
+
+        console.log('✅ Préchargement terminé !');
+        
+      } catch (error) {
+        console.error('❌ Erreur préchargement:', error);
+        button.textContent = '❌ Erreur';
+        button.style.background = '#dc2626';
+        
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+          button.style.background = '#9B2423';
+        }, 3000);
+      }
     }
 
     // Initialisation au chargement de la page
