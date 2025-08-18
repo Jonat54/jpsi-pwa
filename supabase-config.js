@@ -1,5 +1,5 @@
 // Configuration Supabase centralisée pour JPSI PWA
-// Version: 1.2.2 - Simplifié
+// Version: 1.2.3 - Authentification avec token utilisateur
 
 // Configuration Supabase
 const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
@@ -28,6 +28,81 @@ function initializeSupabase() {
   }
 }
 
+// Configurer l'authentification avec le token utilisateur
+async function configureSupabaseAuth() {
+  if (!supabase) {
+    supabase = initializeSupabase();
+    if (!supabase) return false;
+  }
+
+  try {
+    // Récupérer le token utilisateur
+    const userToken = localStorage.getItem('jpsi_token');
+    if (!userToken) {
+      console.warn('⚠️ Aucun token utilisateur trouvé');
+      return false;
+    }
+
+    // Configurer les headers d'authentification
+    supabase.auth.setSession({
+      access_token: userToken,
+      refresh_token: userToken
+    });
+
+    // Configurer les headers par défaut pour toutes les requêtes
+    supabase.rest.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // En cas d'erreur 401, essayer de se reconnecter
+        if (error.status === 401) {
+          console.warn('⚠️ Erreur 401, tentative de reconnexion...');
+          // Reconfigurer l'auth et réessayer
+          configureSupabaseAuth();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    console.log('✅ Authentification Supabase configurée');
+    return true;
+  } catch (error) {
+    console.error('❌ Erreur configuration auth Supabase:', error);
+    return false;
+  }
+}
+
+// Fonction pour faire des requêtes authentifiées
+async function authenticatedRequest(table, operation, data = null) {
+  // Configurer l'auth avant chaque requête
+  await configureSupabaseAuth();
+  
+  try {
+    let result;
+    
+    switch (operation) {
+      case 'insert':
+        result = await supabase.from(table).insert(data).select();
+        break;
+      case 'update':
+        result = await supabase.from(table).update(data).select();
+        break;
+      case 'delete':
+        result = await supabase.from(table).delete().select();
+        break;
+      case 'select':
+        result = await supabase.from(table).select(data || '*');
+        break;
+      default:
+        throw new Error(`Opération non supportée: ${operation}`);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ Erreur requête authentifiée ${table}.${operation}:`, error);
+    throw error;
+  }
+}
+
 // Fonctions utilitaires globales
 window.JPSI = {
   // Test de connexion Supabase
@@ -37,6 +112,9 @@ window.JPSI = {
         supabase = initializeSupabase();
         if (!supabase) return false;
       }
+      
+      // Configurer l'authentification
+      await configureSupabaseAuth();
       
       const { data, error } = await supabase.auth.getSession();
       if (error) {
@@ -50,6 +128,11 @@ window.JPSI = {
       console.error('❌ Échec de la connexion:', error);
       return false;
     }
+  },
+
+  // Requête authentifiée
+  async authenticatedRequest(table, operation, data = null) {
+    return await authenticatedRequest(table, operation, data);
   },
 
   // Gestion des erreurs

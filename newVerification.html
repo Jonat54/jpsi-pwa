@@ -1336,19 +1336,18 @@
         
         console.log('🔍 Types d\'équipements à sauvegarder:', selectedEquipmentTypes);
         
-        // Créer l'intervention en base
-        const { data: intervention, error } = await supabase
-          .from('interventions')
-          .insert({
-            numero_intervention: interventionNumber,
-            id_site: selectedSite.id_site,
-            date_debut: new Date().toISOString().split('T')[0],
-            etat_intervention: 'En cours',
-            types_equipements: selectedEquipmentTypes,
-            observations: ''
-          })
-          .select()
-          .single();
+        // Créer l'intervention en base avec authentification
+        const interventionData = {
+          numero_intervention: interventionNumber,
+          id_site: selectedSite.id_site,
+          date_debut: new Date().toISOString().split('T')[0],
+          etat_intervention: 'En cours',
+          types_equipements: selectedEquipmentTypes,
+          observations: ''
+        };
+
+        // Utiliser la fonction authentifiée
+        const { data: intervention, error } = await JPSI.authenticatedRequest('interventions', 'insert', interventionData);
         
         if (error) {
           console.error('❌ Erreur création intervention:', error);
