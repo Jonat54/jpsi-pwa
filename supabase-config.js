@@ -38,6 +38,29 @@ function initializeSupabase() {
 function getSupabaseClient() {
   return initializeSupabase();
 }
+// Exposer pour les autres scripts
+window.getSupabaseClient = getSupabaseClient;
+
+// Initialisation immédiate au chargement du script
+(() => {
+  // Si la librairie est déjà chargée, init tout de suite
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    initializeSupabase();
+    return;
+  }
+  // Sinon, attendre brièvement son chargement
+  let attempts = 0;
+  const maxAttempts = 20; // ~4s si interval 200ms
+  const timer = setInterval(() => {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      clearInterval(timer);
+      initializeSupabase();
+    } else if (++attempts >= maxAttempts) {
+      clearInterval(timer);
+      console.warn('⚠️ Supabase non disponible après attente initiale');
+    }
+  }, 200);
+})();
 
 // Configuration simple sans auth complexe
 async function configureSupabaseAuth() {
