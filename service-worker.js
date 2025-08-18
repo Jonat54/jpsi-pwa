@@ -119,8 +119,8 @@ self.addEventListener('fetch', (evt) => {
     // Ignorer les requêtes vers Supabase
     if (url.hostname.includes('supabase.co')) return;
 
-    // DÉSACTIVÉ pour Safari/iPad - problèmes de redirection
-    return;
+    // RÉACTIVÉ avec stratégie simple pour Safari/iPad
+    // return;
 
     const pathname = url.pathname;
 
@@ -143,12 +143,13 @@ self.addEventListener('fetch', (evt) => {
     
     if (!isExactAppPage && !isExactStaticResource) return;
 
-    // Documents (pages): Cache First avec fallback réseau
+    // Documents (pages): Cache First simple pour Safari
     if (request.destination === 'document') {
         evt.respondWith(
             caches.match(request)
                 .then(cachedResponse => {
                     if (cachedResponse) {
+                        console.log('✅ Page servie depuis le cache:', request.url);
                         return cachedResponse;
                     }
                     return fetch(request)
@@ -156,24 +157,14 @@ self.addEventListener('fetch', (evt) => {
                             if (response && response.status === 200) {
                                 const responseClone = response.clone();
                                 caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, responseClone));
+                                console.log('✅ Page mise en cache:', request.url);
                             }
                             return response;
                         })
-                        .catch(() => {
-                            // Retourner une page d'erreur simple au lieu de rediriger
-                            return new Response(`
-                                <!DOCTYPE html>
-                                <html>
-                                <head><title>Hors ligne</title></head>
-                                <body>
-                                    <h1>Mode hors ligne</h1>
-                                    <p>Cette page n'est pas disponible hors ligne.</p>
-                                    <a href="/">Retour à l'accueil</a>
-                                </body>
-                                </html>
-                            `, {
-                                headers: { 'Content-Type': 'text/html' }
-                            });
+                        .catch(error => {
+                            console.log('❌ Erreur réseau, page non disponible:', request.url);
+                            // Retourner la page d'accueil en cas d'erreur
+                            return caches.match('/accueil.html');
                         });
                 })
         );
