@@ -60,27 +60,38 @@ class SimpleAuth {
                 return { success: false, error: 'Token invalide' };
             }
 
-            // Récupérer les informations du client associé au token
-            const { data: clientData, error: clientError } = await supabase
-                .from('clients')
-                .select('id_client, nom_client, code_client')
-                .eq('id_client', tokenData.client_id || 1)
-                .single();
+            // Vérifier si c'est un token de technicien ou de client
+            if (tokenData.user_type === 'technicien' || !tokenData.client_id) {
+                // Token de technicien - pas de client spécifique
+                this.currentClient = {
+                    id: null,
+                    nom: 'Technicien',
+                    code: 'TECH',
+                    isTechnician: true
+                };
+            } else {
+                // Token de client - récupérer les infos du client
+                const { data: clientData, error: clientError } = await supabase
+                    .from('clients')
+                    .select('id_client, nom_client, code_client')
+                    .eq('id_client', tokenData.client_id)
+                    .single();
 
-            if (clientError || !clientData) {
-                return { success: false, error: 'Erreur lors de la récupération des données client' };
+                if (clientError || !clientData) {
+                    return { success: false, error: 'Erreur lors de la récupération des données client' };
+                }
+
+                this.currentClient = {
+                    id: clientData.id_client,
+                    nom: clientData.nom_client,
+                    code: clientData.code_client,
+                    isTechnician: false
+                };
             }
 
-            // Mettre à jour le client actuel
-            this.currentClient = {
-                id: clientData.id_client,
-                nom: clientData.nom_client,
-                code: clientData.code_client
-            };
-
-            // Stocker le token et l'ID client
+            // Stocker le token et l'ID client (ou null si technicien)
             localStorage.setItem('jpsi_token', token);
-            localStorage.setItem('jpsi_client_id', clientData.id_client);
+            localStorage.setItem('jpsi_client_id', this.currentClient.id || null);
 
             return { success: true, client: this.currentClient };
         } catch (error) {
@@ -116,24 +127,35 @@ class SimpleAuth {
                 return false;
             }
 
-            // Récupérer les informations du client
-            const { data: clientData, error: clientError } = await supabase
-                .from('clients')
-                .select('id_client, nom_client, code_client')
-                .eq('id_client', tokenData.client_id || 1)
-                .single();
+            // Vérifier si c'est un token de technicien ou de client
+            if (tokenData.user_type === 'technicien' || !tokenData.client_id) {
+                // Token de technicien - pas de client spécifique
+                this.currentClient = {
+                    id: null,
+                    nom: 'Technicien',
+                    code: 'TECH',
+                    isTechnician: true
+                };
+            } else {
+                // Token de client - récupérer les infos du client
+                const { data: clientData, error: clientError } = await supabase
+                    .from('clients')
+                    .select('id_client, nom_client, code_client')
+                    .eq('id_client', tokenData.client_id)
+                    .single();
 
-            if (clientError || !clientData) {
-                this.logout();
-                return false;
+                if (clientError || !clientData) {
+                    this.logout();
+                    return false;
+                }
+
+                this.currentClient = {
+                    id: clientData.id_client,
+                    nom: clientData.nom_client,
+                    code: clientData.code_client,
+                    isTechnician: false
+                };
             }
-
-            // Mettre à jour le client actuel
-            this.currentClient = {
-                id: clientData.id_client,
-                nom: clientData.nom_client,
-                code: clientData.code_client
-            };
 
             return true;
         } catch (error) {
