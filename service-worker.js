@@ -1,11 +1,15 @@
 // Service Worker pour JPSI PWA
-// Version v1.3.37 - Offline ciblé pour la branche Vérification uniquement
+// Version v1.3.38 - Offline complet pour toute l'application
 
-const STATIC_CACHE = 'jpsi-verif-static-v1.3.37';
-const DYNAMIC_CACHE = 'jpsi-verif-dynamic-v1.3.37';
+const STATIC_CACHE = 'jpsi-static-v1.3.38';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.3.38';
 
-// Pages de la branche Vérification (et adjacentes confirmées)
-const VERIF_PAGES = [
+// Toutes les pages de l'application
+const ALL_PAGES = [
+    '/',
+    '/index.html',
+    '/accueil.html',
+    '/login.html',
     '/verification.html',
     '/newVerification.html',
     '/ongoingVerification.html',
@@ -14,60 +18,75 @@ const VERIF_PAGES = [
     '/verificationHistory.html',
     '/verifSite.html',
     '/verifDes.html',
-
-    // Adjacent: Extincteurs
     '/extSite.html',
     '/extDetail.html',
-    // Adjacent: Éclairage
     '/eclairageSite.html',
     '/eclairageDetail.html',
-    // Adjacent: Alarme
     '/alarmeSite.html',
-    // Adjacent: Désenfumage
     '/desenfumageList.html',
     '/desenfumageDetail.html',
     '/desenfumageInstallation.html',
-    '/desenfumageHierarchie.html'
+    '/desenfumageHierarchie.html',
+    '/clients.html',
+    '/ListClients.html',
+    '/addClient.html',
+    '/editClient.html',
+    '/client.html',
+    '/sites.html',
+    '/addSite.html',
+    '/editSite.html',
+    '/detailSite.html',
+    '/audits.html',
+    '/newAudit.html',
+    '/auditDetail.html',
+    '/auditHistory.html',
+    '/inventairePDF.html',
+    '/stocks.html',
+    '/parametres.html',
+    '/offline.html'
 ];
 
-// Ressources à pré-cacher pour la branche Vérification
+// Ressources à pré-cacher pour toute l'application
 const STATIC_RESOURCES = [
-    ...VERIF_PAGES,
-    '/offline.html',
+    ...ALL_PAGES,
     '/styles.css',
     '/app.js',
     '/supabase-config.js',
     '/simple_auth.js',
+    '/token_auth.js',
     '/js/indexedDB.js',
     '/js/syncManager.js',
+    '/manifest.json',
     '/icons/icon-192x192.png',
     '/icons/icon-512x512.png',
-    '/img/logo.png'
+    '/icons/icobm.png',
+    '/img/logo.png',
+    '/img/entete.png'
 ];
 
 // Installation - Mettre en cache les ressources statiques
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.3.37 (scope Vérification)...');
+    console.log('🔄 Service Worker: Installation v1.3.38 (scope complet)...');
 
     evt.waitUntil(
         caches.open(STATIC_CACHE)
             .then(cache => {
-                console.log('📦 Mise en cache des ressources Vérification...');
+                console.log('📦 Mise en cache de toutes les ressources...');
                 return cache.addAll(STATIC_RESOURCES);
             })
             .then(() => {
-                console.log('✅ Cache statique (Vérification) créé');
+                console.log('✅ Cache statique complet créé');
                 return self.skipWaiting();
             })
             .catch(error => {
-                console.error('❌ Erreur installation cache Vérification:', error);
+                console.error('❌ Erreur installation cache:', error);
             })
     );
 });
 
 // Activation - Nettoyer les anciens caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.3.37 (scope Vérification)...');
+    console.log('🔄 Service Worker: Activation v1.3.38 (scope complet)...');
 
     evt.waitUntil(
         caches.keys()
@@ -102,9 +121,9 @@ self.addEventListener('fetch', (evt) => {
 
     const pathname = url.pathname;
 
-    const isVerificationPath = (path) => {
-        // correspond à nos pages de vérification ou toute URL contenant "verification"
-        return VERIF_PAGES.includes(path) || path.includes('verification');
+    const isAppPath = (path) => {
+        // correspond à toutes les pages de l'application
+        return ALL_PAGES.includes(path) || path.includes('.html');
     };
 
     const isStaticResource = (reqUrl) => {
@@ -115,10 +134,10 @@ self.addEventListener('fetch', (evt) => {
         return STATIC_RESOURCES.some(res => reqUrl.endsWith(res));
     };
 
-    const inVerificationScope = isVerificationPath(pathname) || STATIC_RESOURCES.some(p => request.url.endsWith(p));
+    const inAppScope = isAppPath(pathname) || STATIC_RESOURCES.some(p => request.url.endsWith(p));
 
-    // Ne gérer que la branche Vérification; le reste passe au réseau
-    if (!inVerificationScope) return;
+    // Gérer toutes les pages de l'application
+    if (!inAppScope) return;
 
     // Documents (pages): Network First avec fallback cache -> offline.html
     if (request.destination === 'document') {
@@ -157,7 +176,7 @@ self.addEventListener('fetch', (evt) => {
         return;
     }
 
-    // Autres ressources dans le scope Vérification: Stale-While-Revalidate
+    // Autres ressources dans le scope de l'app: Stale-While-Revalidate
     evt.respondWith(
         caches.match(request).then(cachedResponse => {
             const fetchPromise = fetch(request)
@@ -184,7 +203,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.3.37' });
+        event.ports[0].postMessage({ version: 'v1.3.38' });
     }
 });
-console.log('✅ Service Worker chargé v1.3.37 (scope Vérification)');
+console.log('✅ Service Worker chargé v1.3.38 (scope complet)');
