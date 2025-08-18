@@ -1,5 +1,22 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.5 - Correctifs RLS et voyants
+
+**Date :** 2025-08-18  
+**Statut :** ✅ Déployé
+
+### 🔧 Modifications
+- Durcissement de `supabase-config.js` (client valide, timeout non bloquant).
+- `index.html` timeout hors-ligne silencieux, redirection robuste.
+- Suppression des redéclarations `supabase`/`SUPABASE_URL` dans certaines pages (`newVerification.html`).
+- Normalisation comparaison voyants `extSite.html` (types/strings, `type_equipement` en minuscules).
+
+### 🗄️ Base de données (Supabase)
+- RLS: politiques à appliquer pour `interventions` et `verifications` (insert/select/update) avec le rôle `anon` lors des tests.
+
+### 🧩 PWA
+- Incrément des versions d’affichage et caches: Service Worker, splash (`index.html`), `manifest.json`.
+
 ## 🚀 Version 1.4.4 - Correctifs mineurs et incrément version
 
 **Date :** 2024-01-XX  

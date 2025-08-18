@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="icons/icon-180x180.png">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase-config.js"></script>
   <script src="js/indexedDB.js"></script>
   <script src="js/syncManager.js"></script>
@@ -732,11 +732,8 @@
 
   <script>
     // Initialisation de Supabase
-    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
-    
-    // Créer le client Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Obtenir ou créer le client Supabase sans redéclarer la variable globale
+    supabase = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient()) || (window.supabase && typeof window.supabase.createClient === 'function' ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
     
     // Variables globales
     let clients = [];

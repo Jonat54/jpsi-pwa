@@ -36,6 +36,16 @@ function initializeSupabase() {
 }
 
 function getSupabaseClient() {
+  // Retourner le client déjà initialisé et valide
+  if (supabase && typeof supabase.from === 'function') return supabase;
+
+  // Si un client global existe déjà (défini plus tôt), l'utiliser
+  if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+    supabase = window.supabaseClient;
+    return supabase;
+  }
+
+  // Sinon tenter une initialisation propre
   return initializeSupabase();
 }
 // Exposer pour les autres scripts
@@ -114,19 +124,48 @@ window.JPSI = {
   // Test de connexion Supabase
   async testConnection() {
     try {
-      const client = getSupabaseClient();
-      if (!client) return false;
-      
-      // Test simple de connexion
-      const { data, error } = await client.from('clients').select('count').limit(1);
-      if (error) {
-        console.error('❌ Erreur de connexion Supabase:', error);
+      let client = getSupabaseClient();
+
+      // Garde supplémentaire contre un objet invalide (ex: objet librairie au lieu du client)
+      if (!client || typeof client.from !== 'function') {
+        console.warn('⚠️ Client Supabase invalide, tentative de réinitialisation...');
+        supabase = null; // réinitialiser la référence locale
+        client = initializeSupabase();
+      }
+
+      if (!client || typeof client.from !== 'function') {
         return false;
       }
-      
+
+      // Test de connexion avec timeout interne (3s)
+      const timeoutPromise = new Promise((_, reject) => {
+        const id = setTimeout(() => {
+          clearTimeout(id);
+          reject(new Error('timeout'));
+        }, 3000);
+      });
+
+      // Requête la plus légère possible (HEAD-like via select head)
+      const queryPromise = client
+        .from('clients')
+        .select('id_client', { count: 'exact', head: true })
+        .limit(1);
+
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+
+      if (result && result.error) {
+        console.error('❌ Erreur de connexion Supabase:', result.error);
+        return false;
+      }
+
       console.log('✅ Connexion Supabase établie');
       return true;
     } catch (error) {
+      // En cas de timeout ou d’exception réseau, considérer hors-ligne
+      if (String(error && error.message).toLowerCase().includes('timeout')) {
+        console.warn('⏱️ Test connexion Supabase: timeout');
+        return false;
+      }
       console.error('❌ Échec de la connexion:', error);
       return false;
     }

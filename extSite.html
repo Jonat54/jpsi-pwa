@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JPSI - Extincteurs Site</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     html, body {
       height: 100%;
@@ -784,10 +784,12 @@
     // Fonction pour obtenir la classe CSS du statut selon les vérifications de l'intervention
     function getStatusClass(extincteur) {
       // Chercher la vérification pour cet extincteur dans cette intervention
-      const verification = verifications.find(v => 
-        v.id_equipement === extincteur.id_ext && 
-        v.type_equipement === 'extincteurs'
-      );
+      const verification = verifications.find(v => {
+        const vType = (v.type_equipement || '').toLowerCase();
+        const vId = String(v.id_equipement);
+        const extId = String(extincteur.id_ext);
+        return vType === 'extincteurs' && vId === extId;
+      });
       
       if (!verification) {
         // Pas de vérification → gris
@@ -809,10 +811,12 @@
     // Fonction pour obtenir le texte du statut
     function getStatusText(extincteur) {
       // Chercher la vérification pour cet extincteur dans cette intervention
-      const verification = verifications.find(v => 
-        v.id_equipement === extincteur.id_ext && 
-        v.type_equipement === 'extincteurs'
-      );
+      const verification = verifications.find(v => {
+        const vType = (v.type_equipement || '').toLowerCase();
+        const vId = String(v.id_equipement);
+        const extId = String(extincteur.id_ext);
+        return vType === 'extincteurs' && vId === extId;
+      });
       
       if (!verification) {
         return '❓ Non vérifié';

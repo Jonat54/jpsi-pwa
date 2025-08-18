@@ -7,12 +7,12 @@
   <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
   <title>JPSI - Splash</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   
   <!-- PWA Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="JPSI 1.4.4">
+  <meta name="apple-mobile-web-app-title" content="JPSI 1.4.5">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
   <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
   <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png">
@@ -103,7 +103,7 @@
   <div class="splash-container" id="splashContainer">
     <img src="img/logo.png" alt="Logo JPSI" class="splash-logo">
     <div class="splash-title">Business Manager</div>
-                         <div class="splash-version">v1.4.4 - Optimisé iPadOS/Safari</div>
+                         <div class="splash-version">v1.4.5 - Optimisé iPadOS/Safari</div>
     <div class="progress-bar" id="progressBar">
       <div class="progress-segment"></div>
       <div class="progress-segment"></div>
@@ -215,11 +215,12 @@
         
         // Test de connexion avec timeout
         const connectionPromise = JPSI.testConnection();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout connexion')), 5000)
+        // Timeout non-bloquant: retourne false au lieu de lever une erreur
+        const timeoutPromise = new Promise((resolve) => 
+          setTimeout(() => resolve(false), 5000)
         );
         
-        const success = await Promise.race([connectionPromise, timeoutPromise]);
+        const success = await Promise.race([connectionPromise, timeoutPromise]).catch(() => false);
         
         if (success) {
           connectionEstablished = true;
