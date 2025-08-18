@@ -1,8 +1,8 @@
 // Service Worker pour JPSI PWA
-// Version v1.3.38 - Offline complet pour toute l'application
+// Version v1.3.39 - Offline complet pour toute l'application
 
-const STATIC_CACHE = 'jpsi-static-v1.3.38';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.3.38';
+const STATIC_CACHE = 'jpsi-static-v1.3.39';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.3.39';
 
 // Toutes les pages de l'application
 const ALL_PAGES = [
@@ -66,7 +66,7 @@ const STATIC_RESOURCES = [
 
 // Installation - Mettre en cache les ressources statiques
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.3.38 (scope complet)...');
+    console.log('🔄 Service Worker: Installation v1.3.39 (scope complet)...');
 
     evt.waitUntil(
         caches.open(STATIC_CACHE)
@@ -86,7 +86,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyer les anciens caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.3.38 (scope complet)...');
+    console.log('🔄 Service Worker: Activation v1.3.39 (scope complet)...');
 
     evt.waitUntil(
         caches.keys()
@@ -139,20 +139,39 @@ self.addEventListener('fetch', (evt) => {
     // Gérer toutes les pages de l'application
     if (!inAppScope) return;
 
-    // Documents (pages): Network First avec fallback cache -> offline.html
+    // Documents (pages): Cache First avec fallback réseau
     if (request.destination === 'document') {
         evt.respondWith(
-            fetch(request)
-                .then(response => {
-                    if (response && response.status === 200) {
-                        const responseClone = response.clone();
-                        caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, responseClone));
+            caches.match(request)
+                .then(cachedResponse => {
+                    if (cachedResponse) {
+                        return cachedResponse;
                     }
-                    return response;
+                    return fetch(request)
+                        .then(response => {
+                            if (response && response.status === 200) {
+                                const responseClone = response.clone();
+                                caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, responseClone));
+                            }
+                            return response;
+                        })
+                        .catch(() => {
+                            // Retourner une page d'erreur simple au lieu de rediriger
+                            return new Response(`
+                                <!DOCTYPE html>
+                                <html>
+                                <head><title>Hors ligne</title></head>
+                                <body>
+                                    <h1>Mode hors ligne</h1>
+                                    <p>Cette page n'est pas disponible hors ligne.</p>
+                                    <a href="/">Retour à l'accueil</a>
+                                </body>
+                                </html>
+                            `, {
+                                headers: { 'Content-Type': 'text/html' }
+                            });
+                        });
                 })
-                .catch(() =>
-                    caches.match(request).then(cached => cached || caches.match('/offline.html'))
-                )
         );
         return;
     }
@@ -203,7 +222,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.3.38' });
+        event.ports[0].postMessage({ version: 'v1.3.39' });
     }
 });
-console.log('✅ Service Worker chargé v1.3.38 (scope complet)');
+console.log('✅ Service Worker chargé v1.3.39 (scope complet)');
