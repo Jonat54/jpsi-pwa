@@ -119,11 +119,14 @@ self.addEventListener('fetch', (evt) => {
     // Ignorer les requêtes vers Supabase
     if (url.hostname.includes('supabase.co')) return;
 
+    // DÉSACTIVÉ pour Safari/iPad - problèmes de redirection
+    return;
+
     const pathname = url.pathname;
 
     const isAppPath = (path) => {
-        // correspond à toutes les pages de l'application
-        return ALL_PAGES.includes(path) || path.includes('.html');
+        // correspond exactement aux pages de l'application
+        return ALL_PAGES.includes(path);
     };
 
     const isStaticResource = (reqUrl) => {
@@ -134,10 +137,11 @@ self.addEventListener('fetch', (evt) => {
         return STATIC_RESOURCES.some(res => reqUrl.endsWith(res));
     };
 
-    const inAppScope = isAppPath(pathname) || STATIC_RESOURCES.some(p => request.url.endsWith(p));
-
-    // Gérer toutes les pages de l'application
-    if (!inAppScope) return;
+    // Ne gérer que les pages et ressources exactes de l'app
+    const isExactAppPage = isAppPath(pathname);
+    const isExactStaticResource = STATIC_RESOURCES.some(p => request.url.endsWith(p));
+    
+    if (!isExactAppPage && !isExactStaticResource) return;
 
     // Documents (pages): Cache First avec fallback réseau
     if (request.destination === 'document') {
