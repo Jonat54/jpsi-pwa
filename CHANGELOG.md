@@ -245,4 +245,16 @@
 
 ---
 
+## 🚀 Version 1.4.8 - Fix redirections iPad PWA
+
+**Date :** 2025-08-18  
+**Statut :** ✅ Déployé
+
+### 🔧 Modifications
+- Service Worker: évite les réponses redirigées (opaqueredirect/redirected) et la mise en cache de celles-ci.
+- Normalisation des navigations: `'/'` redirigé en interne vers `/index.html` côté SW.
+- Host dynamique (même domaine que le SW) pour la détection des requêtes gérées.
+- Incrément versions splash/manifest et caches SW → v1.4.8.
+
+
 **✅ Version 1.3.35 - Mode Hors Ligne Complet - PRÊT POUR PRODUCTION**

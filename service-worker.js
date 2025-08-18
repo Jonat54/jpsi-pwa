@@ -1,9 +1,9 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
-// Version v1.4.7 - Maintenance
+// Version v1.4.8 - Fix redirections iPad PWA
 
-const STATIC_CACHE = 'jpsi-static-v1.4.7';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.7';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.7';
+const STATIC_CACHE = 'jpsi-static-v1.4.8';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.8';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.8';
 
 // Pages principales de l'application (liste explicite)
 const ALL_PAGES = [
@@ -98,7 +98,7 @@ const utils = {
         
         // Ignorer les requêtes vers des domaines externes
         // (le service worker ne gère que les ressources de son propre domaine)
-        if (url.hostname !== 'jpsi-pwa.pages.dev') return true;
+        if (url.hostname !== self.location.hostname) return true;
         
         // Ignorer les requêtes vers des chemins non gérés
         if (url.pathname === '/offline') return true;
@@ -153,7 +153,7 @@ const utils = {
 
 // Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.4.4...');
+    console.log('🔄 Service Worker: Installation v1.4.8...');
     
     evt.waitUntil(
         (async () => {
@@ -183,7 +183,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.4.4...');
+    console.log('🔄 Service Worker: Activation v1.4.8...');
     
     evt.waitUntil(
         (async () => {
@@ -231,27 +231,49 @@ self.addEventListener('fetch', (evt) => {
         (async () => {
             try {
                 // Stratégie Cache First simple
-                const cachedResponse = await caches.match(request);
+                // Normaliser la navigation: si '/', servir '/index.html'
+                let effectiveRequest = request;
+                if (request.mode === 'navigate') {
+                    const isRoot = url.pathname === '/' || url.pathname === '';
+                    if (isRoot) {
+                        effectiveRequest = new Request('/index.html', { headers: request.headers, mode: 'same-origin' });
+                    }
+                }
+                const cachedResponse = await caches.match(effectiveRequest);
                 
                 if (cachedResponse) {
-                    console.log('✅ Ressource servie depuis le cache:', request.url);
-                    return cachedResponse;
+                    // Éviter de renvoyer une réponse redirigée depuis le cache
+                    if (cachedResponse.type === 'opaqueredirect' || cachedResponse.redirected) {
+                        console.warn('⚠️ Réponse redirigée détectée dans le cache, on l’ignore:', effectiveRequest.url);
+                    } else {
+                        console.log('✅ Ressource servie depuis le cache:', effectiveRequest.url);
+                        return cachedResponse;
+                    }
                 }
                 
                 // Vérifier le quota avant de mettre en cache
                 const hasQuota = await utils.checkStorageQuota();
                 
                 try {
-                    const networkResponse = await fetch(request);
+                    const networkResponse = await fetch(effectiveRequest);
                     
                     if (networkResponse && networkResponse.status === 200) {
+                        if (networkResponse.redirected) {
+                            const body = await networkResponse.blob();
+                            const cleanResponse = new Response(body, { status: 200, headers: networkResponse.headers });
+                            return cleanResponse;
+                        }
                         // Mettre en cache seulement si on a du quota
                         if (hasQuota) {
                             const responseClone = networkResponse.clone();
                             const cacheName = isStaticResource ? STATIC_CACHE : DYNAMIC_CACHE;
                             const cache = await caches.open(cacheName);
-                            await cache.put(request, responseClone);
-                            console.log('✅ Ressource mise en cache:', request.url);
+                            if (responseClone.type !== 'opaqueredirect') {
+                                await cache.put(effectiveRequest, responseClone);
+                                console.log('✅ Ressource mise en cache:', effectiveRequest.url);
+                            } else {
+                                console.warn('⚠️ Réponse opaqueredirect non mise en cache:', effectiveRequest.url);
+                            }
                         }
                         return networkResponse;
                     }
@@ -260,7 +282,7 @@ self.addEventListener('fetch', (evt) => {
                     throw new Error(`HTTP ${networkResponse.status}`);
                     
                 } catch (networkError) {
-                    console.log('❌ Erreur réseau:', request.url, networkError);
+                    console.log('❌ Erreur réseau:', effectiveRequest.url, networkError);
                     
                     // Pour les pages, essayer le fallback
                     if (request.destination === 'document') {
@@ -293,7 +315,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.4.4' });
+        event.ports[0].postMessage({ version: 'v1.4.8' });
     }
     
     if (event.data && event.data.type === 'GET_STORAGE_INFO') {
@@ -324,4 +346,4 @@ self.addEventListener('message', (event) => {
     }
 });
 
-console.log('✅ Service Worker chargé v1.4.4 - Optimisé iPadOS/Safari');
+console.log('✅ Service Worker chargé v1.4.8 - Optimisé iPadOS/Safari');
