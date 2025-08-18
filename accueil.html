@@ -327,6 +327,7 @@
         button.style.background = '#6b7280';
         
         console.log('🔄 Début du préchargement du cache...');
+        alert('🔄 Début du préchargement du cache...');
         
         // Liste des pages à précharger
         const pagesToCache = [
@@ -417,9 +418,11 @@
         }, 3000);
 
         console.log('✅ Préchargement terminé !');
+        alert('✅ Préchargement terminé ! Cache prêt pour mode hors ligne.');
         
       } catch (error) {
         console.error('❌ Erreur préchargement:', error);
+        alert('❌ Erreur préchargement: ' + error.message);
         button.textContent = '❌ Erreur';
         button.style.background = '#dc2626';
         

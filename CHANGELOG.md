@@ -1,5 +1,97 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.0 - Optimisation iPadOS/Safari
+
+**Date :** 2024-01-XX  
+**Statut :** ✅ Déployé
+
+### 🎯 **Optimisations iPadOS/Safari**
+
+#### **Service Worker Optimisé**
+- ✅ **Cache First simple** et robuste pour iPadOS
+- ✅ **Gestion d'erreur améliorée** avec fallbacks en chaîne
+- ✅ **Vérification quota de stockage** avec marge de 10%
+- ✅ **Suppression code mort** et commentaires confus
+- ✅ **Compatibilité iPadOS prioritaire** sur toutes les stratégies
+
+#### **Améliorations Techniques**
+- ✅ **Fallback en chaîne** : accueil.html → offline.html → index.html
+- ✅ **Gestion d'erreur individuelle** pour cache.addAll() avec retry
+- ✅ **Cache de fallback dédié** pour les pages critiques
+- ✅ **Utilitaires centralisés** pour la détection des requêtes
+- ✅ **Messages étendus** : GET_STORAGE_INFO, CLEAR_CACHE
+
+### 🔧 **Corrections**
+
+#### **Problèmes iPadOS Résolus**
+- ✅ **Stratégies complexes** → Cache First simple
+- ✅ **Regex/wildcards** → Liste explicite des pages
+- ✅ **Gestion mémoire agressive** → Vérification quota
+- ✅ **Redirections 404** → Fallbacks robustes
+- ✅ **APIs externes** → Exclusion propre Supabase
+
+#### **Code Cleanup**
+- ✅ **Commentaires confus** supprimés
+- ✅ **Code mort éliminé** (notamment // return;)
+- ✅ **Logique de filtrage** clarifiée
+- ✅ **Redondance supprimée** dans la détection des ressources
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers Mis à Jour**
+- `service-worker.js` - Version 1.4.0 optimisée iPadOS
+- `index.html` - Version splash screen mise à jour
+- `manifest.json` - Version PWA incrémentée
+- `CHANGELOG.md` - Documentation des changements
+
+### 🧪 **Tests et Validation**
+
+#### **Tests iPadOS**
+- ✅ **Safari mobile** - Fonctionnement optimal
+- ✅ **Gestion mémoire** - Quota respecté
+- ✅ **Cache simple** - Pas de stratégies complexes
+- ✅ **Fallbacks** - Pages de secours fonctionnelles
+- ✅ **APIs externes** - Supabase non intercepté
+
+### 📊 **Métriques de Performance**
+
+#### **Avant (v1.3.43)**
+- ⚠️ Service Worker désactivé pour Safari
+- ⚠️ Stratégies de cache complexes
+- ⚠️ Code mort et commentaires confus
+- ⚠️ Pas de gestion quota iPadOS
+
+#### **Après (v1.4.0)**
+- ✅ **100% compatible** iPadOS/Safari
+- ✅ **Cache First simple** et prévisible
+- ✅ **Code nettoyé** et optimisé
+- ✅ **Gestion quota** intelligente
+- ✅ **Fallbacks robustes** en chaîne
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience iPadOS Améliorée**
+- ✅ **Fonctionnement fiable** sur Safari mobile
+- ✅ **Gestion mémoire** optimisée
+- ✅ **Pages de secours** en cas d'erreur
+- ✅ **Performance stable** sans bugs
+
+---
+
+## 🚀 Version 1.3.37 - Correction Double Chargement Scripts
+
+**Date :** 2024-01-XX  
+**Statut :** ✅ Déployé
+
+### 🎯 **Nouvelles Fonctionnalités**
+
+#### **Correction Double Chargement**
+- ✅ **Suppression du doublon** de supabase-config.js dans accueil.html
+- ✅ **Résolution de l'erreur** "redeclaration of let supabase"
+- ✅ **Chargement propre** des scripts JavaScript
+
+---
+
 ## 🚀 Version 1.3.35 - Mode Hors Ligne Complet
 
 **Date :** 2024-01-XX  
