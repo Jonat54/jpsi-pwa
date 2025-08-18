@@ -16,12 +16,25 @@ function initializeSupabase() {
   isInitializing = true;
   
   try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      },
+      global: {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      }
+    });
     window.supabaseClient = supabase;
     window.currentUser = null;
     window.isConnected = false;
     
-    console.log('✅ Supabase client initialisé');
+    console.log('✅ Supabase client initialisé avec headers CORS');
     return supabase;
   } catch (error) {
     console.error('❌ Erreur initialisation Supabase:', error);
