@@ -731,12 +731,8 @@
   </div>
 
   <script>
-    // Configuration Supabase
-    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
-    
-    // Initialisation de Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Utiliser le client Supabase déjà initialisé dans supabase-config.js
+    const supabase = window.supabaseClient;
     
     // Variables globales
     let clients = [];
@@ -1347,30 +1343,12 @@
           observations: ''
         };
 
-        // Créer l'intervention en base avec authentification
-        let intervention;
-        let error;
-        
-        try {
-          // Configurer l'authentification avant la requête
-          if (window.JPSI && window.JPSI.authenticatedRequest) {
-            const result = await JPSI.authenticatedRequest('interventions', 'insert', interventionData);
-            intervention = result.data;
-            error = result.error;
-          } else {
-            // Fallback vers la méthode directe
-            const result = await supabase
-              .from('interventions')
-              .insert(interventionData)
-              .select()
-              .single();
-            intervention = result.data;
-            error = result.error;
-          }
-        } catch (err) {
-          error = err;
-          console.error('❌ Erreur lors de la création:', err);
-        }
+        // Créer l'intervention en base
+        const { data: intervention, error } = await supabase
+          .from('interventions')
+          .insert(interventionData)
+          .select()
+          .single();
         
         if (error) {
           console.error('❌ Erreur création intervention:', error);

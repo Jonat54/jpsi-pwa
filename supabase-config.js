@@ -49,19 +49,8 @@ async function configureSupabaseAuth() {
       refresh_token: userToken
     });
 
-    // Configurer les headers par défaut pour toutes les requêtes
-    supabase.rest.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        // En cas d'erreur 401, essayer de se reconnecter
-        if (error.status === 401) {
-          console.warn('⚠️ Erreur 401, tentative de reconnexion...');
-          // Reconfigurer l'auth et réessayer
-          configureSupabaseAuth();
-        }
-        return Promise.reject(error);
-      }
-    );
+    // Note: Les intercepteurs ne sont pas disponibles dans cette version de Supabase
+    console.log('✅ Authentification Supabase configurée (sans intercepteurs)');
 
     console.log('✅ Authentification Supabase configurée');
     return true;
