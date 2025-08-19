@@ -1,13 +1,12 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
-// Version v1.4.8 - Fix redirections iPad PWA
+// Version v1.4.9 - Fix durable des redirections en cache
 
-const STATIC_CACHE = 'jpsi-static-v1.4.8';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.8';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.8';
+const STATIC_CACHE = 'jpsi-static-v1.4.9';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.9';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.9';
 
 // Pages principales de l'application (liste explicite)
 const ALL_PAGES = [
-    '/',
     '/index.html',
     '/accueil.html',
     '/login.html',
@@ -111,7 +110,23 @@ const utils = {
         const results = [];
         for (const resource of resources) {
             try {
-                await cache.add(resource);
+                // Éviter de stocker des réponses redirigées
+                const response = await fetch(resource, { redirect: 'follow' });
+                if (!response || !response.ok) {
+                    results.push({ resource, success: false, error: new Error('HTTP ' + (response && response.status)) });
+                    continue;
+                }
+
+                let responseToCache = response;
+                if (response.redirected) {
+                    const body = await response.blob();
+                    const headers = new Headers();
+                    // Conserver uniquement les en-têtes utiles, éviter Location
+                    const contentType = response.headers.get('Content-Type');
+                    if (contentType) headers.set('Content-Type', contentType);
+                    responseToCache = new Response(body, { status: 200, headers });
+                }
+                await cache.put(resource, responseToCache);
                 results.push({ resource, success: true });
             } catch (error) {
                 console.warn(`⚠️ Échec cache pour ${resource}:`, error);
@@ -153,7 +168,7 @@ const utils = {
 
 // Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.4.8...');
+    console.log('🔄 Service Worker: Installation v1.4.9...');
     
     evt.waitUntil(
         (async () => {
@@ -183,7 +198,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.4.8...');
+    console.log('🔄 Service Worker: Activation v1.4.9...');
     
     evt.waitUntil(
         (async () => {
@@ -255,12 +270,16 @@ self.addEventListener('fetch', (evt) => {
                 const hasQuota = await utils.checkStorageQuota();
                 
                 try {
-                    const networkResponse = await fetch(effectiveRequest);
+                    const networkResponse = await fetch(effectiveRequest, { redirect: 'follow' });
                     
                     if (networkResponse && networkResponse.status === 200) {
                         if (networkResponse.redirected) {
+                            // Nettoyer la réponse: supprimer les en-têtes de redirection
                             const body = await networkResponse.blob();
-                            const cleanResponse = new Response(body, { status: 200, headers: networkResponse.headers });
+                            const headers = new Headers();
+                            const contentType = networkResponse.headers.get('Content-Type');
+                            if (contentType) headers.set('Content-Type', contentType);
+                            const cleanResponse = new Response(body, { status: 200, headers });
                             return cleanResponse;
                         }
                         // Mettre en cache seulement si on a du quota
