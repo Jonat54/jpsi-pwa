@@ -525,6 +525,30 @@
         // État de tri
         let currentSortCol = null;
         let currentSortDir = 'asc';
+        let searchQuery = '';
+        let filterStatus = 'all';
+
+        function isControlled(eclairage) {
+            return verifications.some(v => v.id_equipement === eclairage.id_ecl && v.type_equipement === 'eclairages');
+        }
+
+        function applySearchAndFilter(list) {
+            let result = list;
+            if (filterStatus === 'controlled') {
+                result = result.filter(e => isControlled(e));
+            } else if (filterStatus === 'not_controlled') {
+                result = result.filter(e => !isControlled(e));
+            }
+            const q = (searchQuery || '').trim().toLowerCase();
+            if (q) {
+                result = result.filter(e => {
+                    const hay = [e.num_ecl, e.niv_ecl, e.loc_ecl, e.family_ecl, e.marque_ecl, e.modele_ecl, e.lcie_ecl]
+                        .map(x => (x ?? '').toString().toLowerCase());
+                    return hay.some(s => s.includes(q));
+                });
+            }
+            return result;
+        }
         
         // Fonction pour récupérer l'ID du site et de l'intervention depuis l'URL
         function getSiteIdFromURL() {
@@ -657,11 +681,11 @@
                 return;
             }
             
-            // Appliquer le tri si défini
+            let list = applySearchAndFilter(eclairages.slice());
             if (currentSortCol) {
                 const col = currentSortCol;
                 const dir = currentSortDir;
-                eclairages.sort((a, b) => {
+                list.sort((a, b) => {
                     let va = a[col];
                     let vb = b[col];
                     if (col === 'num_ecl') {
@@ -677,7 +701,7 @@
                 });
             }
 
-            const eclairagesRows = eclairages.map(ecl => {
+            const eclairagesRows = list.map(ecl => {
                 const statusClass = getStatusClass(ecl);
                 
                 return `
@@ -698,7 +722,22 @@
                 `;
             }).join('');
             
+            // Préserver focus et curseur dans la barre de recherche
+            const activeEl = document.activeElement;
+            const wasSearchFocused = activeEl && activeEl.id === 'searchInput';
+            const selStart = wasSearchFocused ? activeEl.selectionStart : null;
+            const selEnd = wasSearchFocused ? activeEl.selectionEnd : null;
+
             contentContainer.innerHTML = `
+                <div style="display:flex; gap:0.75rem; align-items:center; padding:0.75rem 1rem; border-bottom: 1px solid #f3f4f6; flex-wrap: wrap;">
+                    <input id="searchInput" type="search" class="form-input" placeholder="Rechercher (numéro, localisation, LCIE, marque, modèle...)" style="max-width:420px;">
+                    <div id="filterGroup" style="display:flex; gap:0.4rem;">
+                        <button data-filter="all" class="modal-button secondary">Tous</button>
+                        <button data-filter="controlled" class="modal-button secondary">Contrôlés</button>
+                        <button data-filter="not_controlled" class="modal-button secondary">Non contrôlés</button>
+                    </div>
+                    <div style="margin-left:auto; color:#6b7280; font-size:0.9rem;">${list.length} affichés / ${eclairages.length}</div>
+                </div>
                 <div class="table-container">
                     <table class="eclairages-table">
                         <thead>
@@ -720,6 +759,53 @@
 
             // Mettre à jour les icônes de tri
             updateSortIcons();
+
+            // Re-lier recherche/filtre sans perdre le focus
+            let input = document.getElementById('searchInput');
+            let group = document.getElementById('filterGroup');
+            if (input) {
+                input.value = searchQuery;
+                if (!input.dataset.bound) {
+                    input.addEventListener('input', (e) => { searchQuery = e.target.value; updateDisplay(); });
+                    input.dataset.bound = '1';
+                }
+                if (wasSearchFocused) {
+                    input.focus();
+                    try { if (selStart !== null && selEnd !== null) input.setSelectionRange(selStart, selEnd); } catch(e) {}
+                }
+            }
+            if (group) {
+                Array.from(group.querySelectorAll('button')).forEach(btn => {
+                    const val = btn.getAttribute('data-filter');
+                    if (val === filterStatus) {
+                        btn.classList.remove('secondary');
+                        btn.classList.add('primary');
+                    } else {
+                        btn.classList.add('secondary');
+                        btn.classList.remove('primary');
+                    }
+                    if (!btn.dataset.bound) {
+                        btn.addEventListener('click', () => { filterStatus = val; updateDisplay(); });
+                        btn.dataset.bound = '1';
+                    }
+                });
+            }
+
+            // Init recherche/filtre (éviter redéclaration)
+            input = document.getElementById('searchInput');
+            if (input && !input.dataset.boundInit) {
+                input.value = searchQuery;
+                input.addEventListener('input', (e) => { searchQuery = e.target.value; updateDisplay(); });
+                input.dataset.boundInit = '1';
+            }
+            group = document.getElementById('filterGroup');
+            if (group && !group.dataset.boundInit) {
+                Array.from(group.querySelectorAll('button')).forEach(btn => {
+                    const val = btn.getAttribute('data-filter');
+                    btn.addEventListener('click', () => { filterStatus = val; updateDisplay(); });
+                });
+                group.dataset.boundInit = '1';
+            }
         }
         
         // Fonction pour charger les vérifications de l'intervention
@@ -1149,37 +1235,26 @@
                 // Fermer la modal
                 closeAddEclairageModal();
                 
-                // Ajout au catalogue si besoin
+                // Ajout/MAJ catalogue (upsert direct)
                 if (formData.lcie_ecl) {
                     const ampveilleVal = document.getElementById('ampveille_es')?.value || '';
                     const ampsecoursVal = document.getElementById('ampsecours_es')?.value || '';
-                    // On vérifie si le LCIE existe déjà dans le catalogue
-                    const { data: catData, error: catError } = await supabase
+                    const { error: upsertError } = await supabase
                         .from('eclairage_catalogue')
-                        .select('id_catalogue_es')
-                        .eq('lcie_es', formData.lcie_ecl)
-                        .maybeSingle();
-                    if (!catData) {
-                        // On ajoute dans le catalogue
-                        const catInsert = {
+                        .upsert({
                             lcie_es: formData.lcie_ecl,
-                            marque_es: formData.marque_ecl || '',
-                            modele_es: formData.modele_es || '',
-                            famille_es: formData.family_ecl || '',
-                            ampveille_es: ampveilleVal,
-                            ampsecours_es: ampsecoursVal,
-                            ip_es: formData.ip_ecl || '',
-                            sati_es: formData.sati_ecl || false
-                        };
-                        const { error: insertError } = await supabase
-                            .from('eclairage_catalogue')
-                            .insert([catInsert]);
-                        if (insertError) {
-                            console.error('❌ Erreur lors de l\'ajout au catalogue:', insertError);
-                        } else {
-                            console.log('✅ Modèle ajouté au catalogue !');
-                            alert('✅ Nouveau modèle ajouté au catalogue !');
-                        }
+                            marque_es: formData.marque_ecl || null,
+                            modele_es: formData.modele_es || null,
+                            famille_es: formData.family_ecl || null,
+                            ampveille_es: ampveilleVal || null,
+                            ampsecours_es: ampsecoursVal || null,
+                            ip_es: formData.ip_ecl || null,
+                            sati_es: !!formData.sati_ecl
+                        }, { onConflict: 'lcie_es' });
+                    if (upsertError) {
+                        console.error('❌ Erreur upsert catalogue:', upsertError);
+                    } else {
+                        console.log('✅ Catalogue à jour');
                     }
                 }
                 
@@ -1357,13 +1432,29 @@
                 return;
             }
             try {
-                const { data, error } = await supabase
+                // 1) Essai égalité stricte
+                let { data, error } = await supabase
                     .from('eclairage_catalogue')
                     .select('*')
                     .eq('lcie_es', lcieValue)
                     .maybeSingle();
+
+                // 2) Fallback LIKE insensible à la casse si non trouvé
+                if (error?.code === 'PGRST116' || !data) {
+                    const res = await supabase
+                        .from('eclairage_catalogue')
+                        .select('*')
+                        .ilike('lcie_es', `%${lcieValue}%`)
+                        .limit(5);
+                    data = res.data && res.data.length ? res.data[0] : null;
+                    error = res.error;
+                }
+
                 if (error || !data) {
+                    // Autoriser la saisie manuelle et la création ultérieure
                     enableManualFields(true);
+                    lcieInput.setCustomValidity('');
+                    lcieInput.style.borderColor = '#f59e0b';
                     return;
                 }
                 // Auto-remplir et désactiver les champs

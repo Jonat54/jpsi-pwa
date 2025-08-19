@@ -2069,27 +2069,28 @@
       
       // Mettre à jour dans la base
       try {
-        const { error } = await supabase
-          .from('eclairages')
-          .update({
-            num_ecl,
-            niv_ecl,
-            loc_ecl,
-            lcie_ecl,
-            family_ecl,
-            marque_ecl,
-            modele_ecl,
-            ip_ecl,
-            ampveille_es,
-            ampsecours_es,
-            sati_ecl,
-            telecommande_ecl
-          })
-          .eq('id_ecl', currentEclairage.id_ecl);
-          
-        if (error) {
-          console.error('❌ Erreur lors de la mise à jour:', error);
-          showTemporaryMessage('❌ Erreur lors de la mise à jour : ' + error.message, 'error');
+        // Mise à jour via RPC (compatible RLS)
+        const { data: rpcData, error: rpcError } = await supabase.rpc('update_eclairage', {
+          p_id_ecl: currentEclairage.id_ecl,
+          p_id_site: currentSite?.id_site || null,
+          p_num_ecl: num_ecl || null,
+          p_niv_ecl: niv_ecl || null,
+          p_loc_ecl: loc_ecl || null,
+          p_lcie_ecl: lcie_ecl || null,
+          p_family_ecl: family_ecl || null,
+          p_marque_ecl: marque_ecl || null,
+          p_modele_ecl: modele_ecl || null,
+          p_ip_ecl: ip_ecl || null,
+          p_ampveille_es: ampveille_es || null,
+          p_ampsecours_es: ampsecours_es || null,
+          p_sati_ecl: !!sati_ecl,
+          p_telecommande_ecl: !!telecommande_ecl,
+          p_app_token: localStorage.getItem('jpsi_token')
+        });
+        
+        if (rpcError) {
+          console.error('❌ Erreur RPC mise à jour éclairage:', rpcError);
+          showTemporaryMessage('❌ Erreur lors de la mise à jour : ' + (rpcError.message || 'RPC'), 'error');
           return;
         }
         
@@ -2118,69 +2119,24 @@
             
           if (catError) {
             console.error('❌ Erreur lors de la vérification du catalogue:', catError);
-          } else if (!catExist) {
-            // Ajout d'un nouvel éclairage dans le catalogue
-            console.log('📝 Ajout d\'un nouvel éclairage dans le catalogue:', {
-              lcie_ecl,
-              marque_ecl,
-              modele_ecl,
-              family_ecl,
-              ampveille_es,
-              ampsecours_es,
-              ip_ecl
-            });
-            
-            const catalogueData = {
+          }
+          // Upsert direct catalogue (existant ou nouveau)
+          const { error: upsertError } = await supabase
+            .from('eclairage_catalogue')
+            .upsert({
               lcie_es: lcie_ecl,
               marque_es: marque_ecl || null,
               modele_es: modele_ecl || null,
-              family_es: family_ecl || null,
+              famille_es: family_ecl || null,
               ampveille_es: ampveille_es || null,
               ampsecours_es: ampsecours_es || null,
-              ip_es: ip_ecl || null
-            };
-            
-            const { error: insertError } = await supabase
-              .from('eclairage_catalogue')
-              .insert(catalogueData);
-              
-            if (insertError) {
-              console.error('❌ Erreur lors de l\'ajout au catalogue:', insertError);
-            } else {
-              console.log('✅ Nouvel éclairage ajouté au catalogue');
-            }
+              ip_es: ip_ecl || null,
+              sati_es: !!sati_ecl
+            }, { onConflict: 'lcie_es' });
+          if (upsertError) {
+            console.error('❌ Erreur upsert catalogue:', upsertError);
           } else {
-            // Mise à jour de l'éclairage existant dans le catalogue
-            console.log('📝 Mise à jour de l\'éclairage existant dans le catalogue:', {
-              lcie_ecl,
-              marque_ecl,
-              modele_ecl,
-              family_ecl,
-              ampveille_es,
-              ampsecours_es,
-              ip_ecl
-            });
-            
-            const updateData = {};
-            if (marque_ecl) updateData.marque_es = marque_ecl;
-            if (modele_ecl) updateData.modele_es = modele_ecl;
-            if (family_ecl) updateData.family_es = family_ecl;
-            if (ampveille_es) updateData.ampveille_es = ampveille_es;
-            if (ampsecours_es) updateData.ampsecours_es = ampsecours_es;
-            if (ip_ecl) updateData.ip_es = ip_ecl;
-            
-            if (Object.keys(updateData).length > 0) {
-              const { error: updateError } = await supabase
-                .from('eclairage_catalogue')
-                .update(updateData)
-                .eq('lcie_es', lcie_ecl);
-                
-              if (updateError) {
-                console.error('❌ Erreur lors de la mise à jour du catalogue:', updateError);
-              } else {
-                console.log('✅ Éclairage mis à jour dans le catalogue');
-              }
-            }
+            console.log('✅ Catalogue à jour');
           }
         } catch (catErr) {
           console.error('❌ Erreur lors de la gestion du catalogue:', catErr);
@@ -2193,28 +2149,59 @@
     async function searchEditLCIECatalogue() {
       const lcieInput = document.getElementById('edit_lcie_es');
       if (!lcieInput) return;
-      
-      let lcie = lcieInput.value.trim().toUpperCase().replace(/\s+/g, '');
-      lcie = lcie.replace(/^0+/, ''); // supprime les zéros en début
-      
-      if (!lcie) {
+
+      const lcieRaw = lcieInput.value.trim();
+      const lcieNorm = lcieRaw.toUpperCase().replace(/\s+/g, '').replace(/^0+/, '');
+
+      if (!lcieNorm) {
         lcieInput.setCustomValidity('');
         return;
       }
-      
-      console.log('🔍 Recherche LCIE dans le catalogue:', lcie);
-      
-      // Afficher un indicateur de chargement
+
+      console.log('🔍 Recherche LCIE dans le catalogue:', lcieNorm);
+
+      // Indicateur de chargement
       lcieInput.style.borderColor = '#f59e0b';
       lcieInput.setCustomValidity('Recherche en cours...');
       lcieInput.reportValidity();
-      
+
       try {
-        // Récupérer tout le catalogue
-        const { data, error } = await supabase
-          .from('eclairage_catalogue')
-          .select('*');
-          
+        let found = null;
+        let error = null;
+
+        // 1) Égalité stricte (valeur saisie)
+        {
+          const res = await supabase
+            .from('eclairage_catalogue')
+            .select('*')
+            .eq('lcie_es', lcieRaw)
+            .maybeSingle();
+          if (res.data) found = res.data;
+          if (res.error) error = res.error;
+        }
+
+        // 1b) Égalité stricte (valeur normalisée)
+        if (!found) {
+          const res = await supabase
+            .from('eclairage_catalogue')
+            .select('*')
+            .eq('lcie_es', lcieNorm)
+            .maybeSingle();
+          if (res.data) found = res.data;
+          if (res.error) error = res.error;
+        }
+
+        // 2) Fallback ILIKE (contient la valeur saisie)
+        if (!found) {
+          const res = await supabase
+            .from('eclairage_catalogue')
+            .select('*')
+            .ilike('lcie_es', `%${lcieRaw}%`)
+            .limit(1);
+          if (res.data && res.data.length) found = res.data[0];
+          if (res.error) error = res.error;
+        }
+
         if (error) {
           console.error('❌ Erreur lors de la recherche LCIE:', error);
           lcieInput.setCustomValidity('Erreur lors de la recherche');
@@ -2222,50 +2209,26 @@
           lcieInput.reportValidity();
           return;
         }
-        
-        if (data && data.length > 0) {
-          // Chercher la correspondance en JS
-          const found = data.find(cat => {
-            if (!cat.lcie_es) return false;
-            let catLCIE = cat.lcie_es.trim().toUpperCase().replace(/\s+/g, '');
-            catLCIE = catLCIE.replace(/^0+/, '');
-            return catLCIE === lcie;
-          });
-          
-          if (found) {
-            console.log('✅ Référence trouvée:', found);
-            
-            // Remplir les champs automatiquement
-            if (found.family_es) document.getElementById('edit_famille_es').value = found.family_es;
-            if (found.marque_es) document.getElementById('edit_marque_es').value = found.marque_es;
-            if (found.modele_es) document.getElementById('edit_modele_es').value = found.modele_es;
-            if (found.ampveille_es) document.getElementById('edit_ampveille_es').value = found.ampveille_es;
-            if (found.ampsecours_es) document.getElementById('edit_ampsecours_es').value = found.ampsecours_es;
-            if (found.ip_es) document.getElementById('edit_ip_es').value = found.ip_es;
-            
-            // Indiquer le succès
-            lcieInput.setCustomValidity('');
-            lcieInput.style.borderColor = '#0F8558';
-            console.log('✅ Champs remplis automatiquement');
-            
-            // Afficher un message de succès temporaire
-            showTemporaryMessage('✅ Référence trouvée et champs remplis automatiquement', 'success');
-          } else {
-            console.log('❌ Aucune référence trouvée pour LCIE:', lcie);
-            lcieInput.setCustomValidity('Aucune référence catalogue trouvée pour ce LCIE');
-            lcieInput.style.borderColor = '#ef4444';
-            lcieInput.reportValidity();
-            
-            // Afficher un message d'information
-            showTemporaryMessage('ℹ️ Aucune référence trouvée. Les champs peuvent être remplis manuellement.', 'info');
-          }
+
+        if (found) {
+          if (found.famille_es) document.getElementById('edit_famille_es').value = found.famille_es;
+          if (found.marque_es) document.getElementById('edit_marque_es').value = found.marque_es;
+          if (found.modele_es) document.getElementById('edit_modele_es').value = found.modele_es;
+          if (found.ampveille_es) document.getElementById('edit_ampveille_es').value = found.ampveille_es;
+          if (found.ampsecours_es) document.getElementById('edit_ampsecours_es').value = found.ampsecours_es;
+          if (found.ip_es) document.getElementById('edit_ip_es').value = found.ip_es;
+
+          lcieInput.setCustomValidity('');
+          lcieInput.style.borderColor = '#0F8558';
+          console.log('✅ Champs remplis automatiquement');
+          showTemporaryMessage('✅ Référence trouvée et champs remplis automatiquement', 'success');
         } else {
-          console.log('❌ Catalogue vide');
-          lcieInput.setCustomValidity('Catalogue vide ou erreur');
-          lcieInput.style.borderColor = '#ef4444';
-          lcieInput.reportValidity();
-          
-          showTemporaryMessage('⚠️ Catalogue vide. Les champs doivent être remplis manuellement.', 'warning');
+          console.log('ℹ️ Aucune référence catalogue trouvée pour LCIE (création possible):', lcieNorm);
+          // Ne pas bloquer la saisie: on autorise l'enregistrement pour créer le catalogue
+          lcieInput.setCustomValidity('');
+          lcieInput.style.borderColor = '#f59e0b';
+          // Laisser les champs manuels modifiables
+          showTemporaryMessage('ℹ️ Réf. inconnue: les champs peuvent être remplis, ils seront ajoutés au catalogue à l\'enregistrement.', 'info');
         }
       } catch (err) {
         console.error('❌ Erreur lors de la recherche:', err);

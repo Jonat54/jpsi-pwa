@@ -4,7 +4,7 @@
 class IndexedDBManager {
     constructor() {
         this.dbName = 'JPSIDatabase';
-        this.dbVersion = 1;
+        this.dbVersion = 2;
         this.db = null;
         this.isInitialized = false;
     }
@@ -72,9 +72,12 @@ class IndexedDBManager {
                 }
 
                 // 📚 Catalogues
-                if (!db.objectStoreNames.contains('eclairage_catalogue')) {
-                    const eclairageCatStore = db.createObjectStore('eclairage_catalogue', { keyPath: 'id' });
+                // Adapter le keyPath au schéma Supabase (PK: id_catalogue_es)
+                if (db.objectStoreNames.contains('eclairage_catalogue')) {
+                    db.deleteObjectStore('eclairage_catalogue');
                 }
+                const eclairageCatStore = db.createObjectStore('eclairage_catalogue', { keyPath: 'id_catalogue_es' });
+                try { eclairageCatStore.createIndex('lcie_es', 'lcie_es', { unique: true }); } catch (_) {}
 
                 if (!db.objectStoreNames.contains('fire_extinguisher_certification_registry')) {
                     const extincteurCatStore = db.createObjectStore('fire_extinguisher_certification_registry', { keyPath: 'id' });
