@@ -334,7 +334,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.4.8' });
+        event.ports[0].postMessage({ version: 'v1.4.9' });
     }
     
     if (event.data && event.data.type === 'GET_STORAGE_INFO') {
@@ -365,4 +365,4 @@ self.addEventListener('message', (event) => {
     }
 });
 
-console.log('✅ Service Worker chargé v1.4.8 - Optimisé iPadOS/Safari');
+console.log('✅ Service Worker chargé v1.4.9 - Optimisé iPadOS/Safari');

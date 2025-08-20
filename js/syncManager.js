@@ -152,9 +152,17 @@ class SyncManager {
 
             if (extCatError) throw extCatError;
 
-            // Sauvegarder dans IndexedDB
-            await indexedDBManager.saveData('eclairage_catalogue', eclairageCat || []);
-            await indexedDBManager.saveData('fire_extinguisher_certification_registry', extincteurCat || []);
+            // Sauvegarder dans IndexedDB (bulk, remplacement)
+            if (Array.isArray(eclairageCat)) {
+                await indexedDBManager.saveBulk('eclairage_catalogue', eclairageCat, { clearBefore: true });
+            } else if (eclairageCat) {
+                await indexedDBManager.saveData('eclairage_catalogue', eclairageCat);
+            }
+            if (Array.isArray(extincteurCat)) {
+                await indexedDBManager.saveBulk('fire_extinguisher_certification_registry', extincteurCat, { clearBefore: true });
+            } else if (extincteurCat) {
+                await indexedDBManager.saveData('fire_extinguisher_certification_registry', extincteurCat);
+            }
 
             console.log('✅ Catalogues chargés dans IndexedDB');
             return true;
