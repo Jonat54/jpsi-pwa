@@ -1,9 +1,9 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
-// Version v1.4.9 - Fix durable des redirections en cache
+// Version v1.4.10 - Fix durable des redirections en cache
 
-const STATIC_CACHE = 'jpsi-static-v1.4.9';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.9';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.9';
+const STATIC_CACHE = 'jpsi-static-v1.4.10';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.10';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.10';
 
 // Pages principales de l'application (liste explicite)
 const ALL_PAGES = [
@@ -27,12 +27,10 @@ const ALL_PAGES = [
     '/desenfumageDetail.html',
     '/desenfumageInstallation.html',
     '/desenfumageHierarchie.html',
-    '/clients.html',
     '/ListClients.html',
     '/addClient.html',
     '/editClient.html',
     '/client.html',
-    '/sites.html',
     '/addSite.html',
     '/editSite.html',
     '/detailSite.html',
@@ -168,7 +166,7 @@ const utils = {
 
 // Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.4.9...');
+    console.log('🔄 Service Worker: Installation v1.4.10...');
     
     evt.waitUntil(
         (async () => {
@@ -198,7 +196,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.4.9...');
+    console.log('🔄 Service Worker: Activation v1.4.10...');
     
     evt.waitUntil(
         (async () => {
@@ -334,7 +332,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.4.9' });
+        event.ports[0].postMessage({ version: 'v1.4.10' });
     }
     
     if (event.data && event.data.type === 'GET_STORAGE_INFO') {
@@ -365,4 +363,4 @@ self.addEventListener('message', (event) => {
     }
 });
 
-console.log('✅ Service Worker chargé v1.4.9 - Optimisé iPadOS/Safari');
+console.log('✅ Service Worker chargé v1.4.10 - Optimisé iPadOS/Safari');

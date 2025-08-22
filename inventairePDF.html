@@ -456,17 +456,15 @@
 
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="supabase-config.js"></script>
     
     <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
 
     <script>
-        // Configuration Supabase
-        const supabase = window.supabaseClient || window.supabase.createClient(
-            'https://anyzqzhjvankvbbajahj.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU'
-        );
+        // Client Supabase central
+        const supabase = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
 
         // Variables globales
         let clients = [];
@@ -481,6 +479,8 @@
             peripheriques: [],
             agentMap: {}
         };
+        // Vérifications: indexées par clé `${type}:${id_equipement}` → dernière vérification
+        let latestVerificationByEquip = {};
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -615,6 +615,34 @@
                     peripheriques: peripheriques.data || [],
                     agentMap: agentMap
                 };
+
+                // Charger les vérifications récentes pour le site (toutes interventions du site)
+                try {
+                    const { data: intervs } = await supabase
+                        .from('interventions')
+                        .select('id_intervention, created_at')
+                        .eq('id_site', siteId);
+                    const interventionIds = (intervs || []).map(i => i.id_intervention);
+                    latestVerificationByEquip = {};
+                    if (interventionIds.length > 0) {
+                        const { data: verifs } = await supabase
+                            .from('verifications')
+                            .select('*')
+                            .in('id_intervention', interventionIds);
+                        (verifs || []).forEach(v => {
+                            const key = `${v.type_equipement}:${v.id_equipement}`;
+                            // Choisir la plus récente: created_at > date > id
+                            const prev = latestVerificationByEquip[key];
+                            const ts = Date.parse(v.created_at || v.date || v.timestamp || 0) || 0;
+                            const prevTs = prev ? (Date.parse(prev.created_at || prev.date || prev.timestamp || 0) || 0) : -1;
+                            if (!prev || ts >= prevTs) {
+                                latestVerificationByEquip[key] = v;
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Vérifs indisponibles, inventaire sans surcharge obs:', e);
+                }
 
                 // Afficher l'aperçu
                 displayPreview();
@@ -1041,14 +1069,19 @@
                             equip.obs_ext || '-'
                         ];
                         break;
-                    case 'eclairages':
-                        // Veilleuse et secours (puissance en veille et secours)
+                    case 'eclairages': {
+                        // Dernière vérification pour cet équipement
+                        const v = latestVerificationByEquip[`eclairages:${equip.id_ecl}`];
                         const veilleuse = equip.ampveille_es || '-';
                         const secours = equip.ampsecours_es || '-';
-                        // SATI : Oui ou Non
                         const sati = equip.sati_ecl ? 'Oui' : 'Non';
-                        // Batterie : OK ou HS
-                        const batterie = equip.etat_batterie_ecl ? 'OK' : 'HS';
+                        // Batterie: si observation de vérif contient "Batterie HS" → HS, sinon valeur équipement
+                        let batterie = equip.etat_batterie_ecl ? 'OK' : 'HS';
+                        const verifObs = v && (v.observations || v.obs || '').toString();
+                        if (verifObs && verifObs.indexOf('Batterie HS') !== -1) {
+                            batterie = 'HS';
+                        }
+                        const observation = (verifObs && verifObs.trim()) ? verifObs : (equip.obs_ecl || '-');
                         row = [
                             equip.num_ecl || `ECL${index + 1}`,
                             equip.niv_ecl || '-',
@@ -1060,9 +1093,10 @@
                             secours,
                             sati,
                             batterie,
-                            equip.obs_ecl || '-'
+                            observation
                         ];
                         break;
+                    }
                     case 'alarmes':
                         row = [
                             equip.id_alarme || `ALM${index + 1}`,
@@ -1370,6 +1404,7 @@
                 y = 50; // 10mm en dessous du logo
 
                 // Générer uniquement le type d'équipement sélectionné
+                let tableY = 50;
                 tableY = addEquipmentSection(doc, equipmentTypeNames[type].toUpperCase(), equipmentData[type], tableY, type);
 
                 // Pied de page (format paysage avec marges de 10mm)
