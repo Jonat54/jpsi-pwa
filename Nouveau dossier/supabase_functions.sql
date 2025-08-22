@@ -1,3 +1,133 @@
+-- RPC et RLS pour insertions sécurisées (clients/sites)
+-- A exécuter sur le projet Supabase (SQL Editor)
+
+-- 1) Table auxiliaire tokens (si non existante)
+-- CREATE TABLE IF NOT EXISTS public.tokens (
+--   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+--   token_value text UNIQUE NOT NULL,
+--   is_active boolean NOT NULL DEFAULT true,
+--   user_type text CHECK (user_type IN ('technicien','client')),
+--   client_id integer REFERENCES public.clients(id_client),
+--   created_at timestamptz DEFAULT now()
+-- );
+
+-- 2) Fonctions SECURITY DEFINER pour bypass RLS sous contrôle
+create or replace function public.fn_insert_client(token_in text, client_in jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  tok record;
+  inserted jsonb;
+begin
+  -- Vérifier token actif
+  select * into tok from public.tokens t where t.token_value = token_in and t.is_active = true limit 1;
+  if not found then
+    raise exception 'Token invalide' using errcode = '28000';
+  end if;
+
+  -- Option: restreindre aux techniciens
+  if tok.user_type is distinct from 'technicien' then
+    raise exception 'Accès refusé' using errcode = '42501';
+  end if;
+
+  insert into public.clients (
+    code_client, nom_client, adr_client, ville_client, cp_client,
+    mail_client, tel_client, siren_client, resp_client, mailresp_client, telresp_client
+  ) values (
+    client_in->>'code_client', client_in->>'nom_client', client_in->>'adr_client', client_in->>'ville_client', client_in->>'cp_client',
+    client_in->>'mail_client', client_in->>'tel_client', client_in->>'siren_client', client_in->>'resp_client', client_in->>'mailresp_client', client_in->>'telresp_client'
+  ) returning to_jsonb(clients.*) into inserted;
+
+  return inserted;
+end;
+$$;
+
+grant execute on function public.fn_insert_client(text, jsonb) to anon, authenticated;
+
+create or replace function public.fn_insert_site(token_in text, site_in jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  tok record;
+  inserted jsonb;
+begin
+  select * into tok from public.tokens t where t.token_value = token_in and t.is_active = true limit 1;
+  if not found then
+    raise exception 'Token invalide' using errcode = '28000';
+  end if;
+
+  if tok.user_type is distinct from 'technicien' then
+    -- Autoriser aussi les clients à créer un site pour leur propre client_id
+    if (tok.client_id is null) or ( (site_in->>'id_client')::int is distinct from tok.client_id ) then
+      raise exception 'Accès refusé' using errcode = '42501';
+    end if;
+  end if;
+
+  insert into public.sites (
+    id_client, nom_site, num_site, adr_site, ville_site, cp_site,
+    telresp_site, mailresp_site, resp_site, famille_site, typeerp_site, caterp_site, lastcomm_site
+  ) values (
+    (site_in->>'id_client')::int, site_in->>'nom_site', site_in->>'num_site', site_in->>'adr_site', site_in->>'ville_site', site_in->>'cp_site',
+    site_in->>'telresp_site', site_in->>'mailresp_site', site_in->>'resp_site', site_in->>'famille_site', site_in->>'typeerp_site', nullif(site_in->>'caterp_site','')::int, nullif(site_in->>'lastcomm_site','')::date
+  ) returning to_jsonb(sites.*) into inserted;
+
+  return inserted;
+end;
+$$;
+
+grant execute on function public.fn_insert_site(text, jsonb) to anon, authenticated;
+
+-- 3) Exemple de politiques RLS recommandées
+-- Activer RLS
+-- alter table public.clients enable row level security;
+-- alter table public.sites enable row level security;
+
+-- Politique lecture clients (client voit ses données; technicien voit tout)
+-- create policy clients_select on public.clients
+-- for select using (
+--   exists (
+--     select 1 from public.tokens t
+--     where t.token_value = current_setting('request.headers.x-client-token', true)
+--       and t.is_active = true
+--       and (
+--         t.user_type = 'technicien' or t.client_id = clients.id_client
+--       )
+--   )
+-- );
+
+-- Politique lecture/insert sites
+-- create policy sites_select on public.sites for select using (
+--   exists (
+--     select 1 from public.tokens t
+--     where t.token_value = current_setting('request.headers.x-client-token', true)
+--       and t.is_active = true
+--       and (
+--         t.user_type = 'technicien' or t.client_id = sites.id_client
+--       )
+--   )
+-- );
+-- create policy sites_insert on public.sites for insert with check (
+--   exists (
+--     select 1 from public.tokens t
+--     where t.token_value = current_setting('request.headers.x-client-token', true)
+--       and t.is_active = true
+--       and (
+--         t.user_type = 'technicien' or t.client_id = (new.id_client)
+--       )
+--   )
+-- );
+
+-- Remarque: pour faire passer le token côté client, ajoutez un header personnalisé
+-- via supabase-js v2: supabase.auth.setSession(...) ne couvre pas ce cas.
+-- Vous pouvez utiliser supabase.auth.setSession pour un vrai JWT, ou configurer
+-- des Edge Functions qui injectent le contexte.
+
 -- Fonctions SQL pour l'interface HTML de récupération de structure
 -- Exécutez ces fonctions dans l'éditeur SQL de Supabase
 

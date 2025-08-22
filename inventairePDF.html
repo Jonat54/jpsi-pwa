@@ -464,7 +464,31 @@
 
     <script>
         // Client Supabase central
-        const supabase = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
+        let supabase = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
+
+        // Attendre que Supabase soit prêt avant d'interroger
+        async function ensureSupabaseReady() {
+            try {
+                if (supabase && typeof supabase.from === 'function') return true;
+                let attempts = 0;
+                const maxAttempts = 25; // ~5s
+                while (attempts < maxAttempts) {
+                    const client = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
+                    if (client && typeof client.from === 'function') {
+                        supabase = client;
+                        return true;
+                    }
+                    await new Promise(r => setTimeout(r, 200));
+                    attempts++;
+                }
+                showError('Connexion Supabase indisponible. Veuillez réessayer.');
+                return false;
+            } catch (e) {
+                console.error('Erreur ensureSupabaseReady:', e);
+                showError('Erreur d\'initialisation Supabase.');
+                return false;
+            }
+        }
 
         // Variables globales
         let clients = [];
@@ -483,8 +507,11 @@
         let latestVerificationByEquip = {};
 
         // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            loadClients();
+        document.addEventListener('DOMContentLoaded', async function() {
+            const ready = await ensureSupabaseReady();
+            if (ready) {
+                loadClients();
+            }
         });
 
         // Charger les clients

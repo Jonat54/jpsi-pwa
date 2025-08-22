@@ -6,6 +6,7 @@
   <title>JPSI - Ajouter un Site</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-config.js"></script>
   <style>
     html, body {
       height: 100%;
@@ -378,12 +379,8 @@
   </div>
 
   <script>
-    // Configuration Supabase
-    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
-    
-    // Initialisation de Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Client Supabase centralisé
+    const supabase = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
     
     // Variables globales
     let currentClient = null;
@@ -609,10 +606,27 @@
           lastcomm_site: document.getElementById('lastcomm_site').value || null
         };
         
-        // Insérer dans Supabase (table 'sites')
-        const { error } = await supabase
-          .from('sites')
-          .insert([siteData]);
+        // Insertion via RPC sécurisée (compatibilité RLS)
+        const token = localStorage.getItem('jpsi_token');
+        let error = null;
+        if (token && supabase && typeof supabase.rpc === 'function') {
+          const { error: rpcError } = await supabase.rpc('fn_insert_site', {
+            token_in: token,
+            site_in: siteData
+          });
+          if (rpcError) {
+            error = rpcError;
+          }
+        }
+        // Repli: insertion directe si RPC indisponible ou refusée
+        if (!error) {
+          // ok
+        } else {
+          const res = await supabase
+            .from('sites')
+            .insert([siteData]);
+          error = res.error;
+        }
         
         if (error) {
           console.error('❌ Erreur lors de la sauvegarde:', error);

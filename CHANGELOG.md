@@ -245,6 +245,22 @@
 
 ---
 
+## 🚀 Version 1.4.9 - Centralisation Supabase & RPC insert
+
+**Date :** 2025-08-22  
+**Statut :** ✅ Déployé
+
+### 🔧 Modifications
+- Centralisation du client Supabase via `supabase-config.js` pour `addClient.html` et `addSite.html`.
+- Ajout d'un flux d'insertion via RPC sécurisé avec repli en insertion directe (compat RLS).
+- Nouveau fichier `Nouveau dossier/supabase_functions.sql` : `fn_insert_client`, `fn_insert_site` (SECURITY DEFINER) et exemples de policies RLS.
+
+### 🗄️ Base de données (Supabase)
+- Recommandations de RLS pour `clients` et `sites`; exécution des fonctions RPC au rôle `anon/authenticated`.
+
+### 🔖 Version
+- `supabase-config.js` passé en 1.2.4.
+
 ## 🚀 Version 1.4.8 - Fix redirections iPad PWA
 
 **Date :** 2025-08-18  

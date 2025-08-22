@@ -1,5 +1,5 @@
 // Configuration Supabase centralisée pour JPSI PWA
-// Version: 1.2.3 - Authentification avec token utilisateur
+// Version: 1.2.4 - RPC insert sécurisé + centralisation client
 
 // Configuration Supabase
 const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';

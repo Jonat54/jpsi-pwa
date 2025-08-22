@@ -6,6 +6,7 @@
   <title>JPSI - Ajouter un Client</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-config.js"></script>
   <style>
     html, body {
       height: 100%;
@@ -335,12 +336,8 @@
   </div>
 
   <script>
-    // Configuration Supabase
-    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
-    
-    // Initialisation de Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Client Supabase centralisé
+    const supabase = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
     
     // Sauvegarder le client
     async function saveClient(event) {
@@ -371,11 +368,28 @@
         console.log('📝 Tentative de sauvegarde du client:', clientData);
         showStatus('Sauvegarde en cours...', 'info');
         
-        // Insérer le client dans Supabase
-        const { data, error } = await supabase
-          .from('clients')
-          .insert([clientData])
-          .select();
+        // Tentative via RPC sécurisée (compatibilité RLS)
+        const token = localStorage.getItem('jpsi_token');
+        let data = null; let error = null;
+        if (token && supabase && typeof supabase.rpc === 'function') {
+          const { data: rpcData, error: rpcError } = await supabase.rpc('fn_insert_client', {
+            token_in: token,
+            client_in: clientData
+          });
+          if (!rpcError && rpcData) {
+            data = rpcData;
+          } else if (rpcError) {
+            error = rpcError;
+          }
+        }
+        // Repli: insertion directe si RPC indisponible ou refusée
+        if (!data) {
+          const res = await supabase
+            .from('clients')
+            .insert([clientData])
+            .select();
+          data = res.data; error = res.error;
+        }
         
         if (error) {
           console.error('❌ Erreur lors de la sauvegarde:', error);
