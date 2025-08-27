@@ -12,27 +12,16 @@
 -- );
 
 -- 2) Fonctions SECURITY DEFINER pour bypass RLS sous contrôle
-create or replace function public.fn_insert_client(token_in text, client_in jsonb)
+-- Insertion client sans exigence de token (SECURITY DEFINER)
+create or replace function public.fn_insert_client(client_in jsonb)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  tok record;
   inserted jsonb;
 begin
-  -- Vérifier token actif
-  select * into tok from public.tokens t where t.token_value = token_in and t.is_active = true limit 1;
-  if not found then
-    raise exception 'Token invalide' using errcode = '28000';
-  end if;
-
-  -- Option: restreindre aux techniciens
-  if tok.user_type is distinct from 'technicien' then
-    raise exception 'Accès refusé' using errcode = '42501';
-  end if;
-
   insert into public.clients (
     code_client, nom_client, adr_client, ville_client, cp_client,
     mail_client, tel_client, siren_client, resp_client, mailresp_client, telresp_client
@@ -45,29 +34,18 @@ begin
 end;
 $$;
 
-grant execute on function public.fn_insert_client(text, jsonb) to anon, authenticated;
+grant execute on function public.fn_insert_client(jsonb) to anon, authenticated;
 
-create or replace function public.fn_insert_site(token_in text, site_in jsonb)
+-- Insertion site sans exigence de token (SECURITY DEFINER)
+create or replace function public.fn_insert_site(site_in jsonb)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  tok record;
   inserted jsonb;
 begin
-  select * into tok from public.tokens t where t.token_value = token_in and t.is_active = true limit 1;
-  if not found then
-    raise exception 'Token invalide' using errcode = '28000';
-  end if;
-
-  if tok.user_type is distinct from 'technicien' then
-    -- Autoriser aussi les clients à créer un site pour leur propre client_id
-    if (tok.client_id is null) or ( (site_in->>'id_client')::int is distinct from tok.client_id ) then
-      raise exception 'Accès refusé' using errcode = '42501';
-    end if;
-  end if;
 
   insert into public.sites (
     id_client, nom_site, num_site, adr_site, ville_site, cp_site,
@@ -81,7 +59,7 @@ begin
 end;
 $$;
 
-grant execute on function public.fn_insert_site(text, jsonb) to anon, authenticated;
+grant execute on function public.fn_insert_site(jsonb) to anon, authenticated;
 
 -- 3) Exemple de politiques RLS recommandées
 -- Activer RLS

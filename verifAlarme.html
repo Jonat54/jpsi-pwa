@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JPSI - Vérification Désenfumage</title>
+  <title>JPSI - Vérification Alarme</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase-config.js"></script>
@@ -34,7 +34,7 @@
     
     .header-card {
       background: #f6f7f9;
-      border: 3.5px solid #9B2423;
+      border: 3.5px solid #FFD700;
       border-radius: 38px;
       box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
       padding: 2rem;
@@ -44,8 +44,8 @@
     }
     
     .back-button {
-      background: #9B2423;
-      color: white;
+      background: #FFD700;
+      color: #23272b;
       border: none;
       border-radius: 50%;
       width: 50px;
@@ -60,7 +60,7 @@
     }
     
     .back-button:hover {
-      background: #7a1d1c;
+      background: #FFA500;
     }
     
     .header-title {
@@ -100,12 +100,12 @@
     .equipment-icon {
       width: 60px;
       height: 60px;
-      background: #9B2423;
+      background: #FFD700;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
+      color: #23272b;
       font-size: 1.5rem;
       font-weight: 600;
     }
@@ -181,8 +181,8 @@
     .form-select:focus,
     .form-textarea:focus {
       outline: none;
-      border-color: #9B2423;
-      box-shadow: 0 0 0 3px rgba(155, 36, 35, 0.1);
+      border-color: #FFD700;
+      box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
     }
     
     .form-textarea {
@@ -196,31 +196,6 @@
       color: #6b7280;
       margin-top: 0.5rem;
       font-style: italic;
-    }
-    
-    .radio-group {
-      display: flex;
-      gap: 2rem;
-      margin-top: 0.5rem;
-    }
-    
-    .radio-option {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-    }
-    
-    .radio-option input[type="radio"] {
-      width: 18px;
-      height: 18px;
-      accent-color: #9B2423;
-    }
-    
-    .radio-option label {
-      font-size: 1rem;
-      color: #374151;
-      cursor: pointer;
     }
     
     .buttons-container {
@@ -243,12 +218,12 @@
     }
     
     .btn-primary {
-      background: #9B2423;
-      color: white;
+      background: #FFD700;
+      color: #23272b;
     }
     
     .btn-primary:hover {
-      background: #7a1d1c;
+      background: #FFA500;
     }
     
     .btn-secondary {
@@ -273,7 +248,7 @@
       height: 20px;
       border: 3px solid #e5e7eb;
       border-radius: 50%;
-      border-top-color: #9B2423;
+      border-top-color: #FFD700;
       animation: spin 1s ease-in-out infinite;
       margin-left: 1rem;
     }
@@ -324,7 +299,7 @@
       <button class="back-button" onclick="goBack()">←</button>
       <div>
         <h1 class="header-title">
-          Vérification Désenfumage
+          Vérification Alarme
           <span class="header-subtitle" id="equipmentInfo">Chargement...</span>
         </h1>
       </div>
@@ -340,7 +315,7 @@
     let supabaseClient = null;
     
     let currentSite = null;
-    let currentDesenfumage = null;
+    let currentAlarme = null;
 
     // Initialisation
     document.addEventListener('DOMContentLoaded', async function() {
@@ -365,17 +340,17 @@
         // Récupérer les paramètres de l'URL
         const urlParams = new URLSearchParams(window.location.search);
         const siteId = urlParams.get('site');
-        const desenfumageId = urlParams.get('desenfumage');
+        const alarmeId = urlParams.get('alarme');
         
-        if (!siteId || !desenfumageId) {
+        if (!siteId || !alarmeId) {
           throw new Error('Paramètres manquants');
         }
         
-        console.log('Chargement pour site:', siteId, 'désenfumage:', desenfumageId);
+        console.log('Chargement pour site:', siteId, 'alarme:', alarmeId);
         
         // Charger les données
         await loadSiteData(siteId);
-        await loadDesenfumageData(desenfumageId);
+        await loadAlarmeData(alarmeId);
         
       } catch (error) {
         console.error('Erreur d\'initialisation:', error);
@@ -408,138 +383,138 @@
       }
     }
 
-         // Charger les données du désenfumage et la dernière vérification
-     async function loadDesenfumageData(desenfumageId) {
-       try {
-         console.log('Chargement du désenfumage:', desenfumageId);
-         
-         const { data: desenfumage, error } = await supabaseClient
-           .from('desenfumages')
-           .select('*')
-           .eq('id_desenfumage', desenfumageId)
-           .single();
- 
-         if (error) {
-           console.error('Erreur désenfumage:', error);
-           throw error;
-         }
- 
-         currentDesenfumage = desenfumage;
-         console.log('Désenfumage chargé:', desenfumage);
-         
-         // Charger la dernière vérification pour cet équipement
-         await loadLastVerification(desenfumageId);
-         
-         displayVerificationForm();
-         
-       } catch (error) {
-         console.error('Erreur lors du chargement du désenfumage:', error);
-         throw error;
-       }
-     }
-     
-     // Charger la dernière vérification
-     async function loadLastVerification(desenfumageId) {
-       try {
-         console.log('Chargement de la dernière vérification pour:', desenfumageId);
-         
-         const { data: lastVerification, error } = await supabaseClient
-           .from('verifications')
-           .select('*')
-           .eq('id_equipement', desenfumageId)
-           .eq('type_equipement', 'desenfumages')
-           .order('date_verification', { ascending: false })
-           .limit(1)
-           .single();
- 
-         if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-           console.error('Erreur vérification:', error);
-           throw error;
-         }
- 
-         currentDesenfumage.lastVerification = lastVerification || null;
-         console.log('Dernière vérification chargée:', lastVerification);
-         
-       } catch (error) {
-         console.error('Erreur lors du chargement de la vérification:', error);
-         currentDesenfumage.lastVerification = null;
-       }
-     }
+    // Charger les données de l'alarme et la dernière vérification
+    async function loadAlarmeData(alarmeId) {
+      try {
+        console.log('Chargement de l\'alarme:', alarmeId);
+        
+        const { data: alarme, error } = await supabaseClient
+          .from('alarmes')
+          .select('*')
+          .eq('id_alarme', alarmeId)
+          .single();
 
-         // Afficher le formulaire de vérification
-     function displayVerificationForm() {
-       const content = document.getElementById('content');
-       const equipmentInfo = document.getElementById('equipmentInfo');
-       
-       // Mettre à jour le titre
-       equipmentInfo.textContent = `${currentSite.nom_site} - ${currentDesenfumage.num_des || 'N/A'}`;
-       
-       // Déterminer l'état actuel basé sur la dernière vérification
-       let currentState = '';
-       if (currentDesenfumage.lastVerification) {
-         if (currentDesenfumage.lastVerification.etat_verification === 'OK') {
-           currentState = 'Fonctionnel';
-         } else if (currentDesenfumage.lastVerification.etat_verification === 'Défaut') {
-           currentState = 'Défaut';
-         } else if (currentDesenfumage.lastVerification.etat_verification === 'Hors service') {
-           currentState = 'Hors service';
-         }
-       }
-       
-       content.innerHTML = `
-         <div class="equipment-info">
-           <div class="equipment-header">
-             <div class="equipment-icon">🚪</div>
-             <div class="equipment-details">
-               <div class="equipment-number">Désenfumage ${currentDesenfumage.num_des || 'N/A'}</div>
-               <div class="equipment-location">${currentDesenfumage.localisation_des || 'Localisation non spécifiée'}</div>
-               <div class="equipment-type">${currentDesenfumage.equipement_desenfumage || 'Type non spécifié'}</div>
-             </div>
-           </div>
-         </div>
- 
-         <div class="verification-form">
-           <form id="verificationForm" onsubmit="saveVerification(event)">
-             <div class="form-section">
-               <h2 class="section-title">État de fonctionnement</h2>
-               <div class="form-group">
-                 <label for="functioning" class="form-label">État de fonctionnement</label>
-                 <select id="functioning" name="functioning" class="form-select" required>
-                   <option value="">Sélectionnez un état</option>
-                   <option value="Fonctionnel" ${currentState === 'Fonctionnel' ? 'selected' : ''}>🟢 Fonctionnel</option>
-                   <option value="Défaut" ${currentState === 'Défaut' ? 'selected' : ''}>🟠 Défaut</option>
-                   <option value="Hors service" ${currentState === 'Hors service' ? 'selected' : ''}>🔴 Hors service</option>
-                 </select>
-                 <small class="form-help">Cette vérification sera enregistrée avec la date du jour</small>
-               </div>
-             </div>
- 
-             <div class="form-section">
-               <h2 class="section-title">Observations</h2>
-               <div class="form-group">
-                 <label for="observations" class="form-label">Observations et remarques</label>
-                 <textarea id="observations" name="observations" class="form-textarea" placeholder="Décrivez l'état, les anomalies, les actions effectuées...">${currentDesenfumage.obs_des || ''}</textarea>
-               </div>
-             </div>
- 
-             <div class="buttons-container">
-               <button type="button" class="btn btn-secondary" onclick="goBack()">
-                 Annuler
-               </button>
-               <button type="submit" class="btn btn-primary" id="saveButton">
-                 <span id="saveButtonText">Enregistrer la vérification</span>
-               </button>
-             </div>
-           </form>
-         </div>
-       `;
-     }
+        if (error) {
+          console.error('Erreur alarme:', error);
+          throw error;
+        }
+
+        currentAlarme = alarme;
+        console.log('Alarme chargée:', alarme);
+        
+        // Charger la dernière vérification pour cet équipement
+        await loadLastVerification(alarmeId);
+        
+        displayVerificationForm();
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement de l\'alarme:', error);
+        throw error;
+      }
+    }
+    
+    // Charger la dernière vérification
+    async function loadLastVerification(alarmeId) {
+      try {
+        console.log('Chargement de la dernière vérification pour:', alarmeId);
+        
+        const { data: lastVerification, error } = await supabaseClient
+          .from('verifications')
+          .select('*')
+          .eq('id_equipement', alarmeId)
+          .eq('type_equipement', 'alarmes')
+          .order('date_verification', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('Erreur vérification:', error);
+          throw error;
+        }
+
+        currentAlarme.lastVerification = lastVerification || null;
+        console.log('Dernière vérification chargée:', lastVerification);
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement de la vérification:', error);
+        currentAlarme.lastVerification = null;
+      }
+    }
+
+    // Afficher le formulaire de vérification
+    function displayVerificationForm() {
+      const content = document.getElementById('content');
+      const equipmentInfo = document.getElementById('equipmentInfo');
+      
+      // Mettre à jour le titre
+      equipmentInfo.textContent = `${currentSite.nom_site} - ${currentAlarme.type_alarme || 'N/A'}`;
+      
+      // Déterminer l'état actuel basé sur la dernière vérification
+      let currentState = '';
+      if (currentAlarme.lastVerification) {
+        if (currentAlarme.lastVerification.etat_verification === 'OK') {
+          currentState = 'Fonctionnel';
+        } else if (currentAlarme.lastVerification.etat_verification === 'Défaut') {
+          currentState = 'Défaut';
+        } else if (currentAlarme.lastVerification.etat_verification === 'Hors service') {
+          currentState = 'Hors service';
+        }
+      }
+      
+      content.innerHTML = `
+        <div class="equipment-info">
+          <div class="equipment-header">
+            <div class="equipment-icon">🚨</div>
+            <div class="equipment-details">
+              <div class="equipment-number">Alarme ${currentAlarme.type_alarme || 'N/A'}</div>
+              <div class="equipment-location">${currentAlarme.marque_alarme || 'Marque non spécifiée'} - ${currentAlarme.modele_alarme || 'Modèle non spécifié'}</div>
+              <div class="equipment-type">Système d'alarme incendie</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="verification-form">
+          <form id="verificationForm" onsubmit="saveVerification(event)">
+            <div class="form-section">
+              <h2 class="section-title">État de fonctionnement</h2>
+              <div class="form-group">
+                <label for="functioning" class="form-label">État de fonctionnement</label>
+                <select id="functioning" name="functioning" class="form-select" required>
+                  <option value="">Sélectionnez un état</option>
+                  <option value="Fonctionnel" ${currentState === 'Fonctionnel' ? 'selected' : ''}>🟢 Fonctionnel</option>
+                  <option value="Défaut" ${currentState === 'Défaut' ? 'selected' : ''}>🟠 Défaut</option>
+                  <option value="Hors service" ${currentState === 'Hors service' ? 'selected' : ''}>🔴 Hors service</option>
+                </select>
+                <small class="form-help">Cette vérification sera enregistrée avec la date du jour</small>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h2 class="section-title">Observations</h2>
+              <div class="form-group">
+                <label for="observations" class="form-label">Observations et remarques</label>
+                <textarea id="observations" name="observations" class="form-textarea" placeholder="Décrivez l'état, les anomalies, les actions effectuées...">${currentAlarme.notes_alarme || ''}</textarea>
+              </div>
+            </div>
+
+            <div class="buttons-container">
+              <button type="button" class="btn btn-secondary" onclick="goBack()">
+                Annuler
+              </button>
+              <button type="submit" class="btn btn-primary" id="saveButton">
+                <span id="saveButtonText">Enregistrer la vérification</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+    }
 
     // Sauvegarder la vérification
     async function saveVerification(event) {
       event.preventDefault();
       
-      if (!currentSite || !currentDesenfumage) {
+      if (!currentSite || !currentAlarme) {
         alert('❌ Données non chargées');
         return;
       }
@@ -568,19 +543,19 @@
         const urlParams = new URLSearchParams(window.location.search);
         const interventionId = urlParams.get('intervention');
         
-                 // Convertir l'état de fonctionnement en état de vérification
-         let etatVerification = 'OK';
-         if (functioning === 'Défaut') {
-           etatVerification = 'Défaut';
-         } else if (functioning === 'Hors service') {
-           etatVerification = 'Hors service';
-         }
+        // Convertir l'état de fonctionnement en état de vérification
+        let etatVerification = 'OK';
+        if (functioning === 'Défaut') {
+          etatVerification = 'Défaut';
+        } else if (functioning === 'Hors service') {
+          etatVerification = 'Hors service';
+        }
         
         // Créer l'enregistrement de vérification
         const verificationData = {
           id_intervention: interventionId,
-          id_equipement: currentDesenfumage.id_desenfumage,
-          type_equipement: 'desenfumages',
+          id_equipement: currentAlarme.id_alarme,
+          type_equipement: 'alarmes',
           etat_verification: etatVerification,
           observations: observations,
           date_verification: verificationDate,
@@ -589,70 +564,70 @@
         
         console.log('💾 Données de vérification à sauvegarder:', verificationData);
         
-                 // Vérifier si une vérification existe déjà pour cette intervention et cet équipement
-         let existingVerification = null;
-         let checkError = null;
-         
-         if (interventionId) {
-           // Mode intervention - vérifier si une vérification existe déjà
-           const { data, error } = await supabaseClient
-             .from('verifications')
-             .select('*')
-             .eq('id_intervention', interventionId)
-             .eq('id_equipement', currentDesenfumage.id_desenfumage)
-             .eq('type_equipement', 'desenfumages')
-             .single();
-           
-           existingVerification = data;
-           checkError = error;
-         }
-         
-         if (checkError && checkError.code !== 'PGRST116') {
-           console.error('❌ Erreur vérification existence:', checkError);
-           throw checkError;
-         }
-         
-         let verificationError;
-         if (existingVerification && interventionId) {
-           // Mettre à jour la vérification existante (mode intervention)
-           console.log('🔄 Mise à jour de la vérification existante');
-           const { error } = await supabaseClient
-             .from('verifications')
-             .update(verificationData)
-             .eq('id_intervention', interventionId)
-             .eq('id_equipement', currentDesenfumage.id_desenfumage)
-             .eq('type_equipement', 'desenfumages');
-           verificationError = error;
-                   } else {
-            // Insérer une nouvelle vérification (mode parc ou nouvelle intervention)
-            console.log('➕ Insertion d\'une nouvelle vérification');
-            const { data, error } = await supabaseClient
-              .from('verifications')
-              .insert([verificationData])
-              .select()
-              .single();
-            verificationError = error;
-            if (!error) {
-              console.log('✅ Vérification créée:', data);
-            }
+        // Vérifier si une vérification existe déjà pour cette intervention et cet équipement
+        let existingVerification = null;
+        let checkError = null;
+        
+        if (interventionId) {
+          // Mode intervention - vérifier si une vérification existe déjà
+          const { data, error } = await supabaseClient
+            .from('verifications')
+            .select('*')
+            .eq('id_intervention', interventionId)
+            .eq('id_equipement', currentAlarme.id_alarme)
+            .eq('type_equipement', 'alarmes')
+            .single();
+          
+          existingVerification = data;
+          checkError = error;
+        }
+        
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('❌ Erreur vérification existence:', checkError);
+          throw checkError;
+        }
+        
+        let verificationError;
+        if (existingVerification && interventionId) {
+          // Mettre à jour la vérification existante (mode intervention)
+          console.log('🔄 Mise à jour de la vérification existante');
+          const { error } = await supabaseClient
+            .from('verifications')
+            .update(verificationData)
+            .eq('id_intervention', interventionId)
+            .eq('id_equipement', currentAlarme.id_alarme)
+            .eq('type_equipement', 'alarmes');
+          verificationError = error;
+        } else {
+          // Insérer une nouvelle vérification (mode parc ou nouvelle intervention)
+          console.log('➕ Insertion d\'une nouvelle vérification');
+          const { data, error } = await supabaseClient
+            .from('verifications')
+            .insert([verificationData])
+            .select()
+            .single();
+          verificationError = error;
+          if (!error) {
+            console.log('✅ Vérification créée:', data);
           }
+        }
         
         if (verificationError) {
           console.error('❌ Erreur sauvegarde vérification:', verificationError);
           throw verificationError;
         }
         
-                 // Mettre à jour la date de vérification et les observations dans la table desenfumages
-         const { error: updateError } = await supabaseClient
-           .from('desenfumages')
-           .update({ 
-             last_des: verificationDate,
-             obs_des: observations
-           })
-           .eq('id_desenfumage', currentDesenfumage.id_desenfumage);
+        // Mettre à jour la date de vérification et les observations dans la table alarmes
+        const { error: updateError } = await supabaseClient
+          .from('alarmes')
+          .update({ 
+            last_alarme: verificationDate,
+            notes_alarme: observations
+          })
+          .eq('id_alarme', currentAlarme.id_alarme);
         
         if (updateError) {
-          console.error('❌ Erreur mise à jour désenfumage:', updateError);
+          console.error('❌ Erreur mise à jour alarme:', updateError);
           throw updateError;
         }
         
@@ -682,7 +657,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const interventionId = urlParams.get('intervention');
         
-        let returnUrl = 'desenfumageList.html?site=' + encodeURIComponent(currentSite.id_site);
+        let returnUrl = 'alarmeSite.html?site=' + encodeURIComponent(currentSite.id_site);
         if (interventionId) {
           returnUrl += '&intervention=' + encodeURIComponent(interventionId);
         }
@@ -706,4 +681,4 @@
     }
   </script>
 </body>
-</html> 
+</html>

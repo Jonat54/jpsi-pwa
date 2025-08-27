@@ -336,8 +336,8 @@
   </div>
 
   <script>
-    // Client Supabase centralisé
-    const supabase = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
+    // Client Supabase centralisé (ne pas redéclarer le global `supabase`)
+    const sb = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
     
     // Sauvegarder le client
     async function saveClient(event) {
@@ -371,24 +371,32 @@
         // Tentative via RPC sécurisée (compatibilité RLS)
         const token = localStorage.getItem('jpsi_token');
         let data = null; let error = null;
-        if (token && supabase && typeof supabase.rpc === 'function') {
-          const { data: rpcData, error: rpcError } = await supabase.rpc('fn_insert_client', {
-            token_in: token,
+        if (sb && typeof sb.rpc === 'function') {
+          const { data: rpcData, error: rpcError } = await sb.rpc('fn_insert_client', {
             client_in: clientData
           });
-          if (!rpcError && rpcData) {
-            data = rpcData;
-          } else if (rpcError) {
+          if (rpcError) {
             error = rpcError;
+          } else {
+            data = rpcData;
           }
+        } else {
+          error = { message: 'RPC indisponible. Veuillez réessayer plus tard.' };
         }
-        // Repli: insertion directe si RPC indisponible ou refusée
-        if (!data) {
-          const res = await supabase
-            .from('clients')
-            .insert([clientData])
-            .select();
-          data = res.data; error = res.error;
+
+        // Si le RPC échoue, ne pas tenter un insert direct (RLS)
+        if (error) {
+          console.error('❌ RPC insertion client échouée:', error);
+          let msg;
+          if (error.code === '23505') {
+            msg = 'Un client avec ce code existe déjà';
+          } else if (error.code === '28000') {
+            msg = 'Token invalide: veuillez vous connecter.';
+          } else {
+            msg = `Erreur RPC: ${error.message || 'échec insertion'}`;
+          }
+          showStatus(msg, 'error');
+          return;
         }
         
         if (error) {

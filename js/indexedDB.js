@@ -4,7 +4,7 @@
 class IndexedDBManager {
     constructor() {
         this.dbName = 'JPSIDatabase';
-        this.dbVersion = 2;
+        this.dbVersion = 4;
         this.db = null;
         this.isInitialized = false;
     }
@@ -35,9 +35,15 @@ class IndexedDBManager {
                     sitesStore.createIndex('nom_site', 'nom_site', { unique: false });
                 }
 
+                // 👥 Clients
+                if (!db.objectStoreNames.contains('clients')) {
+                    const clientsStore = db.createObjectStore('clients', { keyPath: 'id_client' });
+                    clientsStore.createIndex('nom_client', 'nom_client', { unique: false });
+                }
+
                 // 🔥 Équipements
                 if (!db.objectStoreNames.contains('extincteurs')) {
-                    const extincteursStore = db.createObjectStore('extincteurs', { keyPath: 'id_extincteur' });
+                    const extincteursStore = db.createObjectStore('extincteurs', { keyPath: 'id_ext' });
                     extincteursStore.createIndex('id_site', 'id_site', { unique: false });
                 }
 
@@ -81,6 +87,13 @@ class IndexedDBManager {
 
                 if (!db.objectStoreNames.contains('fire_extinguisher_certification_registry')) {
                     const extincteurCatStore = db.createObjectStore('fire_extinguisher_certification_registry', { keyPath: 'id' });
+                }
+
+                // 🔄 Interventions
+                if (!db.objectStoreNames.contains('interventions')) {
+                    const interventionsStore = db.createObjectStore('interventions', { keyPath: 'id_intervention' });
+                    interventionsStore.createIndex('id_site', 'id_site', { unique: false });
+                    interventionsStore.createIndex('etat_intervention', 'etat_intervention', { unique: false });
                 }
 
                 // 🔄 Interventions en cours

@@ -2217,6 +2217,10 @@
           if (found.ampveille_es) document.getElementById('edit_ampveille_es').value = found.ampveille_es;
           if (found.ampsecours_es) document.getElementById('edit_ampsecours_es').value = found.ampsecours_es;
           if (found.ip_es) document.getElementById('edit_ip_es').value = found.ip_es;
+          // Récupérer la valeur SATI du catalogue
+          if (found.sati_es !== undefined && found.sati_es !== null) {
+            document.getElementById('edit_sati_ecl').checked = !!found.sati_es;
+          }
 
           lcieInput.setCustomValidity('');
           lcieInput.style.borderColor = '#0F8558';

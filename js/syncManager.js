@@ -60,6 +60,20 @@ class SyncManager {
         try {
             console.log(`📥 Chargement des données du site ${siteId}...`);
 
+            // Charger et stocker les informations du site (pour offline)
+            try {
+                const { data: siteInfo } = await supabase
+                    .from('sites')
+                    .select('*')
+                    .eq('id_site', siteId)
+                    .single();
+                if (siteInfo) {
+                    await indexedDBManager.saveData('sites', siteInfo);
+                }
+            } catch (e) {
+                console.warn('⚠️ Impossible de précharger les métadonnées du site:', e);
+            }
+
             // Charger les équipements du site
             const { data: extincteurs, error: extError } = await supabase
                 .from('extincteurs')
@@ -175,20 +189,33 @@ class SyncManager {
 
     // 📝 Sauvegarder une vérification (online + offline)
     async saveVerification(verificationData) {
-        // Ajouter la vérification aux données en attente
-        await indexedDBManager.saveData('pendingVerifications', {
-            ...verificationData,
-            timestamp: new Date().toISOString(),
-            synced: false
-        });
+        try {
+            // Générer un ID temporaire pour l'usage local
+            const localId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            const verificationWithId = {
+                ...verificationData,
+                id: localId,
+                timestamp: new Date().toISOString()
+            };
 
-        // Si en ligne, synchroniser immédiatement
-        if (this.isOnline) {
-            await this.syncPendingData();
+            // Sauvegarder en IndexedDB pour usage immédiat
+            await indexedDBManager.saveData('verifications', verificationWithId);
+
+            // Ajouter à la file de synchronisation
+            if (window.offlineSyncManager) {
+                await window.offlineSyncManager.addToSyncQueue({
+                    type: 'insert',
+                    table: 'verifications',
+                    data: verificationData
+                });
+            }
+
+            console.log('✅ Vérification sauvegardée localement et ajoutée à la file de synchronisation');
+            
+        } catch (error) {
+            console.error('❌ Erreur sauvegarde vérification:', error);
+            throw error;
         }
-
-        // Mettre à jour le statut
-        await this.updateSyncStatus();
     }
 
     // 🆕 Sauvegarder un nouvel équipement

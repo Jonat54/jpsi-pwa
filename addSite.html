@@ -379,8 +379,8 @@
   </div>
 
   <script>
-    // Client Supabase centralisé
-    const supabase = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
+    // Client Supabase centralisé (ne pas redéclarer le global `supabase`)
+    const sb = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
     
     // Variables globales
     let currentClient = null;
@@ -404,7 +404,7 @@
       try {
         console.log(`📥 Chargement des informations pour le client: ${codeClient}`);
         
-        const { data: client, error } = await supabase
+        const { data: client, error } = await sb
           .from('clients')
           .select('*')
           .eq('code_client', codeClient)
@@ -607,30 +607,21 @@
         };
         
         // Insertion via RPC sécurisée (compatibilité RLS)
-        const token = localStorage.getItem('jpsi_token');
-        let error = null;
-        if (token && supabase && typeof supabase.rpc === 'function') {
-          const { error: rpcError } = await supabase.rpc('fn_insert_site', {
-            token_in: token,
+        let rpcError = null;
+        if (sb && typeof sb.rpc === 'function') {
+          const { error: _rpcError } = await sb.rpc('fn_insert_site', {
             site_in: siteData
           });
-          if (rpcError) {
-            error = rpcError;
-          }
-        }
-        // Repli: insertion directe si RPC indisponible ou refusée
-        if (!error) {
-          // ok
+          rpcError = _rpcError || null;
         } else {
-          const res = await supabase
-            .from('sites')
-            .insert([siteData]);
-          error = res.error;
+          rpcError = { message: 'RPC indisponible. Veuillez réessayer plus tard.' };
         }
-        
-        if (error) {
-          console.error('❌ Erreur lors de la sauvegarde:', error);
-          alert('❌ Erreur lors de la sauvegarde du site');
+
+        // Si le RPC échoue, ne pas tenter un insert direct (RLS)
+        if (rpcError) {
+          console.error('❌ RPC insertion site échouée:', rpcError);
+          const msg = (rpcError.code === '28000') ? 'Token invalide: veuillez vous connecter.' : `Erreur RPC: ${rpcError.message || 'échec insertion'}`;
+          alert(msg);
           return;
         }
         
@@ -695,7 +686,7 @@
     // Fonction pour suggérer le prochain numéro de site
     async function suggestNextNumSite() {
       if (!currentClient) return;
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('sites')
         .select('num_site')
         .eq('id_client', currentClient.id_client)

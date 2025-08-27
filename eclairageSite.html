@@ -561,54 +561,85 @@
                 return null;
             }
             
-            if (!interventionId) {
-                console.error('❌ Aucun ID d\'intervention fourni dans l\'URL');
-                return null;
+            console.log(`🔍 ID du site récupéré: ${siteId}`);
+            if (interventionId) {
+                console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
+            } else {
+                console.log('ℹ️ Mode création de parc (sans intervention)');
             }
             
-            console.log(`🔍 ID du site récupéré: ${siteId}`);
-            console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
-            return { siteId: decodeURIComponent(siteId), interventionId: decodeURIComponent(interventionId) };
+            return { 
+                siteId: decodeURIComponent(siteId), 
+                interventionId: interventionId ? decodeURIComponent(interventionId) : null 
+            };
         }
         
         // Fonction pour charger les données du site et de l'intervention
         async function loadSiteData(params) {
             try {
                 console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
-                console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
                 
-                // Charger l'intervention
-                const { data: intervention, error: interventionError } = await supabase
-                    .from('interventions')
-                    .select(`
-                        *,
-                        sites!inner(
+                if (params.interventionId) {
+                    console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
+                    
+                    // Charger l'intervention
+                    const { data: intervention, error: interventionError } = await supabase
+                        .from('interventions')
+                        .select(`
                             *,
-                            clients!inner(*)
-                        )
-                    `)
-                    .eq('id_intervention', params.interventionId)
-                    .single();
-                
-                if (interventionError) {
-                    console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
-                    showError('Erreur lors du chargement de l\'intervention');
-                    return;
+                            sites!inner(
+                                *,
+                                clients!inner(*)
+                            )
+                        `)
+                        .eq('id_intervention', params.interventionId)
+                        .single();
+                    
+                    if (interventionError) {
+                        console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+                        showError('Erreur lors du chargement de l\'intervention');
+                        return;
+                    }
+                    
+                    currentIntervention = intervention;
+                    currentSite = intervention.sites;
+                    currentClient = intervention.sites.clients;
+                    
+                    console.log('✅ Intervention chargée:', currentIntervention);
+                    console.log('✅ Données du site chargées:', currentSite);
+                    console.log('✅ Données du client chargées:', currentClient);
+                    
+                    // Charger les vérifications de l'intervention
+                    await loadVerifications(params.interventionId);
+                } else {
+                    // Mode création de parc - charger directement le site
+                    console.log('📥 Mode création de parc - chargement direct du site');
+                    
+                    const { data: site, error: siteError } = await supabase
+                        .from('sites')
+                        .select(`
+                            *,
+                            clients(*)
+                        `)
+                        .eq('id_site', params.siteId)
+                        .single();
+                    
+                    if (siteError) {
+                        console.error('❌ Erreur lors du chargement du site:', siteError);
+                        showError('Erreur lors du chargement du site');
+                        return;
+                    }
+                    
+                    currentIntervention = null;
+                    currentSite = site;
+                    currentClient = site.clients;
+                    
+                    console.log('✅ Données du site chargées:', currentSite);
+                    console.log('✅ Données du client chargées:', currentClient);
                 }
-                
-                currentIntervention = intervention;
-                currentSite = intervention.sites;
-                currentClient = intervention.sites.clients;
-                
-                console.log('✅ Intervention chargée:', currentIntervention);
-                console.log('✅ Données du site chargées:', currentSite);
-                console.log('✅ Données du client chargées:', currentClient);
                 
                 // Charger les éclairages
                 await loadEclairages(params.siteId);
-                
-                // Charger les vérifications de l'intervention
-                await loadVerifications(params.interventionId);
                 
                 // Mettre à jour l'affichage
                 updateDisplay();
@@ -652,14 +683,14 @@
         
         // Fonction pour mettre à jour l'affichage
         function updateDisplay() {
-            if (!currentSite || !currentClient || !currentIntervention) {
+            if (!currentSite || !currentClient) {
                 console.log('⏳ Attente du chargement des données...');
                 return;
             }
             
             // Mettre à jour le titre avec le format demandé
             const mainTitle = `${currentClient.nom_client} - ${currentSite.nom_site}`;
-            const subTitle = `Intervention ${currentIntervention.numero_intervention}`;
+            const subTitle = currentIntervention ? `Intervention ${currentIntervention.numero_intervention}` : 'Création de parc';
             
             document.getElementById('mainTitle').textContent = mainTitle;
             document.getElementById('subTitle').textContent = subTitle;
@@ -811,6 +842,12 @@
         // Fonction pour charger les vérifications de l'intervention
         async function loadVerifications(interventionId) {
             try {
+                if (!interventionId) {
+                    console.log('ℹ️ Pas d\'intervention - pas de vérifications à charger');
+                    verifications = [];
+                    return;
+                }
+                
                 console.log(`📥 Chargement des vérifications pour l'intervention: ${interventionId}`);
                 
                 const { data, error } = await supabase
@@ -1010,7 +1047,6 @@
             document.getElementById('addEclairageForm').addEventListener('submit', handleAddEclairage);
             setTimeout(async () => {
                 await suggestNextEclairageNumber();
-                setCurrentYear();
                 document.getElementById('num_ecl').focus();
             }, 100);
         }
@@ -1088,11 +1124,10 @@
             console.log(checkbox.checked ? '✅ Batterie: OK' : '❌ Batterie: Défaut');
         }
         
-        // Fonction pour définir l'année courante
+        // Fonction pour définir l'année courante (supprimée car champ non présent dans le formulaire)
         function setCurrentYear() {
-            const currentYear = new Date().getFullYear();
-            document.getElementById('mes_ecl').value = currentYear;
-            console.log(`✅ Année courante définie: ${currentYear}`);
+            // Cette fonction n'est plus nécessaire car le champ mes_ecl n'existe pas dans le formulaire
+            console.log('ℹ️ Fonction setCurrentYear() appelée mais champ mes_ecl non présent');
         }
         
         // Fonction pour valider une année
@@ -1136,17 +1171,14 @@
             const numEcl = document.getElementById('num_ecl');
             const nivEcl = document.getElementById('niv_ecl');
             const locEcl = document.getElementById('loc_ecl');
-            const marqueEcl = document.getElementById('marque_es'); // Changed to marque_es
-            const modeleEcl = document.getElementById('modele_es'); // Changed to modele_es
-            const familyEcl = document.getElementById('famille_es'); // Changed to famille_es
-            const mesEcl = document.getElementById('mes_ecl');
-            const ipEcl = document.getElementById('ip_es'); // Changed to ip_es
+            const marqueEcl = document.getElementById('marque_es');
+            const modeleEcl = document.getElementById('modele_es');
+            const familyEcl = document.getElementById('famille_es');
+            const ipEcl = document.getElementById('ip_es');
             const satiEcl = document.getElementById('sati_ecl');
             const telecommandeEcl = document.getElementById('telecommande_ecl');
             const etatBatterieEcl = document.getElementById('etat_batterie_ecl');
-            const orientationEcl = document.getElementById('orientation_ecl'); // This field is removed from modal, so it's not in formData
-            const obsEcl = document.getElementById('obs_ecl');
-            const lcieEcl = document.getElementById('lcie_es'); // New field
+            const lcieEcl = document.getElementById('lcie_es');
 
             // Check if LCIE is filled and not found in catalogue
             if (lcieEcl.value.trim() !== '' && !marqueEcl.value.trim() && !modeleEcl.value.trim() && !familyEcl.value.trim()) {
@@ -1154,24 +1186,9 @@
                 return;
             }
 
-            // Traitement des dates
-            const mesYear = document.getElementById('mes_ecl')?.value;
+            // Traitement des dates (supprimé car champs non présents dans le formulaire)
             let mes_ecl = null;
-            if (mesYear && mesYear.trim() !== '') {
-                if (!validateYear(document.getElementById('mes_ecl'))) {
-                    return;
-                }
-                mes_ecl = `${mesYear}-01-01`;
-            }
-            
-            const lastEclDate = document.getElementById('last_ecl')?.value;
             let last_ecl = null;
-            if (lastEclDate && lastEclDate.trim() !== '') {
-                if (!validateDate(document.getElementById('last_ecl'))) {
-                    return;
-                }
-                last_ecl = lastEclDate;
-            }
             
             const formData = {
                 num_ecl: numEcl.value.trim(),
@@ -1291,9 +1308,13 @@
             // Rediriger vers la page de fiche détaillée
             const params = new URLSearchParams({
                 eclairage: eclairageId,
-                site: currentSite.id_site,
-                intervention: currentIntervention.id_intervention
+                site: currentSite.id_site
             });
+            
+            // Ajouter l'intervention seulement si elle existe
+            if (currentIntervention && currentIntervention.id_intervention) {
+                params.append('intervention', currentIntervention.id_intervention);
+            }
             
             window.location.href = `eclairageDetail.html?${params.toString()}`;
         }
@@ -1303,9 +1324,12 @@
           // Retourner vers verifSite.html avec l'ID du site et de l'intervention
           if (currentSite && currentSite.id_site && currentIntervention && currentIntervention.id_intervention) {
             window.location.href = `verifSite.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+          } else if (currentSite && currentSite.id_site) {
+            // Mode création de parc - retourner vers createParc.html
+            window.location.href = 'createParc.html';
           } else {
             // Fallback si pas de données chargées
-            window.location.href = 'verifSite.html';
+            window.location.href = 'verification.html';
           }
         }
         

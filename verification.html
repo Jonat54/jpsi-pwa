@@ -257,11 +257,11 @@
         </span>
         <span class="tile-label">Historique</span>
       </div>
-      <div class="tile">
+      <div class="tile" id="createParcTile" onclick="navigateToCreateParc()">
         <span class="tile-icon">
-          <img src="icons/appicon/codag.png" alt="Soon" class="icon-img" />
+          <img src="icons/appicon/plans.png" alt="Création Parc" class="icon-img" />
         </span>
-        <span class="tile-label">Soon</span>
+        <span class="tile-label">Création Parc</span>
       </div>
       <div class="tile">
         <span class="tile-icon">
@@ -317,8 +317,11 @@
       const newVerifTile = document.getElementById('newVerifTile');
       const ongoingVerifTile = document.getElementById('ongoingVerifTile');
       const historyTile = document.getElementById('historyTile');
+      const createParcTile = document.getElementById('createParcTile');
       
-      if (!isConnected) {
+      // Activer si un token opérateur est présent (offline autorisé)
+      const hasOpToken = !!(localStorage.getItem('jpsi_operator_token') || localStorage.getItem('jpsi_token'));
+      if (!isConnected && !hasOpToken) {
         console.log('⚠️ Connexion non établie - Grisage des tuiles');
         newVerifTile.classList.add('disabled');
         newVerifTile.style.cursor = 'not-allowed';
@@ -329,6 +332,9 @@
         historyTile.classList.add('disabled');
         historyTile.style.cursor = 'not-allowed';
         historyTile.onclick = null;
+        createParcTile.classList.add('disabled');
+        createParcTile.style.cursor = 'not-allowed';
+        createParcTile.onclick = null;
       } else {
         console.log('✅ Connexion établie - Tuiles actives');
         newVerifTile.classList.remove('disabled');
@@ -337,6 +343,8 @@
         ongoingVerifTile.style.cursor = 'pointer';
         historyTile.classList.remove('disabled');
         historyTile.style.cursor = 'pointer';
+        createParcTile.classList.remove('disabled');
+        createParcTile.style.cursor = 'pointer';
       }
     }
     
@@ -367,6 +375,15 @@
       }
     }
     
+    // Fonction de navigation vers la Création de Parc
+    function navigateToCreateParc() {
+      if (isConnected) {
+        window.location.href = 'createParc.html';
+      } else {
+        alert('⚠️ Connexion non établie. Impossible d\'accéder à la création de parc.');
+      }
+    }
+    
 
     
     // Fonction pour retourner à l'accueil
@@ -379,7 +396,29 @@
       console.log('🚀 Initialisation de la page Vérifications...');
       
       // Vérifier la connexion Supabase
-      await checkSupabaseConnection();
+      // Déterminer la connectivité via une requête réelle (plutôt que navigator.onLine)
+      try {
+        const ping = await fetch('manifest.json', { cache: 'no-store' });
+        isConnected = ping && ping.ok;
+      } catch (_) { isConnected = false; }
+      if (!isConnected) {
+        // Dernier recours: tester une requête Supabase head
+        try {
+          const { error } = await supabase.from('clients').select('id_client', { count: 'exact', head: true }).limit(1);
+          isConnected = !error;
+        } catch (_) { isConnected = false; }
+      }
+      console.log('Statut réseau détecté:', isConnected ? 'En ligne (réel)' : 'Hors ligne (réel)');
+      
+      // Mettre le badge
+      if (window.syncManager) {
+        syncManager.isOnline = isConnected;
+        syncManager.showNetworkStatus(isConnected ? '🌐 En ligne' : '❌ Hors ligne');
+      }
+      // Forcer l'affichage immédiat du badge réseau
+      if (window.syncManager) {
+        syncManager.showNetworkStatus(navigator.onLine ? '🌐 En ligne' : '❌ Hors ligne');
+      }
       
       // Mettre à jour l'état des tuiles
       updateTilesState();
@@ -397,16 +436,11 @@
     async function preloadVerificationData() {
       const btn = document.getElementById('preloadButton');
       try {
-        if (!navigator.onLine) {
-          alert('Vous êtes hors ligne. Veuillez vous connecter pour télécharger les données.');
-          return;
-        }
+        // Ne bloque plus sur navigator.onLine; on tentera le réseau et on affichera l'erreur au besoin
 
-        const clientId = localStorage.getItem('jpsi_client_id');
-        if (!clientId) {
-          alert('Client non identifié. Connectez-vous d\'abord.');
-          return;
-        }
+        // Ouvrir une modale de sélection des sites si possible
+        const siteIds = await openSitePickerModal();
+        if (!siteIds || siteIds.length === 0) { return; }
 
         btn.disabled = true;
         btn.textContent = 'Téléchargement des catalogues...';
@@ -415,14 +449,7 @@
         await syncManager.loadCatalogues();
 
         btn.textContent = 'Récupération des sites...';
-        const { data: sites, error } = await supabase
-          .from('sites')
-          .select('id_site')
-          .eq('id_client', clientId);
-
-        if (error) throw error;
-
-        const siteList = Array.isArray(sites) ? sites : [];
+        const siteList = siteIds.map(id => ({ id_site: id }));
         let idx = 0;
         for (const s of siteList) {
           idx += 1;
@@ -448,6 +475,71 @@
           btn.textContent = 'Télécharger pour usage hors ligne';
         }
       }
+    }
+
+    // Modale de sélection des sites (recherche Supabase)
+    async function openSitePickerModal() {
+      return new Promise(async (resolve) => {
+        // Construction DOM
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:80vh;overflow:auto;border:3px solid #9B2423;box-shadow:0 8px 32px rgba(0,0,0,.25);';
+        card.innerHTML = `
+          <div style="padding:16px 16px 8px 16px;display:flex;gap:12px;align-items:center;border-bottom:1px solid #eee;">
+            <div style="font-weight:700;color:#23272b;font-size:1.1rem;">Sélectionner des sites à précharger</div>
+            <div style="margin-left:auto"></div>
+            <button id="spmClose" style="border:none;background:#eee;padding:6px 10px;border-radius:8px;cursor:pointer;">Fermer</button>
+          </div>
+          <div style="padding:12px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px solid #f3f4f6;">
+            <input id="spmSearch" class="form-input" placeholder="Rechercher un site (nom, ville)" style="flex:1;">
+            <button id="spmQuery" class="btn" style="background:#9B2423;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;">Rechercher</button>
+          </div>
+          <div id="spmList" style="padding:8px 16px;max-height:50vh;overflow:auto;font-size:.95rem;"></div>
+          <div style="padding:12px 16px;border-top:1px solid #f3f4f6;display:flex;gap:8px;justify-content:flex-end;">
+            <button id="spmCancel" style="border:none;background:#eee;padding:10px 14px;border-radius:10px;cursor:pointer;">Annuler</button>
+            <button id="spmOk" style="border:none;background:#2563eb;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;">Précharger</button>
+          </div>
+        `;
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+
+        const list = card.querySelector('#spmList');
+        const input = card.querySelector('#spmSearch');
+
+        async function runSearch() {
+          try {
+            list.innerHTML = '<div style="padding:8px;color:#6b7280;">Recherche…</div>';
+            const term = (input.value || '').trim();
+            let query = supabase.from('sites').select('id_site, nom_site, ville_site').limit(50);
+            if (term) { query = query.ilike('nom_site', `%${term}%`); }
+            const { data, error } = await query;
+            if (error) throw error;
+            const rows = (data || []).map(s => `
+              <label style="display:flex;gap:8px;align-items:center;padding:6px 0;">
+                <input type="checkbox" value="${s.id_site}"> 
+                <span><strong>#${s.id_site}</strong> — ${s.nom_site || ''} ${s.ville_site ? `• ${s.ville_site}` : ''}</span>
+              </label>
+            `).join('');
+            list.innerHTML = rows || '<div style="padding:8px;color:#6b7280;">Aucun site</div>';
+          } catch (e) {
+            list.innerHTML = '<div style="padding:12px;color:#ef4444;">Erreur de recherche. Assurez-vous d\'être en ligne.</div>';
+          }
+        }
+
+        card.querySelector('#spmQuery').onclick = runSearch;
+        input.onkeydown = (e)=>{ if (e.key==='Enter') runSearch(); };
+        card.querySelector('#spmCancel').onclick = () => { overlay.remove(); resolve([]); };
+        card.querySelector('#spmClose').onclick = () => { overlay.remove(); resolve([]); };
+        card.querySelector('#spmOk').onclick = async () => {
+          const ids = Array.from(list.querySelectorAll('input[type="checkbox"]:checked')).map(i=>i.value);
+          overlay.remove();
+          resolve(ids);
+        };
+
+        // Lancer une première recherche vide
+        runSearch();
+      });
     }
   </script>
 </body>

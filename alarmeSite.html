@@ -473,48 +473,82 @@
                 return null;
             }
             
-            if (!interventionId) {
-                console.error('❌ Aucun ID d\'intervention fourni dans l\'URL');
-                return null;
+            console.log(`🔍 ID du site récupéré: ${siteId}`);
+            if (interventionId) {
+                console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
+            } else {
+                console.log('ℹ️ Mode création de parc (sans intervention)');
             }
             
-            console.log(`🔍 ID du site récupéré: ${siteId}`);
-            console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
-            return { siteId: decodeURIComponent(siteId), interventionId: decodeURIComponent(interventionId) };
+            return { 
+                siteId: decodeURIComponent(siteId), 
+                interventionId: interventionId ? decodeURIComponent(interventionId) : null 
+            };
         }
         
         // Fonction pour charger les données du site et de l'intervention
         async function loadSiteData(params) {
             try {
                 console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
-                console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
                 
-                // Charger l'intervention
-                const { data: intervention, error: interventionError } = await supabase
-                    .from('interventions')
-                    .select(`
-                        *,
-                        sites!inner(
+                if (params.interventionId) {
+                    console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
+                    
+                    // Charger l'intervention
+                    const { data: intervention, error: interventionError } = await supabase
+                        .from('interventions')
+                        .select(`
                             *,
-                            clients!inner(*)
-                        )
-                    `)
-                    .eq('id_intervention', params.interventionId)
-                    .single();
-                
-                if (interventionError) {
-                    console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
-                    showError('Erreur lors du chargement de l\'intervention');
-                    return;
+                            sites!inner(
+                                *,
+                                clients!inner(*)
+                            )
+                        `)
+                        .eq('id_intervention', params.interventionId)
+                        .single();
+                    
+                    if (interventionError) {
+                        console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+                        showError('Erreur lors du chargement de l\'intervention');
+                        return;
+                    }
+                    
+                    currentIntervention = intervention;
+                    currentSite = intervention.sites;
+                    currentClient = intervention.sites.clients;
+                    
+                    console.log('✅ Intervention chargée:', currentIntervention);
+                    console.log('✅ Données du site chargées:', currentSite);
+                    console.log('✅ Données du client chargées:', currentClient);
+                    
+                    // Charger les vérifications de l'intervention
+                    await loadVerifications(params.interventionId);
+                } else {
+                    // Mode création de parc - charger directement le site
+                    console.log('📥 Mode création de parc - chargement direct du site');
+                    
+                    const { data: site, error: siteError } = await supabase
+                        .from('sites')
+                        .select(`
+                            *,
+                            clients(*)
+                        `)
+                        .eq('id_site', params.siteId)
+                        .single();
+                    
+                    if (siteError) {
+                        console.error('❌ Erreur lors du chargement du site:', siteError);
+                        showError('Erreur lors du chargement du site');
+                        return;
+                    }
+                    
+                    currentIntervention = null;
+                    currentSite = site;
+                    currentClient = site.clients;
+                    
+                    console.log('✅ Données du site chargées:', currentSite);
+                    console.log('✅ Données du client chargées:', currentClient);
                 }
-                
-                currentIntervention = intervention;
-                currentSite = intervention.sites;
-                currentClient = intervention.sites.clients;
-                
-                console.log('✅ Intervention chargée:', currentIntervention);
-                console.log('✅ Données du site chargées:', currentSite);
-                console.log('✅ Données du client chargées:', currentClient);
                 
                 // Charger l'alarme
                 await loadAlarme(params.siteId);
@@ -523,9 +557,6 @@
                 if (alarme) {
                     await loadPeripheriques(alarme.id_alarme);
                 }
-                
-                // Charger les vérifications de l'intervention
-                await loadVerifications(params.interventionId);
                 
                 // Mettre à jour l'affichage
                 updateDisplay();
@@ -656,6 +687,9 @@
                         <button class="add-button" onclick="editAlarme()" style="margin: 0; margin-right: 1rem;">
                             ✏️ Modifier l'Alarme
                         </button>
+                        <button class="add-button" onclick="verifierAlarme()" style="margin: 0; margin-right: 1rem; background: #10b981; color: white;">
+                            ✅ Vérifier l'Alarme
+                        </button>
                         ${alarme.type_alarme !== 'Type 4 Pile' ? `
                             <button class="add-button" onclick="addPeripherique()" style="margin: 0;">
                                 🔧 Ajouter un Périphérique
@@ -751,10 +785,12 @@
                 return 'status-gray';
             }
             
-            // Vérification trouvée, regarder le statut
-            if (verification.statut === 'OK') {
+            // Vérification trouvée, regarder l'état de vérification
+            if (verification.etat_verification === 'OK') {
                 return 'status-ok';
-            } else if (verification.statut === 'Pas OK') {
+            } else if (verification.etat_verification === 'Défaut') {
+                return 'status-error';
+            } else if (verification.etat_verification === 'Hors service') {
                 return 'status-error';
             }
             
@@ -1389,7 +1425,27 @@
             }
         }
         
-                // Fonction pour retourner à la page précédente
+                // Fonction pour vérifier l'alarme
+        function verifierAlarme() {
+            if (!currentSite || !alarme) {
+                alert('⚠️ Données non chargées');
+                return;
+            }
+            
+            console.log('✅ Ouverture de la vérification pour l\'alarme:', alarme.id_alarme);
+            
+            // Construire l'URL avec les paramètres nécessaires
+            let url = `verifAlarme.html?site=${encodeURIComponent(currentSite.id_site)}&alarme=${encodeURIComponent(alarme.id_alarme)}`;
+            
+            // Ajouter l'ID de l'intervention si disponible
+            if (currentIntervention && currentIntervention.id_intervention) {
+                url += `&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+            }
+            
+            window.location.href = url;
+        }
+        
+        // Fonction pour retourner à la page précédente
         function goBack() {
           // Retourner vers verifSite.html avec l'ID du site et de l'intervention
           if (currentSite && currentSite.id_site && currentIntervention && currentIntervention.id_intervention) {

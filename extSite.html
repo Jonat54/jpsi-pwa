@@ -548,55 +548,85 @@
         return null;
       }
       
-      if (!interventionId) {
-        console.error('❌ Aucun ID d\'intervention fourni dans l\'URL');
-        showError('Aucune intervention sélectionnée. Veuillez retourner à la page précédente et sélectionner une intervention.');
-        return null;
+      console.log(`🔍 ID du site récupéré: ${siteId}`);
+      if (interventionId) {
+        console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
+      } else {
+        console.log('ℹ️ Mode création de parc (sans intervention)');
       }
       
-      console.log(`🔍 ID du site récupéré: ${siteId}`);
-      console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
-      return { siteId: decodeURIComponent(siteId), interventionId: decodeURIComponent(interventionId) };
+      return { 
+        siteId: decodeURIComponent(siteId), 
+        interventionId: interventionId ? decodeURIComponent(interventionId) : null 
+      };
     }
     
     // Fonction pour charger les données du site et de l'intervention
     async function loadSiteData(params) {
       try {
         console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
-        console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
         
-        // Charger l'intervention
-        const { data: intervention, error: interventionError } = await supabase
-          .from('interventions')
-          .select(`
-            *,
-            sites!inner(
+        if (params.interventionId) {
+          console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
+          
+          // Charger l'intervention
+          const { data: intervention, error: interventionError } = await supabase
+            .from('interventions')
+            .select(`
               *,
-              clients!inner(*)
-            )
-          `)
-          .eq('id_intervention', params.interventionId)
-          .single();
-        
-        if (interventionError) {
-          console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
-          showError('Erreur lors du chargement de l\'intervention');
-          return;
+              sites!inner(
+                *,
+                clients!inner(*)
+              )
+            `)
+            .eq('id_intervention', params.interventionId)
+            .single();
+          
+          if (interventionError) {
+            console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+            showError('Erreur lors du chargement de l\'intervention');
+            return;
+          }
+          
+          currentIntervention = intervention;
+          currentSite = intervention.sites;
+          currentClient = intervention.sites.clients;
+          
+          console.log('✅ Intervention chargée:', currentIntervention);
+          console.log('✅ Données du site chargées:', currentSite);
+          console.log('✅ Données du client chargées:', currentClient);
+          
+          // Charger les vérifications de l'intervention
+          await loadVerifications(params.interventionId);
+        } else {
+          // Mode création de parc - charger directement le site
+          console.log('📥 Mode création de parc - chargement direct du site');
+          
+          const { data: site, error: siteError } = await supabase
+            .from('sites')
+            .select(`
+              *,
+              clients(*)
+            `)
+            .eq('id_site', params.siteId)
+            .single();
+          
+          if (siteError) {
+            console.error('❌ Erreur lors du chargement du site:', siteError);
+            showError('Erreur lors du chargement du site');
+            return;
+          }
+          
+          currentIntervention = null;
+          currentSite = site;
+          currentClient = site.clients;
+          
+          console.log('✅ Données du site chargées:', currentSite);
+          console.log('✅ Données du client chargées:', currentClient);
         }
-        
-        currentIntervention = intervention;
-        currentSite = intervention.sites;
-        currentClient = intervention.sites.clients;
-        
-        console.log('✅ Intervention chargée:', currentIntervention);
-        console.log('✅ Données du site chargées:', currentSite);
-        console.log('✅ Données du client chargées:', currentClient);
         
         // Charger les extincteurs
         await loadExtincteurs(params.siteId);
-        
-        // Charger les vérifications de l'intervention
-        await loadVerifications(params.interventionId);
         
         // Mettre à jour l'interface
         updateDisplay();

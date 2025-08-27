@@ -17,6 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/indexedDB.js"></script>
   <script src="js/syncManager.js"></script>
+  <script src="js/offlineSync.js"></script>
   <script>
     // Enregistrer le Service Worker pour le mode offline
     if ('serviceWorker' in navigator) {
@@ -568,28 +569,136 @@
       displayInterventions(filtered);
     }
     
-    function viewIntervention(interventionId) {
+    async function viewIntervention(interventionId) {
       // Confirmation pour reprendre l'intervention
       const confirmed = confirm(
-        '🔄 Voulez-vous reprendre cette intervention en cours ?\n\n' +
-        'Vous serez redirigé vers la page de vérification du site.'
+        '🚀 Voulez-vous reprendre cette intervention en mode offline-first ?\n\n' +
+        'Les données seront préchargées une seule fois pour un travail 100% hors ligne.'
       );
       
       if (!confirmed) return;
       
-      // Trouver l'intervention pour récupérer les informations du site
-      const intervention = allInterventions.find(interv => interv.id_intervention === parseInt(interventionId));
-      
-      if (intervention) {
-        // Navigation vers verifSite.html avec les paramètres du site et de l'intervention
+      try {
+        // Trouver l'intervention pour récupérer les informations du site
+        const intervention = allInterventions.find(interv => interv.id_intervention === parseInt(interventionId));
+        
+        if (!intervention) {
+          alert('❌ Erreur : Intervention non trouvée');
+          return;
+        }
+
+        const siteId = intervention.sites.id_site;
+        
+        // Vérifier si les données sont déjà préchargées
+        if (window.offlineFirstManager && window.offlineFirstManager.isDataPreloaded(siteId, interventionId)) {
+          console.log('✅ Données déjà préchargées, navigation directe...');
+          
+          // Navigation directe vers verifSite.html
+          const params = new URLSearchParams({
+            site: siteId,
+            intervention: interventionId
+          });
+          window.location.href = `verifSite.html?${params.toString()}`;
+          return;
+        }
+        
+        // Sinon, rediriger vers la page de préchargement
+        console.log('📥 Redirection vers le préchargement intelligent...');
+        
         const params = new URLSearchParams({
-          site: intervention.sites.id_site,
+          site: siteId,
           intervention: interventionId
         });
         
-        window.location.href = `verifSite.html?${params.toString()}`;
-      } else {
-        alert('❌ Erreur : Intervention non trouvée');
+        window.location.href = `offline.html?${params.toString()}`;
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la navigation:', error);
+        alert('❌ Erreur lors de la navigation. Vérifiez votre connexion.');
+      }
+    }
+
+    // Fonction pour précharger les données spécifiques de l'intervention
+    async function preloadInterventionData(interventionId, siteId) {
+      try {
+        // Charger l'intervention complète avec ses relations
+        const { data: intervention, error } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            sites!inner(
+              *,
+              clients!inner(*)
+            )
+          `)
+          .eq('id_intervention', interventionId)
+          .single();
+
+        if (error) throw error;
+
+        // Sauvegarder l'intervention en IndexedDB
+        await indexedDBManager.saveData('interventions', intervention);
+        
+        // Sauvegarder le site et le client en IndexedDB
+        if (intervention.sites) {
+          await indexedDBManager.saveData('sites', intervention.sites);
+          if (intervention.sites.clients) {
+            await indexedDBManager.saveData('clients', intervention.sites.clients);
+          }
+        }
+
+        // Charger et sauvegarder les équipements selon les types de l'intervention
+        const types = intervention.types_equipements || [];
+        if (Array.isArray(types)) {
+          for (const type of types) {
+            let equipments = [];
+            
+            switch (type) {
+              case 'extincteurs':
+                const { data: ext } = await supabase
+                  .from('extincteurs')
+                  .select('*')
+                  .eq('id_site', siteId);
+                equipments = ext || [];
+                break;
+                
+              case 'eclairages':
+                const { data: ecl } = await supabase
+                  .from('eclairages')
+                  .select('*')
+                  .eq('id_site', siteId);
+                equipments = ecl || [];
+                break;
+                
+              case 'alarmes':
+                const { data: alarm } = await supabase
+                  .from('alarmes')
+                  .select('*')
+                  .eq('id_site', siteId);
+                equipments = alarm || [];
+                break;
+                
+              case 'desenfumages':
+                const { data: des } = await supabase
+                  .from('desenfumages')
+                  .select('*')
+                  .eq('id_site', siteId);
+                equipments = des || [];
+                break;
+            }
+            
+            // Sauvegarder les équipements en IndexedDB
+            if (equipments.length > 0) {
+              await indexedDBManager.saveData(type, equipments);
+            }
+          }
+        }
+
+        console.log(`✅ Données de l'intervention ${interventionId} préchargées`);
+        
+      } catch (error) {
+        console.error(`❌ Erreur préchargement intervention ${interventionId}:`, error);
+        throw error;
       }
     }
     

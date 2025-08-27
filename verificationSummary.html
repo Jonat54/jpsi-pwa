@@ -2351,7 +2351,7 @@
               const { data: des } = await supabase
                 .from('desenfumages')
                 .select('*')
-                .eq('id_des', id_equipement)
+                .eq('id_desenfumage', id_equipement)
                 .single();
               if (des) verifiedEquipment.desenfumages.push(des);
               break;
@@ -2461,10 +2461,10 @@
               case 'desenfumages':
                 const { data: des } = await supabase
                   .from('desenfumages')
-                  .select('id_desenfumage')
-                  .eq('id_des', id_equipement)
+                  .select('num_des')
+                  .eq('id_desenfumage', id_equipement)
                   .single();
-                if (des) numero = des.id_desenfumage || 'N/A';
+                if (des) numero = des.num_des || 'N/A';
                 typeLabel = 'Désenfumage';
                 break;
                 
@@ -3835,6 +3835,17 @@
         
         console.log('✅ Intervention clôturée avec succès');
         console.log('✅ Bon de vérification enregistré:', numeroDeBon);
+        
+        // 🔄 SYNCHRONISATION FINALE - Mode Offline-First
+        if (window.offlineFirstManager) {
+          console.log('🔄 Synchronisation finale de toutes les données...');
+          await window.offlineFirstManager.syncAllData();
+          console.log('✅ Synchronisation finale terminée');
+          
+          // 🧹 Nettoyer les données préchargées après finalisation
+          await window.offlineFirstManager.clearPreloadedData();
+          console.log('🧹 Données préchargées nettoyées');
+        }
         
       } catch (error) {
         console.error('❌ Erreur lors de la clôture:', error);

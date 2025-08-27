@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0F8558">
+  <meta name="description" content="Application de gestion BMSI pour tablettes et mobiles">
+  <title>JPSI - Création Parc</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script>
+    // Enregistrer le Service Worker pour le mode offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {
+        scope: '/'
+      }).then(function(registration) {
+        console.log('✅ ServiceWorker enregistré:', registration.scope);
+      }).catch(function(err) {
+        console.log('❌ Échec ServiceWorker:', err);
+      });
+    }
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #0F8558;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .back-button {
+      background: #0F8558;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #0c6b41;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .form-card {
+      background: #f6f7f9;
+      border: 3.5px solid #0F8558;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+    
+    .form-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .form-section h3 {
+      color: #0F8558;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .form-input, .form-select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      background: #fff;
+      color: #374151;
+      transition: all 0.2s;
+    }
+    
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: #0F8558;
+      box-shadow: 0 0 0 3px rgba(15,133,88,0.1);
+    }
+    
+    .form-input:disabled, .form-select:disabled {
+      background: #f9fafb;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    .search-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .btn {
+      background: #0F8558;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    
+    .btn:hover:not(:disabled) {
+      background: #0c6b41;
+      transform: translateY(-1px);
+    }
+    
+    .btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn.secondary {
+      background: #2563eb;
+    }
+    
+    .btn.secondary:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    
+    .equipment-types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+    
+    .equipment-type-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 2rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 160px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .equipment-type-card:hover:not(.disabled) {
+      border-color: #0F8558;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(15,133,88,0.2);
+    }
+    
+    .equipment-type-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .equipment-icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    .equipment-type-card:hover:not(.disabled) .equipment-icon {
+      transform: scale(1.1);
+    }
+    
+    .equipment-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+      line-height: 1.3;
+    }
+    
+    .equipment-description {
+      font-size: 0.9rem;
+      color: #6b7280;
+      line-height: 1.4;
+      margin-top: 0.5rem;
+    }
+    
+    .hint {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+    
+    .status-pending {
+      background: #f59e0b;
+    }
+    
+    .status-ready {
+      background: #10b981;
+    }
+    
+    .status-disabled {
+      background: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header-card">
+      <button class="back-button" onclick="goBack()">‹</button>
+      <div>
+        <h1 class="header-title">Création Parc</h1>
+        <p style="color: #6b7280; margin: 0.5rem 0 0 0;">Préparez le parc sans créer d'intervention</p>
+      </div>
+    </div>
+
+    <!-- Formulaire principal -->
+    <div class="form-card">
+      <div class="form-grid">
+        <!-- Étape 1: Sélection du client -->
+        <div class="form-section">
+          <h3>
+            <span class="status-indicator status-ready"></span>
+            1) Sélection du client
+          </h3>
+          <div class="search-grid">
+            <input id="searchClient" class="form-input" placeholder="Rechercher un client (nom, code)">
+            <button class="btn" onclick="searchClients()">Rechercher</button>
+          </div>
+          <select id="clientSelect" class="form-select">
+            <option value="">— Sélectionner un client —</option>
+          </select>
+          <p class="hint">Astuce: vous pouvez créer un client via la page Ajouter Client si besoin.</p>
+          <button class="btn secondary" onclick="window.location.href='addClient.html'" style="margin-top: 1rem; width: 100%;">
+            Ajouter un client
+          </button>
+        </div>
+
+        <!-- Étape 2: Sélection du site -->
+        <div class="form-section">
+          <h3>
+            <span class="status-indicator status-pending" id="siteStatus"></span>
+            2) Sélection du site
+          </h3>
+          <div class="search-grid">
+            <input id="searchSite" class="form-input" placeholder="Rechercher un site (nom, ville)" disabled>
+            <button id="btnSearchSite" class="btn" onclick="searchSites()" disabled>Rechercher</button>
+          </div>
+          <select id="siteSelect" class="form-select" disabled>
+            <option value="">— Sélectionner un site —</option>
+          </select>
+          <button id="btnAddSite" class="btn secondary" onclick="goAddSite()" disabled style="margin-top: 1rem; width: 100%;">
+            Ajouter un site
+          </button>
+        </div>
+      </div>
+
+      <!-- Étape 3: Ajouter des équipements -->
+      <div class="form-section" style="margin-top: 2rem;">
+        <h3>
+          <span class="status-indicator status-disabled" id="equipStatus"></span>
+          3) Ajouter des équipements
+        </h3>
+        <p class="hint">Sélectionnez le client et le site pour activer ces actions.</p>
+        
+        <div class="equipment-types-grid">
+          <div class="equipment-type-card disabled" id="eclairagesCard" onclick="openEclairages()">
+            <div class="equipment-icon">
+              <img src="icons/appicon/eclairage.png" alt="Éclairages" style="width: 48px; height: 48px;">
+            </div>
+            <div class="equipment-title">Gérer les Éclairages</div>
+            <div class="equipment-description">Ajouter et modifier les éclairages de sécurité</div>
+          </div>
+
+          <div class="equipment-type-card disabled" id="extincteursCard" onclick="openExtincteurs()">
+            <div class="equipment-icon">
+              <img src="icons/appicon/ext.png" alt="Extincteurs" style="width: 48px; height: 48px;">
+            </div>
+            <div class="equipment-title">Gérer les Extincteurs</div>
+            <div class="equipment-description">Ajouter et modifier les extincteurs</div>
+          </div>
+
+          <div class="equipment-type-card disabled" id="riaCard" onclick="openRIA()">
+            <div class="equipment-icon">
+              <img src="icons/appicon/RIA.png" alt="RIA" style="width: 48px; height: 48px;">
+            </div>
+            <div class="equipment-title">Gérer les RIA</div>
+            <div class="equipment-description">Ajouter et modifier les RIA</div>
+          </div>
+
+          <div class="equipment-type-card disabled" id="alarmeCard" onclick="openAlarme()">
+            <div class="equipment-icon">
+              <img src="icons/appicon/alarme.png" alt="Alarme" style="width: 48px; height: 48px;">
+            </div>
+            <div class="equipment-title">Gérer les Alarmes</div>
+            <div class="equipment-description">Ajouter et modifier les alarmes</div>
+          </div>
+
+          <div class="equipment-type-card disabled" id="desenfumageCard" onclick="openDesenfumage()">
+            <div class="equipment-icon">
+              <img src="icons/appicon/DENFC.png" alt="Désenfumage" style="width: 48px; height: 48px;">
+            </div>
+            <div class="equipment-title">Gérer le Désenfumage</div>
+            <div class="equipment-description">Ajouter et modifier les équipements de désenfumage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sb = window.supabaseClient || (window.getSupabaseClient && window.getSupabaseClient());
+    
+    let selectedClientId = '';
+    let selectedSiteId = '';
+
+    function goBack() {
+      window.location.href = 'verification.html';
+    }
+
+    function updateSiteStatus() {
+      const status = document.getElementById('siteStatus');
+      if (selectedClientId) {
+        status.className = 'status-indicator status-ready';
+      } else {
+        status.className = 'status-indicator status-pending';
+      }
+    }
+
+    function updateEquipStatus() {
+      const status = document.getElementById('equipStatus');
+      if (selectedSiteId) {
+        status.className = 'status-indicator status-ready';
+      } else {
+        status.className = 'status-indicator status-disabled';
+      }
+    }
+
+    function enableSiteStage(enable) {
+      document.getElementById('searchSite').disabled = !enable;
+      document.getElementById('btnSearchSite').disabled = !enable;
+      document.getElementById('siteSelect').disabled = !enable;
+      document.getElementById('btnAddSite').disabled = !enable;
+      updateSiteStatus();
+    }
+
+    function enableEquipStage(enable) {
+      const cards = ['eclairagesCard', 'extincteursCard', 'riaCard', 'alarmeCard', 'desenfumageCard'];
+      cards.forEach(id => {
+        const card = document.getElementById(id);
+        if (card) {
+          if (enable) {
+            card.classList.remove('disabled');
+          } else {
+            card.classList.add('disabled');
+          }
+        }
+      });
+      updateEquipStatus();
+    }
+
+    async function searchClients() {
+      const term = (document.getElementById('searchClient').value || '').trim();
+      let q = sb.from('clients').select('id_client, nom_client, code_client').order('nom_client', { ascending: true }).limit(100);
+      if (term) {
+        q = q.ilike('nom_client', `%${term}%`);
+      }
+      const { data, error } = await q;
+      const sel = document.getElementById('clientSelect');
+      sel.innerHTML = '<option value="">— Sélectionner un client —</option>';
+      if (error) {
+        console.error(error);
+        showStatus('❌ Erreur lors de la recherche des clients', 'error');
+        return;
+      }
+      (data || []).forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id_client;
+        o.textContent = `${c.nom_client || ''} ${c.code_client ? `(#${c.code_client})` : ''}`;
+        sel.appendChild(o);
+      });
+    }
+
+    async function searchSites() {
+      const term = (document.getElementById('searchSite').value || '').trim();
+      const sel = document.getElementById('siteSelect');
+      if (!selectedClientId) {
+        sel.innerHTML = '<option value="">Sélectionnez d\'abord un client</option>';
+        return;
+      }
+      let q = sb.from('sites').select('id_site, nom_site, ville_site').eq('id_client', selectedClientId).order('nom_site', { ascending: true }).limit(200);
+      if (term) {
+        q = q.ilike('nom_site', `%${term}%`);
+      }
+      const { data, error } = await q;
+      sel.innerHTML = '<option value="">— Sélectionner un site —</option>';
+      if (error) {
+        console.error(error);
+        showStatus('❌ Erreur lors de la recherche des sites', 'error');
+        return;
+      }
+      (data || []).forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id_site;
+        o.textContent = `${s.nom_site || ''} ${s.ville_site ? `• ${s.ville_site}` : ''}`;
+        sel.appendChild(o);
+      });
+    }
+
+    function goAddSite() {
+      if (!selectedClientId) return;
+      window.location.href = `addSite.html?client=${encodeURIComponent(selectedClientId)}`;
+    }
+
+    // Fonctions d'ouverture des pages d'équipements (sans intervention)
+    function openEclairages() {
+      if (!selectedSiteId) return;
+      window.location.href = `eclairageSite.html?site=${encodeURIComponent(selectedSiteId)}`;
+    }
+
+    function openExtincteurs() {
+      if (!selectedSiteId) return;
+      window.location.href = `extSite.html?site=${encodeURIComponent(selectedSiteId)}`;
+    }
+
+    function openRIA() {
+      if (!selectedSiteId) return;
+      window.location.href = `verifSite.html?site=${encodeURIComponent(selectedSiteId)}`;
+    }
+
+    function openAlarme() {
+      if (!selectedSiteId) return;
+      window.location.href = `alarmeSite.html?site=${encodeURIComponent(selectedSiteId)}`;
+    }
+
+    function openDesenfumage() {
+      if (!selectedSiteId) return;
+      window.location.href = `desenfumageList.html?site=${encodeURIComponent(selectedSiteId)}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Pré-charger quelques clients
+      searchClients();
+
+      document.getElementById('clientSelect').addEventListener('change', (e) => {
+        selectedClientId = e.target.value || '';
+        enableSiteStage(!!selectedClientId);
+        selectedSiteId = '';
+        document.getElementById('siteSelect').value = '';
+        enableEquipStage(false);
+        if (selectedClientId) searchSites();
+      });
+
+      document.getElementById('siteSelect').addEventListener('change', (e) => {
+        selectedSiteId = e.target.value || '';
+        enableEquipStage(!!selectedSiteId);
+      });
+    });
+  </script>
+</body>
+</html>
+
+

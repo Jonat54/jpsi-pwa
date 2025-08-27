@@ -4,6 +4,10 @@
 class SimpleAuth {
     constructor() {
         this.currentClient = null;
+        this.OP_TOKEN_KEY = 'jpsi_operator_token';
+        this.OP_TOKEN_VERIFIED_AT_KEY = 'jpsi_operator_verified_at';
+        this.LEGACY_TOKEN_KEY = 'jpsi_token';
+        this.MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000; // 24h
     }
 
     // Vérifier si un client est connecté
@@ -20,23 +24,16 @@ class SimpleAuth {
     // Connexion simple avec token
     async login(clientId) {
         try {
-            const { data, error } = await supabase
-                .from('clients')
-                .select('id_client, nom_client, code_client')
-                .eq('id_client', clientId)
-                .single();
-
-            if (error) throw error;
-
+            // Mode Solo: aucune validation distante
             this.currentClient = {
-                id: data.id_client,
-                nom: data.nom_client,
-                code: data.code_client
+                id: null,
+                nom: 'Technicien',
+                code: 'TECH'
             };
 
-            // Stocker le token (simplement l'ID client)
-            localStorage.setItem('jpsi_token', clientId);
-            localStorage.setItem('jpsi_client_id', clientId);
+            // Barrière d'accès locale
+            localStorage.setItem('jpsi_token', String(clientId));
+            localStorage.setItem('jpsi_client_id', null);
 
             return { success: true, client: this.currentClient };
         } catch (error) {
@@ -48,85 +45,46 @@ class SimpleAuth {
     // Connexion avec token de la table tokens
     async loginWithToken(token) {
         try {
-            // Vérifier si Supabase est disponible
-            if (!window.supabase || !supabase) {
-                console.warn('⚠️ Supabase non disponible, stockage local du token');
-                // Stocker le token localement même si Supabase n'est pas disponible
-                localStorage.setItem('jpsi_token', token);
+            const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+            if (isOnline && window.supabase) {
+                // Vérifier le token opérateur côté Supabase (table tokens)
+                const { data, error } = await supabase
+                    .from('tokens')
+                    .select('*')
+                    .eq('token_value', token)
+                    .eq('is_active', true)
+                    .maybeSingle();
+
+                if (error || !data) {
+                    return { success: false, error: 'Token opérateur invalide' };
+                }
+
+                // Cache local pour usage offline
+                localStorage.setItem(this.OP_TOKEN_KEY, token);
+                localStorage.setItem(this.OP_TOKEN_VERIFIED_AT_KEY, String(Date.now()));
+                // Compat rétro
+                localStorage.setItem(this.LEGACY_TOKEN_KEY, token);
                 localStorage.setItem('jpsi_client_id', null);
-                
-                this.currentClient = {
-                    id: null,
-                    nom: 'Utilisateur',
-                    code: 'USER',
-                    isTechnician: false
-                };
-                
+
+                this.currentClient = { id: null, nom: 'Technicien', code: 'TECH', isTechnician: true };
                 return { success: true, client: this.currentClient };
             }
 
-            // Vérifier si le token existe dans la table tokens
-            const { data: tokenData, error: tokenError } = await supabase
-                .from('tokens')
-                .select('*')
-                .eq('token_value', token)
-                .eq('is_active', true)
-                .single();
-
-            if (tokenError || !tokenData) {
-                return { success: false, error: 'Token invalide' };
+            // Offline: accepter si le token correspond à celui déjà validé et mis en cache
+            const cached = localStorage.getItem(this.OP_TOKEN_KEY);
+            if (cached && cached === token) {
+                this.currentClient = { id: null, nom: 'Technicien', code: 'TECH', isTechnician: true };
+                // Compat rétro
+                localStorage.setItem(this.LEGACY_TOKEN_KEY, token);
+                localStorage.setItem('jpsi_client_id', null);
+                return { success: true, client: this.currentClient };
             }
 
-            // Vérifier si c'est un token de technicien ou de client
-            if (tokenData.user_type === 'technicien' || !tokenData.client_id) {
-                // Token de technicien - pas de client spécifique
-                this.currentClient = {
-                    id: null,
-                    nom: 'Technicien',
-                    code: 'TECH',
-                    isTechnician: true
-                };
-            } else {
-                // Token de client - récupérer les infos du client
-                const { data: clientData, error: clientError } = await supabase
-                    .from('clients')
-                    .select('id_client, nom_client, code_client')
-                    .eq('id_client', tokenData.client_id)
-                    .single();
-
-                if (clientError || !clientData) {
-                    return { success: false, error: 'Erreur lors de la récupération des données client' };
-                }
-
-                this.currentClient = {
-                    id: clientData.id_client,
-                    nom: clientData.nom_client,
-                    code: clientData.code_client,
-                    isTechnician: false
-                };
-            }
-
-            // Stocker le token et l'ID client (ou null si technicien)
-            localStorage.setItem('jpsi_token', token);
-            localStorage.setItem('jpsi_client_id', this.currentClient.id || null);
-
-            return { success: true, client: this.currentClient };
+            return { success: false, error: 'Hors ligne: token non validé auparavant' };
         } catch (error) {
             console.error('Erreur connexion avec token:', error);
-            
-            // En cas d'erreur, stocker quand même le token localement
-            console.warn('⚠️ Erreur de connexion, mais token stocké localement');
-            localStorage.setItem('jpsi_token', token);
-            localStorage.setItem('jpsi_client_id', null);
-            
-            this.currentClient = {
-                id: null,
-                nom: 'Utilisateur',
-                code: 'USER',
-                isTechnician: false
-            };
-            
-            return { success: true, client: this.currentClient };
+            return { success: false, error: error.message };
         }
     }
 
@@ -140,98 +98,33 @@ class SimpleAuth {
 
     // Vérifier la connexion au chargement
     async checkLogin() {
-        const token = localStorage.getItem('jpsi_token');
-        if (!token) return false;
+        const localToken = localStorage.getItem(this.OP_TOKEN_KEY) || localStorage.getItem(this.LEGACY_TOKEN_KEY);
+        if (!localToken) return false;
 
-        // Vérifier si Supabase est disponible
-        if (!window.supabase || !supabase) {
-            console.warn('⚠️ Supabase non disponible, utilisation du token local');
-            // Garder le token en local si Supabase n'est pas disponible
-            return true;
-        }
+        const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+        if (!isOnline) return true; // Offline: autoriser si token local présent
+
+        // Online: revalider périodiquement (toutes les 24h)
+        const last = Number(localStorage.getItem(this.OP_TOKEN_VERIFIED_AT_KEY) || 0);
+        const needsRefresh = !last || (Date.now() - last) > this.MAX_CACHE_AGE_MS;
+        if (!needsRefresh) return true;
+
+        if (!window.supabase) return true; // si supabase non prêt, ne bloque pas
 
         try {
-            // Vérifier si le token existe dans la table tokens
-            const { data: tokenData, error: tokenError } = await supabase
+            const { data, error } = await supabase
                 .from('tokens')
-                .select('*')
-                .eq('token_value', token)
+                .select('id')
+                .eq('token_value', localToken)
                 .eq('is_active', true)
-                .single();
-
-            if (tokenError || !tokenData) {
-                console.warn('⚠️ Token invalide ou erreur Supabase, déconnexion');
-                this.logout();
+                .maybeSingle();
+            if (error || !data) {
                 return false;
             }
-
-            // Vérifier si c'est un token de technicien ou de client
-            if (tokenData.user_type === 'technicien' || !tokenData.client_id) {
-                // Token de technicien - pas de client spécifique
-                this.currentClient = {
-                    id: null,
-                    nom: 'Technicien',
-                    code: 'TECH',
-                    isTechnician: true
-                };
-            } else {
-                // Token de client - récupérer les infos du client
-                const { data: clientData, error: clientError } = await supabase
-                    .from('clients')
-                    .select('id_client, nom_client, code_client')
-                    .eq('id_client', tokenData.client_id)
-                    .single();
-
-                if (clientError || !clientData) {
-                    console.warn('⚠️ Erreur récupération client, déconnexion');
-                    this.logout();
-                    return false;
-                }
-
-                this.currentClient = {
-                    id: clientData.id_client,
-                    nom: clientData.nom_client,
-                    code: clientData.code_client,
-                    isTechnician: false
-                };
-            }
-
+            localStorage.setItem(this.OP_TOKEN_VERIFIED_AT_KEY, String(Date.now()));
             return true;
-        } catch (error) {
-            console.error('Erreur vérification connexion:', error);
-            
-            // Mode hors ligne toléré pour la branche Vérification
-            const pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
-            const VERIF_ALLOW_LIST = [
-                'verification',
-                'newVerification.html',
-                'ongoingVerification.html',
-                'verificationDetail.html',
-                'verificationSummary.html',
-                'verificationHistory.html',
-                'verifSite.html',
-                'verifDes.html',
-                // Adjacent confirmés
-                'extSite.html',
-                'extDetail.html',
-                'eclairageSite.html',
-                'eclairageDetail.html',
-                'alarmeSite.html',
-                'desenfumageList.html',
-                'desenfumageDetail.html',
-                'desenfumageInstallation.html',
-                'desenfumageHierarchie.html'
-            ];
-            const isVerificationScope = VERIF_ALLOW_LIST.some(p => pathname.includes(p));
-
-            if (!navigator.onLine && isVerificationScope) {
-                console.log('✅ Hors ligne: accès autorisé à la branche Vérification avec token local');
-                return true;
-            }
-
-            // Si on est en ligne mais qu'il y a une erreur, ne pas déconnecter immédiatement
-            // Garder le token local pour éviter les déconnexions intempestives
-            console.warn('⚠️ Erreur de connexion, mais token conservé localement');
+        } catch (_) {
+            // En cas d’erreur réseau ponctuelle, ne pas bloquer
             return true;
         }
     }

@@ -1,209 +1,495 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JPSI - Hors ligne</title>
-    <style>
-        body {
-            min-height: 100vh;
-            margin: 0;
-            background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
-        }
-        
-        .offline-container {
-            background: linear-gradient(135deg, #fff 80%, #f3f4f6 100%);
-            border: 2.5px solid #d1d5db;
-            border-radius: 22px;
-            box-shadow: 0 6px 24px 0 rgba(30,32,36,0.18), 0 1.5px 0 #e5e7eb inset;
-            padding: 2.5rem 2.2rem 2.2rem 2.2rem;
-            max-width: 400px;
-            width: 90vw;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-        
-        .offline-icon {
-            width: 80px;
-            height: 80px;
-            background: #f44336;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            font-size: 2rem;
-            color: white;
-        }
-        
-        .offline-title {
-            font-size: 1.5rem;
-            color: #374151;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        
-        .offline-message {
-            font-size: 1rem;
-            color: #6b7280;
-            margin-bottom: 2rem;
-            line-height: 1.5;
-        }
-        
-        .offline-actions {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn-primary {
-            background: #9B2423;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #7a1d1c;
-            transform: translateY(-1px);
-        }
-        
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
-            border: 1px solid #d1d5db;
-        }
-        
-        .btn-secondary:hover {
-            background: #e5e7eb;
-        }
-        
-        .sync-status {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: #f9fafb;
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .sync-status h4 {
-            margin: 0 0 0.5rem 0;
-            font-size: 0.9rem;
-            color: #374151;
-        }
-        
-        .sync-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.25rem;
-            font-size: 0.8rem;
-        }
-        
-        .sync-count {
-            font-weight: 600;
-            color: #9B2423;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Préchargement des données pour mode offline - JPSI">
+  <title>JPSI - Préchargement Offline</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script src="js/offlineSync.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      min-height: 100vh;
+      justify-content: center;
+    }
+    
+    .header-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0 0 1rem 0;
+    }
+    
+    .header-subtitle {
+      font-size: 1.1rem;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .preload-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    .progress-container {
+      margin: 2rem 0;
+    }
+    
+    .progress-ring {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto;
+    }
+    
+    .progress-ring svg {
+      transform: rotate(-90deg);
+    }
+    
+    .progress-ring-bg {
+      stroke: #e5e7eb;
+      stroke-width: 8;
+      fill: none;
+    }
+    
+    .progress-ring-fill {
+      stroke: #9B2423;
+      stroke-width: 8;
+      fill: none;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s ease;
+    }
+    
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #23272b;
+    }
+    
+    .progress-label {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-top: 1rem;
+      min-height: 1.5rem;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+      padding: 1rem;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    
+    .status-loading {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .status-error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .info-card {
+      background: #f6f7f9;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+    
+    .info-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #23272b;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .info-text {
+      font-size: 0.9rem;
+      color: #6b7280;
+      margin: 0;
+      line-height: 1.5;
+    }
+    
+    .offline-indicator {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #f44336;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      z-index: 1000;
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        padding: 1rem;
+      }
+      
+      .header-card,
+      .preload-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="offline-container">
-        <div class="offline-icon">📶</div>
-        <h1 class="offline-title">Hors ligne</h1>
-        <p class="offline-message">
-            Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées, 
-            mais vous pouvez continuer à utiliser l'application avec les données en cache.
-        </p>
-        
-        <div class="offline-actions">
-            <button class="btn btn-primary" onclick="retryConnection()">
-                🔄 Réessayer
-            </button>
-            <a href="accueil.html" class="btn btn-secondary">
-                🏠 Accueil
-            </a>
-        </div>
-        
-        <div class="sync-status">
-            <h4>📊 Données en attente</h4>
-            <div class="sync-item">
-                <span>Vérifications :</span>
-                <span class="sync-count" id="pendingVerifications">0</span>
-            </div>
-            <div class="sync-item">
-                <span>Nouveaux équipements :</span>
-                <span class="sync-count" id="pendingEquipments">0</span>
-            </div>
-            <div class="sync-item">
-                <span>Modifications :</span>
-                <span class="sync-count" id="pendingModifications">0</span>
-            </div>
-        </div>
-    </div>
+  <div class="offline-indicator" id="offlineIndicator" style="display: none;">
+    📴 Mode Hors Ligne
+  </div>
 
-    <script>
-        // Vérifier la connexion
-        function retryConnection() {
-            if (navigator.onLine) {
-                window.location.reload();
-            } else {
-                alert('Pas de connexion internet détectée');
-            }
+  <div class="container">
+    <div class="header-card">
+      <h1 class="header-title">🚀 Mode Offline-First</h1>
+      <p class="header-subtitle">Préchargement intelligent des données</p>
+    </div>
+    
+    <div class="preload-card">
+      <div class="progress-container">
+        <div class="progress-ring">
+          <svg width="120" height="120">
+            <circle class="progress-ring-bg" cx="60" cy="60" r="52"></circle>
+            <circle class="progress-ring-fill" cx="60" cy="60" r="52" 
+                    stroke-dasharray="326.73" stroke-dashoffset="326.73" id="progressRing"></circle>
+          </svg>
+          <div class="progress-text" id="progressText">0%</div>
+        </div>
+        <div class="progress-label" id="progressLabel">Prêt à précharger</div>
+      </div>
+      
+      <div class="status-indicator" id="statusIndicator" style="display: none;">
+        <span id="statusIcon">⏳</span>
+        <span id="statusText">Chargement...</span>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="preloadBtn" onclick="startPreload()">
+          🚀 Démarrer le Préchargement
+        </button>
+        <button class="btn btn-secondary" id="cancelBtn" onclick="cancelPreload()" style="display: none;">
+          ❌ Annuler
+        </button>
+      </div>
+      
+      <div class="info-card">
+        <h3 class="info-title">💡 Avantages du mode Offline-First</h3>
+        <p class="info-text">
+          • <strong>Travail 100% offline</strong> : Une fois préchargé, plus besoin de connexion<br>
+          • <strong>Synchronisation à la fin</strong> : Toutes les données envoyées en une fois<br>
+          • <strong>Performance optimale</strong> : Pas d'attente réseau pendant la vérification<br>
+          • <strong>Fiabilité maximale</strong> : Fonctionne même avec une connexion instable
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let isPreloading = false;
+    let currentInterventionId = null;
+    let currentSiteId = null;
+    
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        // Récupérer les paramètres de l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        currentInterventionId = urlParams.get('intervention');
+        currentSiteId = urlParams.get('site');
+        
+        if (!currentInterventionId || !currentSiteId) {
+          showError('Paramètres manquants. Veuillez revenir à la page précédente.');
+          return;
         }
         
-        // Mettre à jour les compteurs de données en attente
-        async function updatePendingCounts() {
-            try {
-                // Vérifier si IndexedDB est disponible
-                if (window.indexedDBManager) {
-                    const verifications = await indexedDBManager.getData('pendingVerifications');
-                    const newEquipments = await indexedDBManager.getData('newEquipments');
-                    const modifiedEquipments = await indexedDBManager.getData('modifiedEquipments');
-                    
-                    document.getElementById('pendingVerifications').textContent = verifications.length;
-                    document.getElementById('pendingEquipments').textContent = newEquipments.length;
-                    document.getElementById('pendingModifications').textContent = modifiedEquipments.length;
-                } else {
-                    // Fallback localStorage
-                    const verifications = JSON.parse(localStorage.getItem('jpsi_pendingVerifications') || '[]');
-                    const newEquipments = JSON.parse(localStorage.getItem('jpsi_newEquipments') || '[]');
-                    const modifiedEquipments = JSON.parse(localStorage.getItem('jpsi_modifiedEquipments') || '[]');
-                    
-                    document.getElementById('pendingVerifications').textContent = verifications.length;
-                    document.getElementById('pendingEquipments').textContent = newEquipments.length;
-                    document.getElementById('pendingModifications').textContent = modifiedEquipments.length;
-                }
-            } catch (error) {
-                console.error('❌ Erreur mise à jour compteurs:', error);
-            }
+        // Vérifier la connectivité
+        updateConnectivityStatus();
+        
+        // Vérifier si déjà préchargé
+        if (window.offlineFirstManager && window.offlineFirstManager.isDataPreloaded(currentSiteId, currentInterventionId)) {
+          showAlreadyPreloaded();
         }
         
-        // Écouter les changements de connexion
-        window.addEventListener('online', () => {
-            window.location.reload();
+        // Écouter les changements de connectivité
+        window.addEventListener('online', updateConnectivityStatus);
+        window.addEventListener('offline', updateConnectivityStatus);
+        
+      } catch (error) {
+        console.error('❌ Erreur d\'initialisation:', error);
+        showError('Erreur d\'initialisation: ' + error.message);
+      }
+    });
+    
+    // Mettre à jour le statut de connectivité
+    function updateConnectivityStatus() {
+      const indicator = document.getElementById('offlineIndicator');
+      const preloadBtn = document.getElementById('preloadBtn');
+      
+      if (!navigator.onLine) {
+        indicator.style.display = 'block';
+        preloadBtn.disabled = true;
+        preloadBtn.textContent = '📴 Hors ligne - Impossible de précharger';
+      } else {
+        indicator.style.display = 'none';
+        preloadBtn.disabled = false;
+        preloadBtn.textContent = '🚀 Démarrer le Préchargement';
+      }
+    }
+    
+    // Démarrer le préchargement
+    async function startPreload() {
+      if (isPreloading || !navigator.onLine) return;
+      
+      isPreloading = true;
+      updateUI('loading');
+      
+      try {
+        console.log('🚀 Début du préchargement intelligent...');
+        
+        // Utiliser le nouveau OfflineFirstManager
+        const success = await window.offlineFirstManager.preloadInterventionData(
+          parseInt(currentInterventionId),
+          parseInt(currentSiteId),
+          updateProgress
+        );
+        
+        if (success) {
+          updateUI('success');
+          console.log('✅ Préchargement terminé avec succès');
+          
+          // Rediriger vers la vérification après 2 secondes
+          setTimeout(() => {
+            const params = new URLSearchParams({
+              site: currentSiteId,
+              intervention: currentInterventionId
+            });
+            window.location.href = `verifSite.html?${params.toString()}`;
+          }, 2000);
+          
+        } else {
+          updateUI('error');
+          console.error('❌ Échec du préchargement');
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du préchargement:', error);
+        updateUI('error');
+      } finally {
+        isPreloading = false;
+      }
+    }
+    
+    // Annuler le préchargement
+    function cancelPreload() {
+      if (!isPreloading) return;
+      
+      isPreloading = false;
+      updateUI('idle');
+      console.log('❌ Préchargement annulé par l\'utilisateur');
+    }
+    
+    // Mettre à jour la progression
+    function updateProgress(progress, label) {
+      const progressText = document.getElementById('progressText');
+      const progressLabel = document.getElementById('progressLabel');
+      const progressRing = document.getElementById('progressRing');
+      
+      progressText.textContent = `${progress}%`;
+      progressLabel.textContent = label;
+      
+      // Calculer l'offset du cercle de progression
+      const circumference = 2 * Math.PI * 52;
+      const offset = circumference - (progress / 100) * circumference;
+      progressRing.style.strokeDashoffset = offset;
+    }
+    
+    // Mettre à jour l'interface utilisateur
+    function updateUI(status) {
+      const statusIndicator = document.getElementById('statusIndicator');
+      const statusIcon = document.getElementById('statusIcon');
+      const statusText = document.getElementById('statusText');
+      const preloadBtn = document.getElementById('preloadBtn');
+      const cancelBtn = document.getElementById('cancelBtn');
+      
+      // Retirer toutes les classes de statut
+      statusIndicator.classList.remove('status-loading', 'status-success', 'status-error');
+      
+      switch (status) {
+        case 'loading':
+          statusIndicator.style.display = 'flex';
+          statusIndicator.classList.add('status-loading');
+          statusIcon.textContent = '⏳';
+          statusText.textContent = 'Préchargement en cours...';
+          preloadBtn.style.display = 'none';
+          cancelBtn.style.display = 'block';
+          break;
+          
+        case 'success':
+          statusIndicator.style.display = 'flex';
+          statusIndicator.classList.add('status-success');
+          statusIcon.textContent = '✅';
+          statusText.textContent = 'Préchargement terminé ! Redirection...';
+          preloadBtn.style.display = 'none';
+          cancelBtn.style.display = 'none';
+          break;
+          
+        case 'error':
+          statusIndicator.style.display = 'flex';
+          statusIndicator.classList.add('status-error');
+          statusIcon.textContent = '❌';
+          statusText.textContent = 'Erreur lors du préchargement';
+          preloadBtn.style.display = 'block';
+          preloadBtn.textContent = '🔄 Réessayer';
+          cancelBtn.style.display = 'none';
+          break;
+          
+        case 'idle':
+        default:
+          statusIndicator.style.display = 'none';
+          preloadBtn.style.display = 'block';
+          preloadBtn.textContent = '🚀 Démarrer le Préchargement';
+          cancelBtn.style.display = 'none';
+          break;
+      }
+    }
+    
+    // Afficher une erreur
+    function showError(message) {
+      const statusIndicator = document.getElementById('statusIndicator');
+      const statusIcon = document.getElementById('statusIcon');
+      const statusText = document.getElementById('statusText');
+      
+      statusIndicator.style.display = 'flex';
+      statusIndicator.classList.add('status-error');
+      statusIcon.textContent = '❌';
+      statusText.textContent = message;
+    }
+    
+    // Afficher que c'est déjà préchargé
+    function showAlreadyPreloaded() {
+      updateProgress(100, '✅ Données déjà préchargées');
+      updateUI('success');
+      
+      setTimeout(() => {
+        const params = new URLSearchParams({
+          site: currentSiteId,
+          intervention: currentInterventionId
         });
-        
-        // Mettre à jour les compteurs au chargement
-        document.addEventListener('DOMContentLoaded', updatePendingCounts);
-        
-        // Mettre à jour périodiquement
-        setInterval(updatePendingCounts, 5000);
-    </script>
+        window.location.href = `verifSite.html?${params.toString()}`;
+      }, 1000);
+    }
+  </script>
 </body>
 </html>

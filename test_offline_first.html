@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Mode Offline-First - JPSI</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script src="js/offlineSync.js"></script>
+  <style>
+    body {
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      color: white;
+      padding: 2rem;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 2rem;
+      backdrop-filter: blur(10px);
+    }
+    
+    .test-section {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .test-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #9B2423;
+    }
+    
+    .test-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 0.5rem;
+      font-size: 1rem;
+    }
+    
+    .test-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .test-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .status {
+      margin: 1rem 0;
+      padding: 1rem;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    
+    .status.success {
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid #22c55e;
+    }
+    
+    .status.error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+    }
+    
+    .status.info {
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid #3b82f6;
+    }
+    
+    .log {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: #9B2423;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Test Mode Offline-First</h1>
+    <p>Page de test pour valider le nouveau système offline-first</p>
+    
+    <div class="test-section">
+      <h2 class="test-title">🔧 Tests de Base</h2>
+      <button class="test-button" onclick="testIndexedDB()">Test IndexedDB</button>
+      <button class="test-button" onclick="testSyncManager()">Test SyncManager</button>
+      <button class="test-button" onclick="testOfflineFirstManager()">Test OfflineFirstManager</button>
+      <div id="baseStatus" class="status info">En attente des tests...</div>
+    </div>
+    
+    <div class="test-section">
+      <h2 class="test-title">🚀 Test Préchargement</h2>
+      <input type="number" id="siteId" placeholder="ID Site" value="1" style="padding: 0.5rem; margin: 0.5rem; border-radius: 4px; border: none;">
+      <input type="number" id="interventionId" placeholder="ID Intervention" value="1" style="padding: 0.5rem; margin: 0.5rem; border-radius: 4px; border: none;">
+      <br>
+      <button class="test-button" onclick="testPreload()">Test Préchargement</button>
+      <button class="test-button" onclick="testPreloadStatus()">Statut Préchargement</button>
+      <button class="test-button" onclick="clearPreloadedData()">Nettoyer Données</button>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div id="preloadStatus" class="status info">En attente du préchargement...</div>
+    </div>
+    
+    <div class="test-section">
+      <h2 class="test-title">📊 Tests de Synchronisation</h2>
+      <button class="test-button" onclick="testSyncQueue()">Test File d'Attente</button>
+      <button class="test-button" onclick="testForceSync()">Test Sync Forcée</button>
+      <button class="test-button" onclick="testSyncStatus()">Statut Sync</button>
+      <div id="syncStatus" class="status info">En attente des tests de sync...</div>
+    </div>
+    
+         <div class="test-section">
+       <h2 class="test-title">📝 Logs</h2>
+               <button class="test-button" onclick="clearLogs()">Nettoyer Logs</button>
+        <button class="test-button" onclick="window.location.href='clear_indexeddb.html'">🧹 Nettoyer IndexedDB</button>
+        <button class="test-button" onclick="forceCleanIndexedDB()" style="background: #dc2626;">🚨 Nettoyage d'Urgence</button>
+        <button class="test-button" onclick="clearSyncQueue()" style="background: #f59e0b;">🧹 Nettoyer File Sync</button>
+       <div class="log" id="logContainer"></div>
+     </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Fonction de logging
+    function log(message) {
+      const logContainer = document.getElementById('logContainer');
+      const timestamp = new Date().toLocaleTimeString();
+      logContainer.textContent += `[${timestamp}] ${message}\n`;
+      logContainer.scrollTop = logContainer.scrollHeight;
+      console.log(message);
+    }
+    
+         // Test IndexedDB
+     async function testIndexedDB() {
+       const status = document.getElementById('baseStatus');
+       try {
+         log('🧪 Test IndexedDB...');
+         
+         // Vérifier si l'instance existe
+         if (typeof indexedDBManager === 'undefined') {
+           throw new Error('IndexedDBManager non disponible - instance globale manquante');
+         }
+         
+         await indexedDBManager.init();
+         log('✅ IndexedDB initialisé');
+         
+         // Test de sauvegarde
+         await indexedDBManager.saveData('clients', { id_client: 1, nom_client: 'Test Client' });
+         log('✅ Test de sauvegarde réussi');
+         
+         // Test de lecture
+         const data = await indexedDBManager.getData('clients');
+         log(`✅ Test de lecture réussi: ${JSON.stringify(data)}`);
+         
+         status.className = 'status success';
+         status.textContent = '✅ IndexedDB fonctionne correctement';
+         
+       } catch (error) {
+         log(`❌ Erreur IndexedDB: ${error.message}`);
+         status.className = 'status error';
+         status.textContent = `❌ Erreur IndexedDB: ${error.message}`;
+       }
+     }
+    
+         // Test SyncManager
+     async function testSyncManager() {
+       const status = document.getElementById('baseStatus');
+       try {
+         log('🧪 Test SyncManager...');
+         
+         if (typeof syncManager === 'undefined') {
+           throw new Error('SyncManager non disponible - instance globale manquante');
+         }
+         
+         log('✅ SyncManager disponible');
+         log(`📡 Statut réseau: ${syncManager.isOnline ? 'En ligne' : 'Hors ligne'}`);
+         
+         status.className = 'status success';
+         status.textContent = '✅ SyncManager fonctionne correctement';
+         
+       } catch (error) {
+         log(`❌ Erreur SyncManager: ${error.message}`);
+         status.className = 'status error';
+         status.textContent = `❌ Erreur SyncManager: ${error.message}`;
+       }
+     }
+    
+         // Test OfflineFirstManager
+     async function testOfflineFirstManager() {
+       const status = document.getElementById('baseStatus');
+       try {
+         log('🧪 Test OfflineFirstManager...');
+         
+         if (typeof offlineFirstManager === 'undefined') {
+           throw new Error('OfflineFirstManager non disponible - instance globale manquante');
+         }
+         
+         const preloadStatus = offlineFirstManager.getPreloadStatus();
+         log(`✅ OfflineFirstManager disponible`);
+         log(`📊 Statut préchargement: ${JSON.stringify(preloadStatus)}`);
+         
+         status.className = 'status success';
+         status.textContent = '✅ OfflineFirstManager fonctionne correctement';
+         
+       } catch (error) {
+         log(`❌ Erreur OfflineFirstManager: ${error.message}`);
+         status.className = 'status error';
+         status.textContent = `❌ Erreur OfflineFirstManager: ${error.message}`;
+       }
+     }
+    
+    // Test Préchargement
+    async function testPreload() {
+      const status = document.getElementById('preloadStatus');
+      const progressFill = document.getElementById('progressFill');
+      const siteId = parseInt(document.getElementById('siteId').value);
+      const interventionId = parseInt(document.getElementById('interventionId').value);
+      
+      try {
+        log(`🚀 Test préchargement pour site ${siteId}, intervention ${interventionId}...`);
+        status.className = 'status info';
+        status.textContent = '⏳ Préchargement en cours...';
+        
+                 const success = await offlineFirstManager.preloadInterventionData(
+           interventionId,
+           siteId,
+           (progress, label) => {
+             progressFill.style.width = `${progress}%`;
+             log(`📊 Progression: ${progress}% - ${label}`);
+           }
+         );
+        
+        if (success) {
+          log('✅ Préchargement réussi');
+          status.className = 'status success';
+          status.textContent = '✅ Préchargement terminé avec succès';
+        } else {
+          throw new Error('Échec du préchargement');
+        }
+        
+      } catch (error) {
+        log(`❌ Erreur préchargement: ${error.message}`);
+        status.className = 'status error';
+        status.textContent = `❌ Erreur préchargement: ${error.message}`;
+      }
+    }
+    
+    // Test Statut Préchargement
+    async function testPreloadStatus() {
+      const status = document.getElementById('preloadStatus');
+      const siteId = parseInt(document.getElementById('siteId').value);
+      const interventionId = parseInt(document.getElementById('interventionId').value);
+      
+      try {
+        log('📊 Vérification statut préchargement...');
+        
+                 const isPreloaded = offlineFirstManager.isDataPreloaded(siteId, interventionId);
+         const preloadStatus = offlineFirstManager.getPreloadStatus();
+        
+        log(`🔍 Données préchargées: ${isPreloaded ? 'Oui' : 'Non'}`);
+        log(`📊 Statut complet: ${JSON.stringify(preloadStatus)}`);
+        
+        status.className = 'status success';
+        status.textContent = `📊 Préchargé: ${isPreloaded ? 'Oui' : 'Non'} | Sites: ${preloadStatus.preloadedSites} | Interventions: ${preloadStatus.preloadedInterventions}`;
+        
+      } catch (error) {
+        log(`❌ Erreur statut: ${error.message}`);
+        status.className = 'status error';
+        status.textContent = `❌ Erreur statut: ${error.message}`;
+      }
+    }
+    
+    // Nettoyer données préchargées
+    async function clearPreloadedData() {
+      const status = document.getElementById('preloadStatus');
+      try {
+        log('🧹 Nettoyage des données préchargées...');
+        
+                 await offlineFirstManager.clearPreloadedData();
+        
+        log('✅ Données préchargées nettoyées');
+        status.className = 'status success';
+        status.textContent = '✅ Données préchargées nettoyées';
+        
+      } catch (error) {
+        log(`❌ Erreur nettoyage: ${error.message}`);
+        status.className = 'status error';
+        status.textContent = `❌ Erreur nettoyage: ${error.message}`;
+      }
+    }
+    
+    // Test File d'Attente
+    async function testSyncQueue() {
+      const status = document.getElementById('syncStatus');
+      try {
+        log('🧪 Test file d\'attente de synchronisation...');
+        
+                 if (typeof offlineSyncManager === 'undefined') {
+           throw new Error('OfflineSyncManager non disponible - instance globale manquante');
+         }
+         
+         // Ajouter un élément de test
+         const syncId = await offlineSyncManager.addToSyncQueue({
+          type: 'insert',
+          table: 'pendingVerifications',
+          data: { 
+            id_equipement: 999, 
+            type_equipement: 'extincteur',
+            statut: 'Test Sync',
+            date_verification: new Date().toISOString()
+          }
+        });
+        
+        log(`✅ Élément ajouté à la file: ${syncId}`);
+        
+        const syncStatus = offlineSyncManager.getSyncStatus();
+        log(`📊 Statut file: ${JSON.stringify(syncStatus)}`);
+        
+        status.className = 'status success';
+        status.textContent = `✅ File d'attente: ${syncStatus.total} éléments`;
+        
+      } catch (error) {
+        log(`❌ Erreur file d'attente: ${error.message}`);
+        status.className = 'status error';
+        status.textContent = `❌ Erreur file d'attente: ${error.message}`;
+      }
+    }
+    
+    // Test Sync Forcée
+    async function testForceSync() {
+      const status = document.getElementById('syncStatus');
+      try {
+        log('🔄 Test synchronisation forcée...');
+        
+                 await offlineSyncManager.forceSync();
+        
+        log('✅ Synchronisation forcée terminée');
+        status.className = 'status success';
+        status.textContent = '✅ Synchronisation forcée terminée';
+        
+      } catch (error) {
+        log(`❌ Erreur sync forcée: ${error.message}`);
+        status.className = 'status error';
+        status.textContent = `❌ Erreur sync forcée: ${error.message}`;
+      }
+    }
+    
+    // Test Statut Sync
+    async function testSyncStatus() {
+      const status = document.getElementById('syncStatus');
+      try {
+        log('📊 Vérification statut synchronisation...');
+        
+        const syncStatus = offlineSyncManager.getSyncStatus();
+        log(`📊 Statut sync: ${JSON.stringify(syncStatus)}`);
+        
+        status.className = 'status success';
+        status.textContent = `📊 Sync: ${syncStatus.total} total, ${syncStatus.pending} en attente, ${syncStatus.failed} échecs`;
+        
+      } catch (error) {
+        log(`❌ Erreur statut sync: ${error.message}`);
+        status.className = 'status error';
+        status.textContent = `❌ Erreur statut sync: ${error.message}`;
+      }
+    }
+    
+         // Nettoyer logs
+     function clearLogs() {
+       document.getElementById('logContainer').textContent = '';
+       log('🧹 Logs nettoyés');
+     }
+     
+           // Nettoyer file d'attente de synchronisation
+      async function clearSyncQueue() {
+        try {
+          log('🧹 Nettoyage de la file d\'attente de synchronisation...');
+          
+          if (typeof offlineSyncManager !== 'undefined') {
+            // Vider la file d'attente
+            await offlineSyncManager.clearQueue();
+            log('✅ File d\'attente de synchronisation nettoyée');
+          } else {
+            // Fallback : nettoyer directement localStorage
+            localStorage.removeItem('jpsi_sync_queue');
+            log('✅ File d\'attente nettoyée via localStorage');
+          }
+          
+        } catch (error) {
+          log(`❌ Erreur nettoyage file sync: ${error.message}`);
+          // Fallback en cas d'erreur
+          try {
+            localStorage.removeItem('jpsi_sync_queue');
+            log('✅ Nettoyage de secours via localStorage');
+          } catch (fallbackError) {
+            log(`❌ Échec du nettoyage de secours: ${fallbackError.message}`);
+          }
+        }
+      }
+    
+         // Nettoyer IndexedDB automatiquement si erreur de version
+     async function forceCleanIndexedDB() {
+       try {
+         log('🧹 Nettoyage forcé d\'IndexedDB...');
+         const deleteRequest = indexedDB.deleteDatabase('JPSIDatabase');
+         
+         deleteRequest.onsuccess = function() {
+           log('✅ IndexedDB supprimé avec succès');
+           log('🔄 Rechargement de la page...');
+           setTimeout(() => window.location.reload(), 1000);
+         };
+         
+         deleteRequest.onerror = function() {
+           log('❌ Erreur lors de la suppression');
+         };
+         
+       } catch (error) {
+         log(`❌ Erreur nettoyage: ${error.message}`);
+       }
+     }
+     
+     // Initialisation
+     document.addEventListener('DOMContentLoaded', function() {
+       log('🚀 Page de test initialisée');
+       log(`📱 User Agent: ${navigator.userAgent}`);
+       log(`🌐 En ligne: ${navigator.onLine}`);
+       log(`💾 IndexedDB supporté: ${'indexedDB' in window}`);
+       log(`🔧 Service Worker supporté: ${'serviceWorker' in navigator}`);
+       
+       // Vérifier si IndexedDB fonctionne
+       setTimeout(async () => {
+         try {
+                    if (typeof indexedDBManager !== 'undefined') {
+           await indexedDBManager.init();
+             log('✅ IndexedDB initialisé correctement');
+           }
+         } catch (error) {
+           if (error.message.includes('higher version')) {
+             log('⚠️ Conflit de version IndexedDB détecté');
+             log('🔄 Nettoyage automatique en cours...');
+             await forceCleanIndexedDB();
+           }
+         }
+       }, 1000);
+     });
+  </script>
+</body>
+</html>

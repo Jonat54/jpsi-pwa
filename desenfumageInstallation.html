@@ -794,6 +794,11 @@
       // Récupérer les données du formulaire
       const formData = new FormData(event.target);
       
+      // Récupérer les données des éléments dynamiques
+      const ouvrants = collectOuvrantsData();
+      const commandesPrimaires = collectCommandesPrimairesData();
+      const commandesSecondaires = collectCommandesSecondairesData();
+      
       // Données de l'installation
       const installationData = {
         id_site: currentSite.id_site,
@@ -801,6 +806,9 @@
         nom_installation: formData.get('nomInstallation'),
         localisation_installation: formData.get('localisationInstallation'),
         observations: formData.get('observations'),
+        ouvrants: ouvrants,
+        commandes_primaires: commandesPrimaires,
+        commandes_secondaires: commandesSecondaires,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -818,6 +826,9 @@
         // TODO: Implémenter la sauvegarde complète avec les relations
         // Pour l'instant, on affiche juste un message de succès
         console.log('✅ Installation sauvegardée avec succès !');
+        console.log('📋 Ouvrants:', ouvrants);
+        console.log('🎛️ Commandes primaires:', commandesPrimaires);
+        console.log('⚡ Commandes secondaires:', commandesSecondaires);
         alert('✅ Installation sauvegardée avec succès !\n\nNote: La sauvegarde complète avec les relations sera implémentée une fois la base de données mise à jour.');
         
         // Rediriger vers la liste
@@ -832,6 +843,93 @@
         saveButtonText.textContent = 'Enregistrer l\'installation';
         document.getElementById('installationForm').classList.remove('loading');
       }
+    }
+    
+    // Fonction pour collecter les données des ouvrants
+    function collectOuvrantsData() {
+      const ouvrants = [];
+      const ouvrantsList = document.getElementById('ouvrantsList');
+      const ouvrantItems = ouvrantsList.querySelectorAll('.list-item');
+      
+      ouvrantItems.forEach((item, index) => {
+        const numero = item.querySelector(`input[name^="numeroOuvrant_"]`)?.value || '';
+        const niveau = item.querySelector(`input[name^="niveauOuvrant_"]`)?.value || '';
+        const localisation = item.querySelector(`input[name^="localisationOuvrant_"]`)?.value || '';
+        const type = item.querySelector(`select[name^="typeOuvrant_"]`)?.value || '';
+        const observations = item.querySelector(`textarea[name^="observationsOuvrant_"]`)?.value || '';
+        
+        if (numero || niveau || localisation || type || observations) {
+          ouvrants.push({
+            numero: numero,
+            niveau: niveau,
+            localisation: localisation,
+            type: type,
+            observations: observations
+          });
+        }
+      });
+      
+      return ouvrants;
+    }
+    
+    // Fonction pour collecter les données des commandes primaires
+    function collectCommandesPrimairesData() {
+      const commandes = [];
+      const commandesList = document.getElementById('commandesPrimairesList');
+      const commandeItems = commandesList.querySelectorAll('.list-item');
+      
+      commandeItems.forEach((item, index) => {
+        const numero = item.querySelector(`input[name^="numeroCommandePrimaire_"]`)?.value || '';
+        const niveau = item.querySelector(`input[name^="niveauCommandePrimaire_"]`)?.value || '';
+        const localisation = item.querySelector(`input[name^="localisationCommandePrimaire_"]`)?.value || '';
+        const type = item.querySelector(`select[name^="typeCommandePrimaire_"]`)?.value || '';
+        const grammageOuverture = item.querySelector(`input[name^="grammageOuverture_"]`)?.value || '';
+        const grammageFermeture = item.querySelector(`input[name^="grammageFermeture_"]`)?.value || '';
+        const observations = item.querySelector(`textarea[name^="observationsCommandePrimaire_"]`)?.value || '';
+        
+        if (numero || niveau || localisation || type || observations) {
+          commandes.push({
+            numero: numero,
+            niveau: niveau,
+            localisation: localisation,
+            type: type,
+            grammage_ouverture: grammageOuverture,
+            grammage_fermeture: grammageFermeture,
+            observations: observations
+          });
+        }
+      });
+      
+      return commandes;
+    }
+    
+    // Fonction pour collecter les données des commandes secondaires
+    function collectCommandesSecondairesData() {
+      const commandes = [];
+      const commandesList = document.getElementById('commandesSecondairesList');
+      const commandeItems = commandesList.querySelectorAll('.list-item');
+      
+      commandeItems.forEach((item, index) => {
+        const numero = item.querySelector(`input[name^="numeroCommandeSecondaire_"]`)?.value || '';
+        const niveau = item.querySelector(`input[name^="niveauCommandeSecondaire_"]`)?.value || '';
+        const localisation = item.querySelector(`input[name^="localisationCommandeSecondaire_"]`)?.value || '';
+        const type = item.querySelector(`select[name^="typeCommandeSecondaire_"]`)?.value || '';
+        const grammage = item.querySelector(`input[name^="grammageSecondaire_"]`)?.value || '';
+        const observations = item.querySelector(`textarea[name^="observationsCommandeSecondaire_"]`)?.value || '';
+        
+        if (numero || niveau || localisation || type || observations) {
+          commandes.push({
+            numero: numero,
+            niveau: niveau,
+            localisation: localisation,
+            type: type,
+            grammage: grammage,
+            observations: observations
+          });
+        }
+      });
+      
+      return commandes;
     }
     
     // Fonction pour retourner à la page précédente

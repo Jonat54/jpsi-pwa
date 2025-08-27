@@ -215,3 +215,148 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ JPSI PWA initialisée');
   }, 500);
 });
+
+// ------------------------------------------------------------
+// Notifier global (toasts unifiés: success/info/warning/error)
+// Couleurs: vert (success), bleu (info), jaune (warning), rouge (error)
+// ------------------------------------------------------------
+(function initGlobalNotifier() {
+  if (window.Notifier) return; // éviter double init
+
+  const THEME = {
+    success: { bg: '#10b981', text: '#ffffff', icon: '✅' },
+    info:    { bg: '#3b82f6', text: '#ffffff', icon: 'ℹ️' },
+    warning: { bg: '#f59e0b', text: '#1f2937', icon: '⚠️' },
+    error:   { bg: '#ef4444', text: '#ffffff', icon: '❌' }
+  };
+
+  function ensureStyles() {
+    if (document.getElementById('notifier-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'notifier-styles';
+    style.textContent = `
+      .notifier-container{position:fixed;top:20px;right:20px;z-index:2147483647;display:flex;flex-direction:column;gap:10px;max-width:360px}
+      .notifier-toast{display:flex;align-items:flex-start;gap:10px;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.15);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;word-break:break-word}
+      .notifier-icon{font-size:18px;line-height:1;margin-top:1px}
+      .notifier-text{color:inherit}
+      .notifier-close{margin-left:8px;background:transparent;border:0;color:inherit;cursor:pointer;font-size:16px}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function getContainer() {
+    let el = document.getElementById('notifier-container');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'notifier-container';
+      el.className = 'notifier-container';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function normalizeType(type) {
+    if (!type) return 'info';
+    const t = String(type).toLowerCase();
+    if (t.startsWith('succ')) return 'success';
+    if (t.startsWith('warn') || t === 'warning' || t === 'yellow') return 'warning';
+    if (t.startsWith('err') || t === 'danger' || t === 'red') return 'error';
+    if (t === 'blue' || t === 'info') return 'info';
+    return ['success','info','warning','error'].includes(t) ? t : 'info';
+  }
+
+  const recent = new Map(); // message -> timestamp
+
+  function show(message, type = 'info', options = {}) {
+    try {
+      ensureStyles();
+      const container = getContainer();
+      const t = normalizeType(type);
+      const theme = THEME[t] || THEME.info;
+      const text = String(message ?? '').trim();
+
+      // Anti-spam (même message < 1.5s)
+      const now = Date.now();
+      const key = `${t}:${text}`;
+      const last = recent.get(key) || 0;
+      if (now - last < 1500) return;
+      recent.set(key, now);
+
+      const toast = document.createElement('div');
+      toast.className = 'notifier-toast';
+      toast.setAttribute('role', 'alert');
+      toast.style.background = theme.bg;
+      toast.style.color = theme.text;
+
+      const icon = document.createElement('div');
+      icon.className = 'notifier-icon';
+      icon.textContent = options.icon || theme.icon;
+
+      const span = document.createElement('div');
+      span.className = 'notifier-text';
+      span.textContent = text;
+
+      const close = document.createElement('button');
+      close.className = 'notifier-close';
+      close.setAttribute('aria-label', 'Fermer');
+      close.textContent = '×';
+      close.onclick = () => toast.remove();
+
+      toast.appendChild(icon);
+      toast.appendChild(span);
+      toast.appendChild(close);
+      container.appendChild(toast);
+
+      const ttl = options.ttl ?? (t === 'error' ? 5000 : t === 'warning' ? 4500 : 3500);
+      setTimeout(() => toast.remove(), ttl);
+    } catch (e) {
+      // En dernier recours, fallback console
+      console[t === 'error' ? 'error' : 'log']('Notifier:', type, message);
+    }
+  }
+
+  function auto(message) {
+    const text = String(message ?? '');
+    const m = text.trim();
+    if (m.startsWith('✅')) return show(m, 'success');
+    if (m.startsWith('⚠️')) return show(m, 'warning');
+    if (m.startsWith('❌') || /erreur|error|failed/i.test(m)) return show(m, 'error');
+    if (/latence|lent|attente|patientez/i.test(m)) return show(m, 'warning');
+    return show(m, 'info');
+  }
+
+  const Notifier = {
+    show,
+    success: (m, o) => show(m, 'success', o),
+    info:    (m, o) => show(m, 'info', o),
+    warning: (m, o) => show(m, 'warning', o),
+    error:   (m, o) => show(m, 'error', o),
+    auto
+  };
+
+  window.Notifier = Notifier;
+
+  // Remplacer alert() global par toasts (déduction du type)
+  const originalAlert = window.alert;
+  window.alert = function(message) {
+    try { Notifier.auto(message); } catch(_) { originalAlert(message); }
+  };
+
+  // Unifier showStatus s'il existe ou fournir une implémentation
+  function hookShowStatus() {
+    const prev = window.showStatus;
+    window.showStatus = function(message, type = 'info') {
+      try {
+        const t = normalizeType(type);
+        Notifier.show(message, t);
+      } catch (_) {
+        if (typeof prev === 'function') try { prev(message, type); } catch(_) {}
+      }
+    };
+  }
+
+  // Premier hook tout de suite
+  hookShowStatus();
+  // Et ré-appliquer après que les pages aient (re)défini showStatus
+  document.addEventListener('DOMContentLoaded', hookShowStatus);
+})();

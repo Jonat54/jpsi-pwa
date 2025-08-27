@@ -323,6 +323,16 @@
       box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
     }
     
+    .voyant-orange {
+      background: #fff7ed;
+      color: #c2410c;
+    }
+    
+    .voyant-orange .voyant-light {
+      background: #f97316;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
+    }
+    
     .voyant-red {
       background: #fef2f2;
       color: #991b1b;
@@ -435,7 +445,7 @@
     let currentClient = null;
     let currentIntervention = null;
     let desenfumages = [];
-    let verifications = []; // Vérifications de l'intervention
+    let verifications = []; // Vérifications de l'intervention - initialisé comme tableau vide
 
     // Récupérer l'ID du site et de l'intervention depuis l'URL
     function getSiteIdFromURL() {
@@ -448,54 +458,89 @@
         return null;
       }
       
-      if (!interventionId) {
-        console.error('❌ Aucun ID d\'intervention fourni dans l\'URL');
-        return null;
+      console.log(`🔍 ID du site récupéré: ${siteId}`);
+      if (interventionId) {
+        console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
+      } else {
+        console.log('ℹ️ Mode création de parc (sans intervention)');
       }
       
-      console.log(`🔍 ID du site récupéré: ${siteId}`);
-      console.log(`🔍 ID de l'intervention récupéré: ${interventionId}`);
-      return { siteId: decodeURIComponent(siteId), interventionId: decodeURIComponent(interventionId) };
+      return { 
+        siteId: decodeURIComponent(siteId), 
+        interventionId: interventionId ? decodeURIComponent(interventionId) : null 
+      };
     }
 
     // Charger les données du site et de l'intervention
     async function loadSiteData(params) {
       try {
         console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
-        console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
         
-        // Charger l'intervention
-        const { data: intervention, error: interventionError } = await supabaseClient
-          .from('interventions')
-          .select(`
-            *,
-            sites!inner(
+        if (params.interventionId) {
+          console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
+          
+          // Charger l'intervention
+          const { data: intervention, error: interventionError } = await supabaseClient
+            .from('interventions')
+            .select(`
               *,
-              clients!inner(*)
-            )
-          `)
-          .eq('id_intervention', params.interventionId)
-          .single();
-        
-        if (interventionError) {
-          console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
-          showError('Erreur lors du chargement de l\'intervention');
-          return;
+              sites!inner(
+                *,
+                clients!inner(*)
+              )
+            `)
+            .eq('id_intervention', params.interventionId)
+            .single();
+          
+          if (interventionError) {
+            console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+            showError('Erreur lors du chargement de l\'intervention');
+            return;
+          }
+          
+          currentIntervention = intervention;
+          currentSite = intervention.sites;
+          currentClient = intervention.sites.clients;
+          
+          console.log('✅ Intervention chargée:', currentIntervention);
+          console.log('✅ Données du site chargées:', currentSite);
+          console.log('✅ Données du client chargées:', currentClient);
+          
+          // Charger les vérifications de l'intervention
+          await loadVerifications(params.interventionId);
+        } else {
+          // Mode création de parc - charger directement le site
+          console.log('📥 Mode création de parc - chargement direct du site');
+          
+          const { data: site, error: siteError } = await supabaseClient
+            .from('sites')
+            .select(`
+              *,
+              clients(*)
+            `)
+            .eq('id_site', params.siteId)
+            .single();
+          
+          if (siteError) {
+            console.error('❌ Erreur lors du chargement du site:', siteError);
+            showError('Erreur lors du chargement du site');
+            return;
+          }
+          
+          currentIntervention = null;
+          currentSite = site;
+          currentClient = site.clients;
+          
+          console.log('✅ Données du site chargées:', currentSite);
+          console.log('✅ Données du client chargées:', currentClient);
+          
+          // Charger les dernières vérifications de tous les équipements du site
+          await loadLastVerificationsForSite();
         }
-        
-        currentIntervention = intervention;
-        currentSite = intervention.sites;
-        currentClient = intervention.sites.clients;
-        
-        console.log('✅ Intervention chargée:', currentIntervention);
-        console.log('✅ Données du site chargées:', currentSite);
-        console.log('✅ Données du client chargées:', currentClient);
         
         // Charger les désenfumages
         await loadDesenfumages();
         
-        // Charger les vérifications de l'intervention
-        await loadVerifications(params.interventionId);
       } catch (error) {
         console.error('❌ Erreur lors du chargement des données:', error);
         showError('Erreur lors du chargement des données');
@@ -636,37 +681,139 @@
         
         if (error) {
           console.error('❌ Erreur lors du chargement des vérifications:', error);
+          verifications = []; // Initialiser avec un tableau vide en cas d'erreur
           return;
         }
         
         verifications = data || [];
         console.log(`✅ ${verifications.length} vérifications chargées:`, verifications);
         
+        // Debug: afficher chaque vérification
+        verifications.forEach((v, index) => {
+          console.log(`🔍 Vérification ${index + 1}:`, {
+            id_intervention: v.id_intervention,
+            id_equipement: v.id_equipement,
+            type_equipement: v.type_equipement,
+            etat_verification: v.etat_verification,
+            date_verification: v.date_verification
+          });
+        });
+        
       } catch (error) {
         console.error('❌ Erreur lors du chargement des vérifications:', error);
+        verifications = []; // Initialiser avec un tableau vide en cas d'erreur
+      }
+    }
+    
+    // Fonction pour charger les dernières vérifications de tous les équipements du site
+    async function loadLastVerificationsForSite() {
+      try {
+        console.log(`📥 Chargement des dernières vérifications pour le site: ${currentSite.id_site}`);
+        
+        // Récupérer tous les désenfumages du site
+        const { data: desenfumages, error: desenfumagesError } = await supabaseClient
+          .from('desenfumages')
+          .select('id_desenfumage')
+          .eq('id_site', currentSite.id_site);
+        
+        if (desenfumagesError) {
+          console.error('❌ Erreur lors du chargement des désenfumages:', desenfumagesError);
+          verifications = [];
+          return;
+        }
+        
+        if (!desenfumages || desenfumages.length === 0) {
+          console.log('ℹ️ Aucun désenfumage trouvé pour ce site');
+          verifications = [];
+          return;
+        }
+        
+        const desenfumageIds = desenfumages.map(d => d.id_desenfumage);
+        console.log(`🔍 Recherche des dernières vérifications pour les désenfumages:`, desenfumageIds);
+        
+        // Pour chaque désenfumage, récupérer sa dernière vérification
+        const allVerifications = [];
+        
+        for (const desenfumageId of desenfumageIds) {
+          const { data: lastVerification, error: verificationError } = await supabaseClient
+            .from('verifications')
+            .select('*')
+            .eq('id_equipement', desenfumageId)
+            .eq('type_equipement', 'desenfumages')
+            .order('date_verification', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (verificationError && verificationError.code !== 'PGRST116') {
+            console.error(`❌ Erreur lors du chargement de la vérification pour le désenfumage ${desenfumageId}:`, verificationError);
+          } else if (lastVerification) {
+            console.log(`✅ Dernière vérification trouvée pour le désenfumage ${desenfumageId}:`, lastVerification);
+            allVerifications.push(lastVerification);
+          } else {
+            console.log(`ℹ️ Aucune vérification trouvée pour le désenfumage ${desenfumageId}`);
+          }
+        }
+        
+        verifications = allVerifications;
+        console.log(`✅ ${verifications.length} dernières vérifications chargées pour le site:`, verifications);
+        
+        // Debug: afficher chaque vérification
+        verifications.forEach((v, index) => {
+          console.log(`🔍 Dernière vérification ${index + 1}:`, {
+            id_intervention: v.id_intervention,
+            id_equipement: v.id_equipement,
+            type_equipement: v.type_equipement,
+            etat_verification: v.etat_verification,
+            date_verification: v.date_verification
+          });
+        });
+        
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des dernières vérifications:', error);
+        verifications = [];
       }
     }
     
     // Calculer l'état du voyant basé sur les vérifications de l'intervention
     function calculateVoyantStatus(desenfumage) {
+      // Vérifier que verifications est initialisé
+      if (!verifications || !Array.isArray(verifications)) {
+        console.warn('⚠️ Verifications non initialisées, retour gris par défaut');
+        return { status: 'grey', text: 'N/A', title: 'Vérifications non chargées' };
+      }
+      
+      console.log(`🔍 Recherche vérification pour désenfumage ${desenfumage.id_desenfumage}`);
+      console.log(`📋 Vérifications disponibles:`, verifications);
+      console.log(`🔍 Type de désenfumage.id_desenfumage:`, typeof desenfumage.id_desenfumage);
+      console.log(`🔍 Valeur de désenfumage.id_desenfumage:`, desenfumage.id_desenfumage);
+      
       // Chercher la vérification pour ce désenfumage dans cette intervention
-      const verification = verifications.find(v => 
-        v.id_equipement === desenfumage.id_desenfumage && 
-        v.type_equipement === 'desenfumages'
-      );
+      const verification = verifications.find(v => {
+        console.log(`🔍 Comparaison: v.id_equipement (${typeof v.id_equipement}) = ${v.id_equipement} vs désenfumage.id_desenfumage (${typeof desenfumage.id_desenfumage}) = ${desenfumage.id_desenfumage}`);
+        console.log(`🔍 Comparaison type: v.type_equipement = ${v.type_equipement} vs 'desenfumages'`);
+        return v.id_equipement === desenfumage.id_desenfumage && v.type_equipement === 'desenfumages';
+      });
       
       if (!verification) {
-        // Pas de vérification → gris
+        console.log(`❌ Aucune vérification trouvée pour le désenfumage ${desenfumage.id_desenfumage}`);
         return { status: 'grey', text: 'N/A', title: 'Non vérifié dans cette intervention' };
       }
       
+      console.log(`✅ Vérification trouvée:`, verification);
+      
       // Vérification trouvée, regarder l'état
       if (verification.etat_verification === 'OK') {
+        console.log(`🟢 État OK pour le désenfumage ${desenfumage.id_desenfumage}`);
         return { status: 'green', text: 'OK', title: 'Vérifié et conforme' };
       } else if (verification.etat_verification === 'Défaut') {
-        return { status: 'red', text: 'ATT', title: 'Vérifié avec problème' };
+        console.log(`🟠 État Défaut pour le désenfumage ${desenfumage.id_desenfumage}`);
+        return { status: 'orange', text: 'ATT', title: 'Vérifié avec défaut' };
+      } else if (verification.etat_verification === 'Hors service') {
+        console.log(`🔴 État Hors service pour le désenfumage ${desenfumage.id_desenfumage}`);
+        return { status: 'red', text: 'HS', title: 'Hors service' };
       }
       
+      console.log(`⚠️ État inconnu: ${verification.etat_verification} pour le désenfumage ${desenfumage.id_desenfumage}`);
       // Statut inconnu → gris
       return { status: 'grey', text: 'N/A', title: 'Statut inconnu' };
     }
@@ -684,35 +831,56 @@
 
     // Ajouter un désenfumage
     function addDesenfumage() {
-      if (!currentSite || !currentIntervention) {
-        alert('Site ou intervention non chargé');
+      if (!currentSite) {
+        alert('Site non chargé');
         return;
       }
       
       console.log('Redirection vers ajout désenfumage');
-      window.location.href = `addEfu.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+      let addUrl = `addEfu.html?site=${encodeURIComponent(currentSite.id_site)}`;
+      
+      // Ajouter l'ID de l'intervention si disponible
+      if (currentIntervention) {
+        addUrl += `&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+      }
+      
+      window.location.href = addUrl;
     }
 
     // Ouvrir la vérification d'un désenfumage
     function openVerification(id) {
-      if (!currentSite || !currentIntervention) {
-        alert('Site ou intervention non chargé');
+      if (!currentSite) {
+        alert('Site non chargé');
         return;
       }
       
       console.log('Ouverture de la vérification pour le désenfumage:', id);
-      window.location.href = `verifDes.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}&desenfumage=${id}`;
+      let verificationUrl = `verifDes.html?site=${encodeURIComponent(currentSite.id_site)}&desenfumage=${id}`;
+      
+      // Ajouter l'ID de l'intervention si disponible
+      if (currentIntervention) {
+        verificationUrl += `&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+      }
+      
+      window.location.href = verificationUrl;
     }
 
     // Modifier un désenfumage
     function editDesenfumage(id) {
-      if (!currentSite || !currentIntervention) {
-        alert('Site ou intervention non chargé');
+      if (!currentSite) {
+        alert('Site non chargé');
         return;
       }
       
       console.log('Redirection vers modification désenfumage:', id);
-      window.location.href = `desenfumageDetail.html?site=${encodeURIComponent(currentSite.id_site)}&intervention=${encodeURIComponent(currentIntervention.id_intervention)}&id=${id}`;
+      let editUrl = `desenfumageDetail.html?site=${encodeURIComponent(currentSite.id_site)}&id=${id}`;
+      
+      // Ajouter l'ID de l'intervention si disponible
+      if (currentIntervention) {
+        editUrl += `&intervention=${encodeURIComponent(currentIntervention.id_intervention)}`;
+      }
+      
+      window.location.href = editUrl;
     }
 
     // Supprimer un désenfumage

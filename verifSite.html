@@ -17,6 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/indexedDB.js"></script>
   <script src="js/syncManager.js"></script>
+  <script src="js/offlineSync.js"></script>
   <script>
     // Enregistrer le Service Worker pour le mode offline
     if ('serviceWorker' in navigator) {
@@ -598,6 +599,58 @@
         margin-top: 0.5rem;
       }
     }
+
+    .sync-status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.8rem 1.2rem;
+      background: #f6f7f9;
+      border: 2px solid #9B2423;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+    
+    .sync-icon {
+      font-size: 1.2rem;
+      animation: spin 2s linear infinite;
+    }
+    
+    .sync-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    
+    .sync-text {
+      font-weight: 600;
+      color: #23272b;
+    }
+    
+    .sync-details {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .sync-status-indicator.offline {
+      border-color: #6b7280;
+      background: #f3f4f6;
+    }
+    
+    .sync-status-indicator.syncing {
+      border-color: #059669;
+      background: #ecfdf5;
+    }
+    
+    .sync-status-indicator.error {
+      border-color: #dc2626;
+      background: #fef2f2;
+    }
   </style>
 </head>
 <body>
@@ -615,19 +668,28 @@
         ‹
       </button>
           <div class="header-info">
-        <h1 class="header-title" id="pageTitle">Chargement...</h1>
-        <div class="header-sub" id="headerSub"></div>
+        <h1 id="headerTitle">Vérifications Site</h1>
+        <p id="headerSub">Chargement...</p>
+        <p id="headerClient">Client: Chargement...</p>
       </div>
     </div>
         <div class="progress-indicator">
           <div class="circular-progress">
             <svg class="progress-ring" width="60" height="60">
-              <circle class="progress-ring-bg" cx="30" cy="30" r="24" stroke-width="4"/>
-              <circle class="progress-ring-fill" cx="30" cy="30" r="24" stroke-width="4"/>
+              <circle class="progress-ring-bg" cx="30" cy="30" r="25" stroke="#e5e7eb" stroke-width="4" fill="transparent"/>
+              <circle class="progress-ring-fill" cx="30" cy="30" r="25" stroke="#9B2423" stroke-width="4" fill="transparent" stroke-dasharray="157" stroke-dashoffset="157"/>
             </svg>
-            <div class="progress-text" id="circularProgressText">0%</div>
+            <div class="progress-text">0%</div>
       </div>
       </div>
+      
+      <!-- Indicateur de synchronisation offline -->
+      <div id="syncStatusIndicator" class="sync-status-indicator" style="display: none;">
+        <div class="sync-icon">🔄</div>
+        <div class="sync-info">
+          <div class="sync-text">Synchronisation</div>
+          <div class="sync-details">En attente...</div>
+        </div>
       </div>
     </div>
     
@@ -681,37 +743,46 @@
       try {
         console.log(`📥 Chargement des données pour le site: ${siteId}`);
         
-        // Charger les données du site depuis Supabase
-        const { data: site, error } = await supabase
-          .from('sites')
-          .select('*')
-          .eq('id_site', siteId)
-          .single();
+        // Essayer de charger depuis IndexedDB d'abord
+        let site = null;
+        try {
+          const cachedSites = await indexedDBManager.getData('sites');
+          site = (cachedSites || []).find(s => String(s.id_site) === String(siteId));
+        } catch (e) {
+          console.warn('⚠️ Lecture IndexedDB sites échouée:', e);
+        }
         
-        if (error) {
-          console.error('❌ Erreur lors du chargement du site:', error);
-          showError('Erreur lors du chargement du site');
-          return;
+        // Si pas en cache et en ligne, charger depuis Supabase
+        if (!site && navigator.onLine) {
+          console.log('🌐 Site non trouvé en cache, chargement depuis Supabase...');
+          const res = await supabase
+            .from('sites')
+            .select('*')
+            .eq('id_site', siteId)
+            .single();
+          site = res.data;
+          
+          if (res.error) {
+            console.error('❌ Erreur lors du chargement du site:', res.error);
+            showError('Erreur lors du chargement du site');
+            return;
+          }
+          
+          // Sauvegarder en IndexedDB
+          await indexedDBManager.saveData('sites', site);
         }
         
         if (!site) {
-          console.error('❌ Site non trouvé');
-          showError('Site non trouvé');
+          console.error('❌ Site non trouvé en cache ni en ligne');
+          showError('Site non trouvé. Vérifiez votre connexion ou rechargez la page.');
           return;
         }
         
         console.log('✅ Données du site chargées:', site);
         currentSite = site;
         
-        // Charger les informations du client
-        await loadClientInfo(site.id_client);
-        
-        // Charger les données du site dans IndexedDB pour le mode offline
-        if (syncManager.isOnline) {
-          console.log('📥 Chargement des données dans IndexedDB...');
-          await syncManager.loadSiteData(siteId);
-          await syncManager.loadCatalogues();
-        }
+        // Charger les informations du client depuis IndexedDB
+        await loadClientInfoFromCache(site.id_client);
         
         // Mettre à jour l'interface
         updateDisplay();
@@ -721,23 +792,46 @@
         showError('Erreur de connexion à la base de données');
       }
     }
-    
-    // Fonction pour charger les informations du client
-    async function loadClientInfo(clientId) {
+
+    // Fonction pour charger les informations du client depuis IndexedDB
+    async function loadClientInfoFromCache(clientId) {
       try {
-        const { data: client, error } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('id_client', clientId)
-          .single();
-        
-        if (error) {
-          console.error('❌ Erreur lors du chargement du client:', error);
-          return;
+        // Essayer de charger depuis IndexedDB d'abord
+        let client = null;
+        try {
+          const cachedClients = await indexedDBManager.getData('clients');
+          client = (cachedClients || []).find(c => c.id_client === clientId);
+        } catch (e) {
+          console.warn('⚠️ Lecture IndexedDB clients échouée:', e);
         }
         
-        currentClient = client;
-        console.log('✅ Informations du client chargées:', client);
+        // Si pas en cache et en ligne, charger depuis Supabase
+        if (!client && navigator.onLine) {
+          console.log('🌐 Client non trouvé en cache, chargement depuis Supabase...');
+          const { data, error } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('id_client', clientId)
+            .single();
+          
+          if (error) {
+            console.error('❌ Erreur lors du chargement du client:', error);
+            return;
+          }
+          
+          client = data;
+          
+          // Sauvegarder en IndexedDB
+          await indexedDBManager.saveData('clients', client);
+        }
+        
+        if (client) {
+          currentClient = client;
+          document.getElementById('headerClient').textContent = `Client: ${client.nom_client}`;
+          console.log('✅ Informations du client chargées:', client);
+        } else {
+          console.warn('⚠️ Client non trouvé en cache ni en ligne');
+        }
         
       } catch (error) {
         console.error('❌ Erreur lors du chargement du client:', error);
@@ -997,7 +1091,7 @@
       const clientCode = currentClient ? currentClient.code_client : 'N/A';
       const siteNumber = currentSite.num_site || 'N/A';
       
-      document.getElementById('pageTitle').textContent = `${clientName} - ${currentSite.nom_site}`;
+      document.getElementById('headerTitle').textContent = `${clientName} - ${currentSite.nom_site}`;
       document.getElementById('headerSub').textContent = `${clientCode} - ${siteNumber}`;
     }
     
@@ -1274,6 +1368,9 @@
     document.addEventListener('DOMContentLoaded', async () => {
       console.log('🚀 Initialisation de la page Vérifications Site...');
       
+      // Démarrer la surveillance du statut de synchronisation
+      startSyncStatusMonitoring();
+      
       // Récupérer l'ID de l'intervention depuis l'URL
       const interventionId = getInterventionIdFromURL();
       
@@ -1282,11 +1379,11 @@
         return;
       }
       
-              // Charger les données de l'intervention
-        await loadInterventionData(interventionId);
-        
-        // Charger l'état d'avancement des vérifications
-        await loadVerificationProgress();
+      // Charger les données de l'intervention
+      await loadInterventionData(interventionId);
+      
+      // Charger l'état d'avancement des vérifications
+      await loadVerificationProgress();
     });
     
     // Fonction pour récupérer l'ID de l'intervention depuis l'URL
@@ -1295,27 +1392,56 @@
       return urlParams.get('intervention');
     }
     
-    // Fonction pour charger les données de l'intervention
+    // Fonction pour charger les données de l'intervention depuis IndexedDB
     async function loadInterventionData(interventionId) {
       try {
-        console.log('🔍 Chargement de l\'intervention:', interventionId);
+        console.log(`📥 Chargement de l'intervention ${interventionId} depuis IndexedDB...`);
         
-        // Charger l'intervention
-        const { data: intervention, error: interventionError } = await supabase
-          .from('interventions')
-          .select(`
-            *,
-            sites!inner(
+        // Essayer de charger depuis IndexedDB d'abord
+        let intervention = null;
+        try {
+          const cachedInterventions = await indexedDBManager.getData('interventions');
+          intervention = (cachedInterventions || []).find(i => i.id_intervention === parseInt(interventionId));
+        } catch (e) {
+          console.warn('⚠️ Lecture IndexedDB interventions échouée:', e);
+        }
+        
+        // Si pas en cache et en ligne, charger depuis Supabase
+        if (!intervention && navigator.onLine) {
+          console.log('🌐 Intervention non trouvée en cache, chargement depuis Supabase...');
+          const { data, error: interventionError } = await supabase
+            .from('interventions')
+            .select(`
               *,
-              clients!inner(*)
-            )
-          `)
-          .eq('id_intervention', interventionId)
-          .single();
+              sites!inner(
+                *,
+                clients!inner(*)
+              )
+            `)
+            .eq('id_intervention', interventionId)
+            .single();
+          
+          if (interventionError) {
+            console.error('❌ Erreur chargement intervention:', interventionError);
+            showError('Erreur lors du chargement de l\'intervention');
+            return;
+          }
+          
+          intervention = data;
+          
+          // Sauvegarder en IndexedDB pour usage offline
+          await indexedDBManager.saveData('interventions', intervention);
+          if (intervention.sites) {
+            await indexedDBManager.saveData('sites', intervention.sites);
+            if (intervention.sites.clients) {
+              await indexedDBManager.saveData('clients', intervention.sites.clients);
+            }
+          }
+        }
         
-        if (interventionError) {
-          console.error('❌ Erreur chargement intervention:', interventionError);
-          showError('Erreur lors du chargement de l\'intervention');
+        if (!intervention) {
+          console.error('❌ Intervention non trouvée en cache ni en ligne');
+          showError('Intervention non trouvée. Vérifiez votre connexion ou rechargez la page.');
           return;
         }
         
@@ -1327,8 +1453,8 @@
         console.log('🔍 types_equipements brut:', currentIntervention.types_equipements);
         console.log('🔍 type de types_equipements:', typeof currentIntervention.types_equipements);
         
-        // Charger les équipements selon les types sélectionnés
-        await loadInterventionEquipments();
+        // Charger les équipements depuis IndexedDB
+        await loadInterventionEquipmentsFromCache();
         
         // Afficher l'interface
         displayInterventionInterface();
@@ -1338,9 +1464,9 @@
         showError('Erreur lors du chargement des données');
       }
     }
-    
-    // Fonction pour charger les équipements de l'intervention
-    async function loadInterventionEquipments() {
+
+    // Fonction pour charger les équipements depuis IndexedDB
+    async function loadInterventionEquipmentsFromCache() {
       try {
         // S'assurer que types_equipements est bien un tableau
         let types = currentIntervention.types_equipements || [];
@@ -1367,47 +1493,39 @@
         for (const type of types) {
           let equipments = [];
           
-          switch (type) {
-            case 'extincteurs':
-              const { data: ext } = await supabase
-                .from('extincteurs')
+          try {
+            // Charger depuis IndexedDB
+            const cachedEquipments = await indexedDBManager.getData(type);
+            equipments = (cachedEquipments || []).filter(eq => eq.id_site === currentSite.id_site);
+            
+            // Si pas assez d'équipements en cache et en ligne, charger depuis Supabase
+            if (equipments.length === 0 && navigator.onLine) {
+              console.log(`🌐 Chargement ${type} depuis Supabase...`);
+              const { data } = await supabase
+                .from(type)
                 .select('*')
                 .eq('id_site', currentSite.id_site);
-              equipments = ext || [];
-              break;
+              equipments = data || [];
               
-            case 'eclairages':
-              const { data: ecl } = await supabase
-                .from('eclairages')
-                .select('*')
-                .eq('id_site', currentSite.id_site);
-              equipments = ecl || [];
-              break;
-              
-            case 'alarmes':
-              const { data: alarm } = await supabase
-                .from('alarmes')
-                .select('*')
-                .eq('id_site', currentSite.id_site);
-              equipments = alarm || [];
-              break;
-              
-            case 'desenfumages':
-              const { data: des } = await supabase
-                .from('desenfumages')
-                .select('*')
-                .eq('id_site', currentSite.id_site);
-              equipments = des || [];
-              break;
+              // Sauvegarder en IndexedDB
+              if (equipments.length > 0) {
+                await indexedDBManager.saveBulk(type, equipments, { clearBefore: true });
+              }
+            }
+          } catch (e) {
+            console.warn(`⚠️ Erreur chargement ${type}:`, e);
+            equipments = [];
           }
           
           interventionEquipments.push({
             type: type,
             equipments: equipments
           });
+          
+          console.log(`✅ ${equipments.length} ${type} chargés`);
         }
         
-        console.log('✅ Équipements chargés:', interventionEquipments);
+        console.log('✅ Tous les équipements chargés depuis le cache');
         
       } catch (error) {
         console.error('❌ Erreur chargement équipements:', error);
@@ -1416,9 +1534,23 @@
     
     // Fonction pour afficher l'interface de l'intervention
     function displayInterventionInterface() {
-      // Mettre à jour le header
-      document.getElementById('pageTitle').textContent = `${currentClient.nom_client} - ${currentSite.nom_site}`;
-      document.getElementById('headerSub').textContent = `Intervention ${currentIntervention.numero_intervention}`;
+      // Mettre à jour le header avec vérifications de sécurité
+      const headerTitle = document.getElementById('headerTitle');
+      const headerSub = document.getElementById('headerSub');
+      const headerClient = document.getElementById('headerClient');
+      const circularProgressText = document.getElementById('circularProgressText');
+      const progressRing = document.querySelector('.progress-ring-fill');
+      const content = document.getElementById('content');
+      
+      if (headerTitle) {
+        headerTitle.textContent = `${currentClient?.nom_client || 'Client'} - ${currentSite?.nom_site || 'Site'}`;
+      }
+      if (headerSub) {
+        headerSub.textContent = `Intervention ${currentIntervention?.numero_intervention || 'N/A'}`;
+      }
+      if (headerClient) {
+        headerClient.textContent = `Client: ${currentClient?.nom_client || 'N/A'}`;
+      }
       
       // Calculer la progression globale
       let totalEquipments = 0;
@@ -1434,24 +1566,28 @@
       });
       
       const globalProgress = totalEquipments > 0 ? Math.round((totalVerified / totalEquipments) * 100) : 0;
-      document.getElementById('circularProgressText').textContent = `${globalProgress}%`;
+      
+      if (circularProgressText) {
+        circularProgressText.textContent = `${globalProgress}%`;
+      }
       
       // Mettre à jour l'indicateur circulaire
-      const progressRing = document.querySelector('.progress-ring-fill');
-      const circumference = 2 * Math.PI * 24;
-      const offset = circumference - (globalProgress / 100) * circumference;
-      progressRing.style.strokeDashoffset = offset;
+      if (progressRing) {
+        const circumference = 2 * Math.PI * 24;
+        const offset = circumference - (globalProgress / 100) * circumference;
+        progressRing.style.strokeDashoffset = offset;
+      }
       
       // Afficher la grille des équipements
-      const content = document.getElementById('content');
-      
-      content.innerHTML = `
-        <div class="content-card">
-          <div class="detail-grid">
-            ${getEquipmentCards()}
+      if (content) {
+        content.innerHTML = `
+          <div class="content-card">
+            <div class="detail-grid">
+              ${getEquipmentCards()}
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      }
     }
     
     // Fonction pour générer les cartes d'équipements
@@ -1708,21 +1844,34 @@
       try {
         console.log('⏸️ Mise en attente de l\'intervention:', currentIntervention.id_intervention);
         
-        // Mettre à jour l'état de l'intervention
-        const { error } = await supabase
-          .from('interventions')
-          .update({ 
-            etat_intervention: 'En attente',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id_intervention', currentIntervention.id_intervention);
+        // Préparer les données de mise à jour
+        const updateData = {
+          etat_intervention: 'En attente',
+          updated_at: new Date().toISOString()
+        };
+
+        // Mettre à jour localement en IndexedDB
+        const interventions = await indexedDBManager.getData('interventions');
+        const interventionIndex = interventions.findIndex(i => i.id_intervention === currentIntervention.id_intervention);
         
-        if (error) {
-          console.error('❌ Erreur mise à jour intervention:', error);
-          alert('❌ Erreur lors de la mise en attente');
-          return;
+        if (interventionIndex !== -1) {
+          interventions[interventionIndex] = { ...interventions[interventionIndex], ...updateData };
+          await indexedDBManager.saveBulk('interventions', interventions, { clearBefore: true });
+          
+          // Mettre à jour l'objet local
+          currentIntervention = { ...currentIntervention, ...updateData };
         }
-        
+
+        // Ajouter à la file de synchronisation
+        if (window.offlineSyncManager) {
+          await window.offlineSyncManager.addToSyncQueue({
+            type: 'update',
+            table: 'interventions',
+            data: updateData,
+            where: { id_intervention: currentIntervention.id_intervention }
+          });
+        }
+
         alert('✅ Intervention mise en attente avec succès !');
         
         // Rediriger vers la liste des interventions (affiche aussi les "En attente")
@@ -1785,6 +1934,49 @@
         console.error('❌ Erreur:', error);
         alert('❌ Erreur lors de la finalisation');
       }
+    }
+
+    // Fonction pour mettre à jour le statut de synchronisation
+    function updateSyncStatus() {
+      if (!window.offlineSyncManager) return;
+      
+      const status = window.offlineSyncManager.getSyncStatus();
+      const indicator = document.getElementById('syncStatusIndicator');
+      
+      if (!indicator) return;
+      
+      if (status.total === 0) {
+        indicator.style.display = 'none';
+        return;
+      }
+      
+      indicator.style.display = 'flex';
+      
+      // Retirer toutes les classes de statut
+      indicator.classList.remove('offline', 'syncing', 'error');
+      
+      if (status.failed > 0) {
+        indicator.classList.add('error');
+        indicator.querySelector('.sync-details').textContent = `${status.failed} erreur(s)`;
+      } else if (status.isSyncing) {
+        indicator.classList.add('syncing');
+        indicator.querySelector('.sync-details').textContent = `Synchronisation...`;
+      } else if (status.pending > 0) {
+        indicator.classList.add('offline');
+        indicator.querySelector('.sync-details').textContent = `${status.pending} en attente`;
+      } else {
+        indicator.classList.add('syncing');
+        indicator.querySelector('.sync-details').textContent = 'À jour';
+      }
+    }
+
+    // Démarrer la surveillance du statut de synchronisation
+    function startSyncStatusMonitoring() {
+      // Mettre à jour immédiatement
+      updateSyncStatus();
+      
+      // Mettre à jour toutes les 2 secondes
+      setInterval(updateSyncStatus, 2000);
     }
   </script>
 </body>
