@@ -1,5 +1,5 @@
 // 📱 Application principale JPSI
-// Version: 1.2.1 - Gestion complète online/offline
+// Version: 1.4.28 - Gestion complète online/offline
 
 // 🌐 État global de l'application
 window.AppState = {

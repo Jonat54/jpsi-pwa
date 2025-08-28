@@ -1,9 +1,9 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
-// Version v1.4.27 - Fix IndexedDB et erreurs DOM
+// Version v1.4.28 - Fix IndexedDB et erreurs DOM
 
-const STATIC_CACHE = 'jpsi-static-v1.4.27';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.27';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.27';
+const STATIC_CACHE = 'jpsi-static-v1.4.28';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.28';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.28';
 
 // Pages principales de l'application (liste explicite)
 const ALL_PAGES = [
@@ -165,7 +165,7 @@ const utils = {
 
 // Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.4.13...');
+    console.log('🔄 Service Worker: Installation v1.4.28...');
     
     evt.waitUntil(
         (async () => {
@@ -195,7 +195,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.4.13...');
+    console.log('🔄 Service Worker: Activation v1.4.28...');
     
     evt.waitUntil(
         (async () => {
@@ -331,7 +331,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.4.13' });
+        event.ports[0].postMessage({ version: 'v1.4.28' });
     }
     
     if (event.data && event.data.type === 'GET_STORAGE_INFO') {
@@ -362,4 +362,4 @@ self.addEventListener('message', (event) => {
     }
 });
 
-console.log('✅ Service Worker chargé v1.4.13 - Optimisé iPadOS/Safari');
+console.log('✅ Service Worker chargé v1.4.28 - Optimisé iPadOS/Safari');
