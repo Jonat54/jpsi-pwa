@@ -1,5 +1,245 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.34 - Notes Directes
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### ✨ **Nouvelle Fonctionnalité - Notes Directes**
+
+#### **Problème résolu**
+- ❌ **Saisie complexe** : Pour ajouter des notes, il fallait ouvrir une modal
+- ❌ **Processus en 4 étapes** : Clic → Modal → Saisie → Enregistrer
+- ❌ **Champ limité** : Modal avec petit champ de saisie
+- ❌ **Expérience utilisateur dégradée** : Interruption du workflow
+
+#### **Solution implémentée**
+- ✅ **Saisie directe** : Grand textarea éditable directement dans la page
+- ✅ **Synchronisation bidirectionnelle** : Textarea ↔ Boutons d'observations rapides
+- ✅ **Sauvegarde automatique** : Notes récupérées depuis le textarea lors de "✅ Vérifié" ou "💾"
+- ✅ **Mise à jour en temps réel** : Fonction `updateNotesFromTextarea()` appelée à chaque frappe
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `extDetail.html` - Remplacement du tableau par un textarea éditable
+- `index.html` - Version 1.4.34
+- `manifest.json` - Version 1.4.34
+- `service-worker.js` - Version 1.4.34
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience améliorée**
+- 🚀 **Saisie immédiate** : Plus besoin d'ouvrir de modal
+- 📝 **Champ spacieux** : Textarea de 120px de hauteur minimum
+- 🔄 **Synchronisation parfaite** : Boutons d'observations rapides + saisie manuelle
+- 💾 **Sauvegarde transparente** : Notes automatiquement récupérées lors de la sauvegarde
+
+#### **Nouvelles fonctionnalités**
+- **Textarea éditable** : Saisie directe des observations personnalisées
+- **Placeholder informatif** : "Saisissez vos observations personnalisées ici..."
+- **Conseil utilisateur** : "Vous pouvez écrire directement ou utiliser les boutons d'observations rapides"
+- **Redimensionnement** : Textarea redimensionnable verticalement
+
+### 🔧 **Détails Techniques**
+
+#### **Fonctions ajoutées**
+- `updateNotesFromTextarea()` : Met à jour `currentExtincteur.obs_ext` à chaque frappe
+- **Modification de `addObservation()`** : Met à jour le textarea quand une observation rapide est ajoutée
+- **Modification de `saveAndReturn()` et `saveWithoutReturn()`** : Récupèrent les notes depuis le textarea
+
+#### **Synchronisation**
+- **Observations rapides** → **Textarea** : Mise à jour automatique
+- **Textarea** → **État extincteur** : Mise à jour en temps réel
+- **Sauvegarde** : Récupération des notes depuis le textarea
+
+---
+
+## 🚀 Version 1.4.33 - Correction Observations Rapides
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### 🔧 **Correction - Observations Rapides**
+
+#### **Problème résolu**
+- ❌ **Boutons inactifs** : Certains boutons d'observations rapides n'avaient aucune fonction attachée
+- ❌ **Observations impossibles** : Impossible d'ajouter "⚠️ Début corrosion" et "❌ Inadapté"
+- ❌ **Expérience utilisateur dégradée** : Clics sans effet sur certains boutons
+
+#### **Boutons affectés**
+- **❌ Inadapté** (pour CO2 et autres agents) - Pas de `onclick`
+- **⚠️ Début corrosion** (pour autres agents) - Pas de `onclick`
+
+#### **Solution implémentée**
+- ✅ **Fonction onclick ajoutée** : Tous les boutons ont maintenant `onclick="addObservation('texte')"`
+- ✅ **Fonctionnalité complète** : Tous les boutons d'observations rapides sont maintenant fonctionnels
+- ✅ **Logique toggle préservée** : Ajout/suppression alternés au clic
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `extDetail.html` - Correction des boutons d'observations rapides
+- `index.html` - Version 1.4.33
+- `manifest.json` - Version 1.4.33
+- `service-worker.js` - Version 1.4.33
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience améliorée**
+- 🚀 **Toutes les observations fonctionnent** : Plus de boutons "fantômes"
+- 📝 **Ajout facile** : "⚠️ Début corrosion" et "❌ Inadapté" maintenant disponibles
+- 🔄 **Toggle parfait** : Ajout/suppression alternés sur tous les boutons
+
+#### **Observations maintenant fonctionnelles**
+- **Agent CO2** : 🔄 Échange Standard, 🎨 Sérigraphie, ❌ Inadapté
+- **Autres agents** : 🔴 Corrosion Intérieur/Extérieur, 💥 Choc Cuve, 🎨 Sérigraphie, ❌ Inadapté, ⚠️ Début corrosion, 🔥 Flamme Gaz
+
+---
+
+## 🚀 Version 1.4.32 - Correction Paramètres Offline
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### 🔧 **Correction - Paramètres Offline**
+
+#### **Problème résolu**
+- ❌ **Erreur NaN** : La page offline.html recevait des paramètres `NaN` au lieu des vrais IDs
+- ❌ **Préchargement impossible** : Les requêtes Supabase échouaient avec l'erreur "id_site=eq.NaN"
+- ❌ **Navigation bloquée** : Impossible de passer du mode online au mode offline
+
+#### **Cause identifiée**
+- **Requête Supabase incomplète** : Dans `ongoingInterventions.html`, la requête ne sélectionnait que `nom_site` et `nom_client`
+- **IDs manquants** : Les champs `id_site` et `id_client` n'étaient pas inclus dans la sélection
+- **Valeurs undefined** : `intervention.sites.id_site` était `undefined`, donnant `NaN` après conversion
+
+#### **Solution implémentée**
+- ✅ **Requête corrigée** : Ajout de `id_site` et `id_client` dans la sélection Supabase
+- ✅ **Validation des paramètres** : Vérification que les IDs sont des nombres valides dans `offline.html`
+- ✅ **Logs de débogage** : Ajout de logs pour tracer la récupération des paramètres
+- ✅ **Gestion d'erreur** : Affichage d'erreurs claires si les paramètres sont invalides
+
+#### **Fonctionnalités corrigées**
+- **Navigation offline** : Le flux ongoingInterventions → offline.html fonctionne maintenant correctement
+- **Préchargement** : Les données sont correctement préchargées avec les bons IDs
+- **Gestion d'erreur** : Messages d'erreur explicites en cas de paramètres manquants
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `ongoingInterventions.html` - Correction de la requête Supabase pour inclure les IDs
+- `offline.html` - Validation et gestion des paramètres d'URL
+- `index.html` - Version 1.4.32
+- `manifest.json` - Version 1.4.32
+- `service-worker.js` - Version 1.4.32
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience améliorée**
+- 🚀 **Navigation fluide** : Plus d'erreur lors du passage en mode offline
+- 📱 **Mode offline fonctionnel** : Le préchargement des données fonctionne correctement
+- 🔍 **Débogage facilité** : Logs clairs pour identifier les problèmes de paramètres
+
+#### **Exemple de correction**
+- **Avant** : Erreur "🏢 Préchargement des données du site NaN..." et requêtes échouées
+- **Après** : "🏢 Préchargement des données du site 123..." et préchargement réussi
+
+---
+
+## 🚀 Version 1.4.31 - Interface Extincteurs améliorée
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### 🔧 **Amélioration - Interface Extincteurs**
+
+#### **Nouvelles fonctionnalités**
+- ✅ **Barre de recherche** : Recherche en temps réel dans les extincteurs (numéro, localisation, marque, agent, modèle)
+- ✅ **Filtres de statut** : Boutons "Tous", "Contrôlés", "Non contrôlés" pour filtrer les équipements
+- ✅ **Tri des colonnes** : Possibilité de trier par numéro, niveau, localisation, marque, agent, modèle
+- ✅ **Compteur dynamique** : Affichage du nombre d'extincteurs affichés vs total
+
+#### **Interface utilisateur**
+- 🎨 **Design cohérent** : Même style que la page éclairageSite.html
+- 📱 **Responsive** : Interface adaptée aux tablettes et mobiles
+- 🔍 **Recherche intuitive** : Placeholder explicite et recherche instantanée
+- 📊 **Indicateurs visuels** : Icônes de tri et boutons de filtre actifs/inactifs
+
+#### **Fonctionnalités techniques**
+- 🔄 **Filtrage intelligent** : Filtrage par statut de vérification (contrôlé/non contrôlé)
+- 📝 **Préservation du focus** : La barre de recherche garde le focus et la position du curseur
+- ⚡ **Performance** : Mise à jour en temps réel sans rechargement de page
+- 🎯 **Tri numérique** : Tri correct des numéros d'extincteurs (1, 2, 10 au lieu de 1, 10, 2)
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `extSite.html` - Ajout de la barre de recherche, filtres et tri
+- `index.html` - Version 1.4.31
+- `manifest.json` - Version 1.4.31
+- `service-worker.js` - Version 1.4.31
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience améliorée**
+- 🚀 **Navigation rapide** : Recherche instantanée dans la liste des extincteurs
+- 📊 **Vue d'ensemble** : Filtrage facile par statut de vérification
+- 🔍 **Organisation** : Tri des colonnes pour une meilleure lisibilité
+- 📱 **Interface moderne** : Design cohérent avec le reste de l'application
+
+#### **Exemples d'utilisation**
+- **Recherche** : Taper "rez" pour voir tous les extincteurs du rez-de-chaussée
+- **Filtrage** : Cliquer sur "Non contrôlés" pour voir les extincteurs à vérifier
+- **Tri** : Cliquer sur "Numéro" pour trier par ordre numérique
+- **Comptage** : Voir en temps réel combien d'extincteurs correspondent aux critères
+
+## 🚀 Version 1.4.30 - Fix Groupement Extincteurs par Capacité
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### 🔧 **Correction - Groupement Extincteurs**
+
+#### **Problème résolu**
+- ❌ **Groupement incomplet** : Les extincteurs n'étaient groupés que par type d'agent, pas par capacité
+- ❌ **Affichage confus** : Tous les extincteurs du même type étaient mélangés, peu importe leur capacité
+
+#### **Cause identifiée**
+- **Fonction de groupement** : La fonction `groupExtincteursByAgent()` ne prenait en compte que le champ `agent_ext`
+- **Clé de groupement** : Utilisation d'une clé simple basée uniquement sur l'agent, sans la capacité
+
+#### **Solution implémentée**
+- ✅ **Groupement amélioré** : Modification de la fonction pour grouper par agent ET capacité
+- ✅ **Clé composite** : Utilisation d'une clé `agentId_capacite` pour un groupement précis
+- ✅ **Affichage détaillé** : Affichage du type ET de la capacité dans les tableaux et PDFs
+
+#### **Fonctionnalités corrigées**
+- **Tableau récapitulatif** : Les extincteurs sont maintenant groupés par type et capacité
+- **Génération PDF** : Les PDFs affichent correctement les extincteurs groupés par type et capacité
+- **Cohérence** : Même logique de groupement dans tous les modules (résumé, PDF simple, PDF détaillé)
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `verificationSummary.html` - Correction du groupement des extincteurs
+- `index.html` - Version 1.4.30
+- `manifest.json` - Version 1.4.30
+- `service-worker.js` - Version 1.4.30
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience améliorée**
+- 🚀 **Affichage précis** : Les extincteurs sont maintenant correctement groupés par type et capacité
+- 📊 **Récapitulatif clair** : Le tableau récapitulatif affiche "Extincteur - Eau + Additif 6kg" au lieu de juste "Extincteur - Eau + Additif"
+- 📄 **PDFs cohérents** : Les PDFs générés reflètent le bon groupement des équipements
+
+#### **Exemple d'amélioration**
+- **Avant** : "Extincteur - Eau + Additif : 5 unités" (toutes capacités mélangées)
+- **Après** : 
+  - "Extincteur - Eau + Additif 6kg : 3 unités"
+  - "Extincteur - Eau + Additif 9L : 2 unités"
+
 ## 🚀 Version 1.4.27 - Fix IndexedDB et Erreurs DOM
 
 **Date :** 2025-01-XX  

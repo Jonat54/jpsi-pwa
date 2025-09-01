@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alarme Incendie - JPSI</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="simple_auth.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -447,12 +449,18 @@
     </div>
 
     <script>
-        // Configuration Supabase
-        const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+        // Utiliser le client Supabase de supabase-config.js
         
-        // Initialisation de Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Fonction pour obtenir le client Supabase
+        function getSupabaseClient() {
+            if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+                return window.supabaseClient;
+            }
+            if (window.getSupabaseClient) {
+                return window.getSupabaseClient();
+            }
+            throw new Error('Client Supabase non disponible');
+        }
         
         // Variables globales
         let currentSite = null;
@@ -495,7 +503,7 @@
                     console.log(`📥 Chargement de l'intervention: ${params.interventionId}`);
                     
                     // Charger l'intervention
-                    const { data: intervention, error: interventionError } = await supabase
+                    const { data: intervention, error: interventionError } = await getSupabaseClient()
                         .from('interventions')
                         .select(`
                             *,
@@ -527,7 +535,7 @@
                     // Mode création de parc - charger directement le site
                     console.log('📥 Mode création de parc - chargement direct du site');
                     
-                    const { data: site, error: siteError } = await supabase
+                    const { data: site, error: siteError } = await getSupabaseClient()
                         .from('sites')
                         .select(`
                             *,
@@ -572,7 +580,7 @@
             try {
                 console.log(`📥 Chargement de l'alarme pour le site: ${siteId}`);
                 
-                const { data, error } = await supabase
+                const { data, error } = await getSupabaseClient()
                     .from('alarmes')
                     .select('*')
                     .eq('id_site', siteId)
@@ -591,24 +599,62 @@
             }
         }
         
-        // Fonction pour charger les périphériques
-        async function loadPeripheriques(alarmeId) {
+        // Fonction pour charger les périphériques avec un client spécifique
+        async function loadPeripheriquesWithClient(supabaseClient, alarmeId) {
             try {
                 console.log(`📥 Chargement des périphériques pour l'alarme: ${alarmeId}`);
+                console.log('🔌 Client utilisé pour loadPeripheriquesWithClient:', supabaseClient);
                 
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('peripheriques')
                     .select('*')
                     .eq('id_alarme', alarmeId)
                     .order('id_periph', { ascending: true });
+                
+                console.log('🔍 Requête loadPeripheriquesWithClient - data:', data);
+                console.log('🔍 Requête loadPeripheriquesWithClient - error:', error);
                 
                 if (error) {
                     console.error('❌ Erreur lors du chargement des périphériques:', error);
                     return;
                 }
                 
+                console.log('🔍 Données brutes reçues:', data);
                 peripheriques = data || [];
                 console.log(`✅ ${peripheriques.length} périphériques chargés:`, peripheriques);
+                console.log('🔍 Variable peripheriques mise à jour:', peripheriques);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des périphériques:', error);
+            }
+        }
+        
+        // Fonction pour charger les périphériques (version originale)
+        async function loadPeripheriques(alarmeId) {
+            try {
+                console.log(`📥 Chargement des périphériques pour l'alarme: ${alarmeId}`);
+                
+                const supabaseClient = getSupabaseClient();
+                console.log('🔌 Client utilisé pour loadPeripheriques:', supabaseClient);
+                
+                const { data, error } = await supabaseClient
+                    .from('peripheriques')
+                    .select('*')
+                    .eq('id_alarme', alarmeId)
+                    .order('id_periph', { ascending: true });
+                
+                console.log('🔍 Requête loadPeripheriques - data:', data);
+                console.log('🔍 Requête loadPeripheriques - error:', error);
+                
+                if (error) {
+                    console.error('❌ Erreur lors du chargement des périphériques:', error);
+                    return;
+                }
+                
+                console.log('🔍 Données brutes reçues:', data);
+                peripheriques = data || [];
+                console.log(`✅ ${peripheriques.length} périphériques chargés:`, peripheriques);
+                console.log('🔍 Variable peripheriques mise à jour:', peripheriques);
                 
             } catch (error) {
                 console.error('❌ Erreur lors du chargement des périphériques:', error);
@@ -702,6 +748,9 @@
                             <h3 style="color: #374151; font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; text-align: center;">
                                 Périphériques (${peripheriques.length})
                             </h3>
+                            <div style="text-align: center; margin-bottom: 1rem; color: #6b7280; font-size: 0.9rem;">
+                                Debug: ${peripheriques.length} périphériques dans la variable
+                            </div>
                             
                             ${peripheriques.length === 0 ? `
                                 <div style="text-align: center; padding: 2rem; color: #6b7280; background: #f9fafb; border-radius: 12px; border: 2px dashed #e5e7eb;">
@@ -753,7 +802,7 @@
             try {
                 console.log(`📥 Chargement des vérifications pour l'intervention: ${interventionId}`);
                 
-                const { data, error } = await supabase
+                const { data, error } = await getSupabaseClient()
                     .from('verifications')
                     .select('*')
                     .eq('id_intervention', interventionId)
@@ -1009,7 +1058,7 @@
             try {
                 console.log('📥 Ajout de l\'alarme:', formData);
                 
-                const { data, error } = await supabase
+                const { data, error } = await getSupabaseClient()
                     .from('alarmes')
                     .insert([formData])
                     .select();
@@ -1065,7 +1114,7 @@
             try {
                 console.log('📥 Modification de l\'alarme:', formData);
                 
-                const { data, error } = await supabase
+                const { data, error } = await getSupabaseClient()
                     .from('alarmes')
                     .update(formData)
                     .eq('id_alarme', alarme.id_alarme)
@@ -1197,10 +1246,54 @@
             try {
                 console.log('📥 Ajout du périphérique:', formData);
                 
-                const { data, error } = await supabase
+                // Vérifier l'authentification avant l'insertion
+                if (!simpleAuth || !simpleAuth.isLoggedIn()) {
+                    console.error('❌ Utilisateur non authentifié');
+                    alert('⚠️ Vous devez être connecté pour ajouter un périphérique');
+                    return;
+                }
+                
+                console.log('✅ Authentification vérifiée:', simpleAuth.getCurrentClient());
+                console.log('🔑 Token actuel:', localStorage.getItem('jpsi_token'));
+                
+                // Vérifier le client Supabase
+                const supabaseClient = getSupabaseClient();
+                console.log('🔌 Client Supabase:', supabaseClient);
+                
+                // Tentative d'insertion directe
+                let { data, error } = await supabaseClient
                     .from('peripheriques')
                     .insert([formData])
                     .select();
+                
+                console.log('🔍 Résultat insertion directe:', { data, error });
+                
+                // Si erreur RLS, essayer avec la fonction RPC
+                if (error && (error.code === '42501' || error.code === '401')) {
+                    console.log('🔄 Tentative avec fonction RPC...');
+                    console.log('🔍 Code d\'erreur:', error.code);
+                    console.log('🔍 Message d\'erreur:', error.message);
+                    
+                    const rpcResult = await supabaseClient
+                        .rpc('fn_insert_peripherique', { periph_in: formData });
+                    
+                    console.log('🔍 Résultat RPC:', rpcResult);
+                    
+                    if (rpcResult.error) {
+                        console.error('❌ Erreur RPC:', rpcResult.error);
+                        
+                        // Si la fonction RPC n'existe pas encore, proposer une solution
+                        if (rpcResult.error.code === 'PGRST202') {
+                            alert('⚠️ Fonction RPC non créée. Veuillez contacter l\'administrateur ou attendre la mise à jour.');
+                        } else {
+                            alert('Erreur lors de l\'ajout du périphérique (RLS + RPC échoué)');
+                        }
+                        return;
+                    }
+                    
+                    data = rpcResult.data;
+                    error = null;
+                }
                 
                 if (error) {
                     console.error('❌ Erreur lors de l\'ajout:', error);
@@ -1213,9 +1306,15 @@
                 // Fermer la modal
                 closeAddPeripheriqueModal();
                 
-                // Recharger les périphériques
-                await loadPeripheriques(alarme.id_alarme);
-                updateDisplay();
+                console.log('🔄 Rechargement des périphériques...');
+                // Recharger les périphériques avec le MÊME client Supabase
+                setTimeout(async () => {
+                    await loadPeripheriquesWithClient(supabaseClient, alarme.id_alarme);
+                    console.log('📊 Périphériques après rechargement:', peripheriques);
+                    
+                    console.log('🔄 Mise à jour de l\'affichage...');
+                    updateDisplay();
+                }, 500);
                 
                 alert('✅ Périphérique ajouté avec succès');
                 
@@ -1338,7 +1437,7 @@
             try {
                 console.log('📥 Modification du périphérique:', formData);
                 
-                const { data, error } = await supabase
+                const { data, error } = await getSupabaseClient()
                     .from('peripheriques')
                     .update(formData)
                     .eq('id_periph', peripheriqueId)
@@ -1405,7 +1504,7 @@
             }
             try {
                 console.log(`🗑️ Suppression du périphérique: ${peripheriqueId}`);
-                const { error } = await supabase
+                const { error } = await getSupabaseClient()
                     .from('peripheriques')
                     .delete()
                     .eq('id_periph', peripheriqueId);
@@ -1468,6 +1567,16 @@
         // Initialisation au chargement de la page
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Initialisation de la page Alarme Site...');
+            
+            // Vérifier l'authentification
+            if (!simpleAuth || !simpleAuth.isLoggedIn()) {
+                console.error('❌ Utilisateur non authentifié');
+                alert('⚠️ Vous devez être connecté pour accéder à cette page');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            console.log('✅ Utilisateur authentifié:', simpleAuth.getCurrentClient());
             
             // Récupérer l'ID du site et de l'intervention depuis l'URL
             const params = getSiteIdFromURL();

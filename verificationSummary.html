@@ -2523,17 +2523,18 @@
         const extincteursByAgent = groupExtincteursByAgent(verifiedEquipment.extincteurs);
         console.log('🔍 Extincteurs vérifiés groupés par agent:', extincteursByAgent);
         
-        Object.entries(extincteursByAgent).forEach(([agentId, extincteurs]) => {
+        Object.entries(extincteursByAgent).forEach(([groupKey, extincteurs]) => {
           // Récupérer le nom long depuis le premier extincteur du groupe
           const firstExtincteur = extincteurs[0];
-          const agentName = firstExtincteur.agent_long_name || `Agent ${agentId}`;
+          const agentName = firstExtincteur.agent_long_name || `Agent ${firstExtincteur.agent_ext}`;
+          const capacite = firstExtincteur.capacite_ext || 'Non spécifiée';
           const count = extincteurs.length;
           
-          console.log(`🔍 Ajout extincteur vérifié: ${agentName} - ${count} unités`);
+          console.log(`🔍 Ajout extincteur vérifié: ${agentName} ${capacite} - ${count} unités`);
           
           html += `
             <tr>
-              <td>Extincteur - ${agentName}</td>
+              <td>Extincteur - ${agentName} ${capacite}</td>
               <td class="equipment-count">${count}</td>
             </tr>
           `;
@@ -2625,9 +2626,11 @@
       
       extincteurs.forEach(ext => {
         const agentId = ext.agent_ext || 'Autre';
-        console.log(`🔍 Extincteur agent_ext: ${agentId}`);
-        if (!groups[agentId]) groups[agentId] = [];
-        groups[agentId].push(ext);
+        const capacite = ext.capacite_ext || 'Non spécifiée';
+        const groupKey = `${agentId}_${capacite}`;
+        console.log(`🔍 Extincteur agent_ext: ${agentId}, capacité: ${capacite}`);
+        if (!groups[groupKey]) groups[groupKey] = [];
+        groups[groupKey].push(ext);
       });
       
       console.log('🔍 Groupes finaux:', groups);
@@ -2932,10 +2935,12 @@
         // Ajouter les extincteurs
         if (equipmentData.extincteurs.length > 0) {
           const extincteursByAgent = groupExtincteursByAgent();
-          Object.entries(extincteursByAgent).forEach(([agentId, extincteurs]) => {
-            const agentName = getAgentLongName(agentId);
+          Object.entries(extincteursByAgent).forEach(([groupKey, extincteurs]) => {
+            const firstExtincteur = extincteurs[0];
+            const agentName = getAgentLongName(firstExtincteur.agent_ext);
+            const capacite = firstExtincteur.capacite_ext || 'Non spécifiée';
             const count = extincteurs.length;
-            tableData.push([`Extincteur - ${agentName}`, count.toString()]);
+            tableData.push([`Extincteur - ${agentName} ${capacite}`, count.toString()]);
           });
         }
         
@@ -3440,19 +3445,22 @@
           let equipements = [];
           let quantites = [];
           
-          // EXTINCTEURS par agent
+          // EXTINCTEURS par agent et capacité
           if (verifiedEquipment.extincteurs && verifiedEquipment.extincteurs.length > 0) {
             const extincteursByAgent = {};
             verifiedEquipment.extincteurs.forEach(ext => {
               const agentId = ext.agent_ext || 'Autre';
-              if (!extincteursByAgent[agentId]) extincteursByAgent[agentId] = [];
-              extincteursByAgent[agentId].push(ext);
+              const capacite = ext.capacite_ext || 'Non spécifiée';
+              const groupKey = `${agentId}_${capacite}`;
+              if (!extincteursByAgent[groupKey]) extincteursByAgent[groupKey] = [];
+              extincteursByAgent[groupKey].push(ext);
             });
             
-            Object.entries(extincteursByAgent).forEach(([agentId, extincteurs]) => {
+            Object.entries(extincteursByAgent).forEach(([groupKey, extincteurs]) => {
               const firstExtincteur = extincteurs[0];
-              const agentName = firstExtincteur.agent_long_name || `Agent ${agentId}`;
-              equipements.push(`Extincteur - ${agentName}`);
+              const agentName = firstExtincteur.agent_long_name || `Agent ${firstExtincteur.agent_ext}`;
+              const capacite = firstExtincteur.capacite_ext || 'Non spécifiée';
+              equipements.push(`Extincteur - ${agentName} ${capacite}`);
               quantites.push(extincteurs.length);
             });
           }

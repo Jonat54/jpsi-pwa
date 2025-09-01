@@ -450,8 +450,12 @@
           .select(`
             *,
             sites!inner(
+              id_site,
               nom_site,
-              clients!inner(nom_client)
+              clients!inner(
+                id_client,
+                nom_client
+              )
             )
           `)
            .in('etat_intervention', ['En cours', 'En attente'])
@@ -587,7 +591,18 @@
           return;
         }
 
+        console.log('🔍 Intervention trouvée:', intervention);
+        console.log('🔍 Structure sites:', intervention.sites);
+        
         const siteId = intervention.sites.id_site;
+        
+        if (!siteId) {
+          console.error('❌ Erreur : id_site manquant dans intervention.sites:', intervention.sites);
+          alert('❌ Erreur : Informations du site incomplètes');
+          return;
+        }
+        
+        console.log('✅ Site ID récupéré:', siteId);
         
         // Vérifier si les données sont déjà préchargées
         if (window.offlineFirstManager && window.offlineFirstManager.isDataPreloaded(siteId, interventionId)) {

@@ -309,10 +309,33 @@
         currentInterventionId = urlParams.get('intervention');
         currentSiteId = urlParams.get('site');
         
+        console.log('🔍 Paramètres récupérés:', { 
+          intervention: currentInterventionId, 
+          site: currentSiteId 
+        });
+        
         if (!currentInterventionId || !currentSiteId) {
           showError('Paramètres manquants. Veuillez revenir à la page précédente.');
           return;
         }
+        
+        // Valider que les paramètres sont des nombres valides
+        const interventionIdNum = parseInt(currentInterventionId);
+        const siteIdNum = parseInt(currentSiteId);
+        
+        if (isNaN(interventionIdNum) || isNaN(siteIdNum)) {
+          showError(`Paramètres invalides. Intervention: ${currentInterventionId}, Site: ${currentSiteId}`);
+          return;
+        }
+        
+        // Mettre à jour avec les valeurs validées
+        currentInterventionId = interventionIdNum;
+        currentSiteId = siteIdNum;
+        
+        console.log('✅ Paramètres validés:', { 
+          intervention: currentInterventionId, 
+          site: currentSiteId 
+        });
         
         // Vérifier la connectivité
         updateConnectivityStatus();
@@ -352,6 +375,22 @@
     async function startPreload() {
       if (isPreloading || !navigator.onLine) return;
       
+      // Validation supplémentaire des paramètres
+      if (!currentInterventionId || !currentSiteId || 
+          isNaN(currentInterventionId) || isNaN(currentSiteId)) {
+        console.error('❌ Paramètres invalides pour le préchargement:', {
+          intervention: currentInterventionId,
+          site: currentSiteId
+        });
+        showError('Paramètres invalides. Veuillez recharger la page.');
+        return;
+      }
+      
+      console.log('🚀 Début du préchargement avec paramètres:', {
+        intervention: currentInterventionId,
+        site: currentSiteId
+      });
+      
       isPreloading = true;
       updateUI('loading');
       
@@ -360,8 +399,8 @@
         
         // Utiliser le nouveau OfflineFirstManager
         const success = await window.offlineFirstManager.preloadInterventionData(
-          parseInt(currentInterventionId),
-          parseInt(currentSiteId),
+          currentInterventionId,
+          currentSiteId,
           updateProgress
         );
         

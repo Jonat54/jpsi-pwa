@@ -921,14 +921,14 @@
               ${currentExtincteur.agent_ext == 5 ? `
                 <button class="action-button" style="background: #ef4444;" onclick="addObservation('Devis Échange Standard')">🔄 Échange Standard</button>
                 <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Sérigraphie')">🎨 Sérigraphie</button>
-                <button class="action-button" style="background: #f97316;">❌ Inadapté</button>
+                <button class="action-button" style="background: #f97316;" onclick="addObservation('❌ Inadapté')">❌ Inadapté</button>
               ` : `
                 <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Corrosion Intérieur')">🔴 Corrosion Intérieur</button>
                 <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Corrosion Extérieur')">🔴 Corrosion Extérieur</button>
                 <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Choc Cuve')">💥 Choc Cuve</button>
                 <button class="action-button" style="background: #ef4444;" onclick="addObservation('Réformé Sérigraphie')">🎨 Sérigraphie</button>
-                <button class="action-button" style="background: #f97316;">❌ Inadapté</button>
-                <button class="action-button" style="background: #f97316;">⚠️ Début corrosion</button>
+                <button class="action-button" style="background: #f97316;" onclick="addObservation('❌ Inadapté')">❌ Inadapté</button>
+                <button class="action-button" style="background: #f97316;" onclick="addObservation('⚠️ Début corrosion')">⚠️ Début corrosion</button>
                 <button class="action-button" id="flammeGazBtn" style="background: #fbbf24; color: #23272b; font-weight:700;" onclick="addFlammeGazObservation()">🔥 Flamme Gaz</button>
               `}
             </div>
@@ -936,14 +936,29 @@
           
           <div class="info-section">
             <h3>Observations</h3>
-            <table class="info-table">
-              <tr>
-                <th style="cursor: pointer; color: #3b82f6;" onclick="openNoteModal()" title="Cliquer pour modifier les notes">📝 Notes</th>
-              </tr>
-              <tr>
-                <td>${existingVerification ? (existingVerification.observations || '') : (currentExtincteur.obs_ext || '')}</td>
-              </tr>
-            </table>
+            <div style="margin-bottom: 1rem;">
+              <label for="notesTextarea" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">📝 Notes personnalisées :</label>
+              <textarea 
+                id="notesTextarea" 
+                placeholder="Saisissez vos observations personnalisées ici..."
+                style="
+                  width: 100%;
+                  min-height: 120px;
+                  padding: 1rem;
+                  border: 2px solid #e5e7eb;
+                  border-radius: 8px;
+                  font-family: inherit;
+                  font-size: 0.95rem;
+                  resize: vertical;
+                  box-sizing: border-box;
+                  background: white;
+                "
+                oninput="updateNotesFromTextarea()"
+              >${existingVerification ? (existingVerification.observations || '') : (currentExtincteur.obs_ext || '')}</textarea>
+            </div>
+            <div style="margin-bottom: 1rem; font-size: 0.9rem; color: #6b7280;">
+              💡 <strong>Conseil :</strong> Vous pouvez écrire directement dans ce champ ou utiliser les boutons d'observations rapides ci-dessus
+            </div>
             <div class="buttons-row">
               ${existingVerification ? `
                 <button class="action-button" style="background: #9ca3af; cursor: not-allowed;" disabled title="Déjà vérifié dans cette intervention">✅ Vérifié</button>
@@ -1705,6 +1720,12 @@
       // Mettre à jour l'affichage localement
       currentExtincteur.obs_ext = newObs;
       
+      // Mettre à jour le textarea s'il existe
+      const textarea = document.getElementById('notesTextarea');
+      if (textarea) {
+        textarea.value = newObs || '';
+      }
+      
       updateDisplay();
     }
     
@@ -1772,8 +1793,12 @@
         
         console.log('✅ Données sauvegardées');
         
+        // Récupérer les notes depuis le textarea
+        const notesTextarea = document.getElementById('notesTextarea');
+        const currentNotes = notesTextarea ? notesTextarea.value.trim() : (currentExtincteur.obs_ext || '');
+        
         // Créer ou mettre à jour la vérification avec les observations
-        await createOrUpdateVerification(currentExtincteur.obs_ext);
+        await createOrUpdateVerification(currentNotes);
         
         goBack();
         
@@ -1957,14 +1982,30 @@
         
         console.log('✅ Données sauvegardées');
         
+        // Récupérer les notes depuis le textarea
+        const notesTextarea = document.getElementById('notesTextarea');
+        const currentNotes = notesTextarea ? notesTextarea.value.trim() : (currentExtincteur.obs_ext || '');
+        
         // Créer ou mettre à jour la vérification avec les observations
-        await createOrUpdateVerification(currentExtincteur.obs_ext);
+        await createOrUpdateVerification(currentNotes);
         
         goBack();
         
       } catch (error) {
         console.error('❌ Erreur de connexion:', error);
         alert('Erreur de connexion à la base de données');
+      }
+    }
+    
+    // Fonction pour mettre à jour les notes depuis le textarea
+    function updateNotesFromTextarea() {
+      if (!currentExtincteur) return;
+      
+      const textarea = document.getElementById('notesTextarea');
+      if (textarea) {
+        const newNotes = textarea.value.trim();
+        currentExtincteur.obs_ext = newNotes || null;
+        console.log('📝 Notes mises à jour depuis le textarea:', newNotes);
       }
     }
     

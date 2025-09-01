@@ -25,19 +25,6 @@
       box-sizing: border-box;
       overflow-x: hidden;
       overflow-y: auto;
-      position: relative;
-    }
-    
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(circle at 50% 50%, rgba(155, 36, 35, 0.03) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: -1;
     }
     
     .container {
@@ -47,66 +34,33 @@
       display: flex;
       flex-direction: column;
       gap: 2rem;
-      min-height: 100vh;
     }
     
     .header-card {
-      background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+      background: #f6f7f9;
       border: 3.5px solid #9B2423;
       border-radius: 38px;
-      box-shadow: 0 8px 32px rgba(155, 36, 35, 0.15), 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
       padding: 2rem;
       display: flex;
       align-items: center;
       gap: 1.5rem;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .header-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(155, 36, 35, 0.05) 0%, rgba(155, 36, 35, 0.02) 100%);
-      pointer-events: none;
     }
     
     .back-button {
-      background: linear-gradient(135deg, #9B2423 0%, #7a1d1c 100%);
+      background: #9B2423;
       color: white;
       border: none;
       border-radius: 50%;
       width: 50px;
       height: 50px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.2rem;
       font-weight: 600;
-      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .back-button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    .back-button:hover::before {
-      opacity: 1;
     }
     
     .back-button:hover {
@@ -131,14 +85,14 @@
     }
     
     .add-button {
-      background: linear-gradient(135deg, #9B2423 0%, #7a1d1c 100%);
+      background: #9B2423;
       color: white;
       border: none;
       border-radius: 50%;
       width: 50px;
       height: 50px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -146,24 +100,6 @@
       font-weight: 600;
       margin-left: auto;
       box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .add-button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 100%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    .add-button:hover::before {
-      opacity: 1;
     }
     
     .add-button:hover {
@@ -175,28 +111,10 @@
     .extincteurs-table {
       width: 100%;
       background: white;
-      border-radius: 0 0 16px 16px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.1);
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      transition: all 0.3s ease;
-      position: relative;
-    }
-    
-    .extincteurs-table::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
-    }
-    
-    .extincteurs-table:hover {
-      box-shadow: 0 8px 25px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.1);
-      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 2px solid #e5e7eb;
     }
     
     .extincteurs-table table {
@@ -205,25 +123,13 @@
     }
     
     .extincteurs-table th {
-      background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-      padding: 1.25rem 1rem;
+      background: #f9fafb;
+      padding: 1rem;
       text-align: left;
       font-weight: 600;
       color: #374151;
       border-bottom: 2px solid #e5e7eb;
       font-size: 0.9rem;
-      position: relative;
-      transition: background-color 0.3s ease;
-    }
-    
-    .extincteurs-table th::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent 0%, #d1d5db 50%, transparent 100%);
     }
     
     .extincteurs-table td {
@@ -269,14 +175,8 @@
       width: 8%;
     }
     
-    .extincteurs-table tr {
-      transition: all 0.3s ease;
-    }
-    
     .extincteurs-table tr:hover {
-      background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-      transform: translateX(4px);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      background: #f9fafb;
     }
     
     .status-indicator {
@@ -285,15 +185,8 @@
       border-radius: 50%;
       display: inline-block;
       margin-right: 0.5rem;
-      border: 2px solid;
+      border: 1px solid #d1d5db;
       cursor: help;
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .status-indicator:hover {
-      transform: scale(1.2);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
     .status-ok {
@@ -316,40 +209,216 @@
       border-color: #6b7280;
     }
     
+    /* Styles pour la modal d'ajout d'extincteur */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #374151;
+      margin: 0;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .form-select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      background: white;
+    }
+    
+    .form-select:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: flex-end;
+    }
+    
+    .modal-button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-button.primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .modal-button.primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .modal-button.secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .modal-button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    /* Styles pour le switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #6b7280;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #10b981;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
     /* Styles pour la barre de recherche et les filtres */
     .search-filter-bar {
       display: flex;
       gap: 0.75rem;
       align-items: center;
-      padding: 1rem 1.5rem;
+      padding: 0.75rem 1rem;
       border-bottom: 1px solid #f3f4f6;
       flex-wrap: wrap;
-      background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+      background: white;
       border-radius: 16px 16px 0 0;
-      position: relative;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    
-    .search-filter-bar::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
     }
     
     .search-input {
       max-width: 420px;
-      padding: 0.875rem 1rem;
+      padding: 0.75rem;
       border: 2px solid #e5e7eb;
-      border-radius: 10px;
+      border-radius: 8px;
       font-size: 0.95rem;
-      transition: all 0.3s ease;
+      transition: border-color 0.2s;
       box-sizing: border-box;
-      background: #ffffff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     
     .search-input:focus {
@@ -364,55 +433,31 @@
     }
     
     .filter-button {
-      padding: 0.625rem 1.25rem;
+      padding: 0.5rem 1rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s;
       font-size: 0.9rem;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .filter-button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s ease;
-    }
-    
-    .filter-button:hover::before {
-      left: 100%;
     }
     
     .filter-button.secondary {
-      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      background: #f3f4f6;
       color: #374151;
-      border: 1px solid #d1d5db;
     }
     
     .filter-button.secondary:hover {
-      background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      background: #e5e7eb;
     }
     
     .filter-button.primary {
-      background: linear-gradient(135deg, #9B2423 0%, #7a1d1c 100%);
+      background: #9B2423;
       color: white;
-      border: 1px solid #7a1d1c;
-      box-shadow: 0 2px 4px rgba(155, 36, 35, 0.2);
     }
     
     .filter-button.primary:hover {
-      background: linear-gradient(135deg, #7a1d1c 0%, #5a1514 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(155, 36, 35, 0.3);
+      background: #7a1d1c;
     }
     
     .count-display {
@@ -439,40 +484,9 @@
       font-size: 0.85em;
     }
     
-    .empty-state {
-      text-align: center;
-      padding: 4rem 3rem;
-      color: #6b7280;
-      background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
-      border-radius: 20px;
-      border: 2px solid #e5e7eb;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      margin: 2rem 0;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .empty-state::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(155, 36, 35, 0.02) 0%, rgba(155, 36, 35, 0.01) 100%);
-      pointer-events: none;
-    }
-    
     .empty-state-icon {
       font-size: 4rem;
       margin-bottom: 1rem;
-      opacity: 0.8;
-      transition: all 0.3s ease;
-    }
-    
-    .empty-state:hover .empty-state-icon {
-      opacity: 1;
-      transform: scale(1.05);
     }
     
     .empty-state-title {
@@ -480,36 +494,26 @@
       font-weight: 600;
       margin-bottom: 0.5rem;
       color: #374151;
-      transition: color 0.3s ease;
     }
     
     .empty-state-description {
       font-size: 1rem;
       margin-bottom: 2rem;
-      line-height: 1.6;
-      color: #6b7280;
     }
     
-    .modal-button.add-green {
-      background: #10b981;
-      color: white;
-      font-size: 1.1rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      padding: 1.1rem 2.2rem;
-      cursor: pointer;
-      transition: all 0.2s;
+    .dates-row {
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      box-shadow: 0 2px 8px rgba(16,185,129,0.08);
+      gap: 1rem;
+      margin-bottom: 1rem;
     }
-    
-    .modal-button.add-green:hover {
-      background: #059669;
-      box-shadow: 0 4px 16px rgba(16,185,129,0.18);
-      transform: translateY(-2px);
+    .dates-row .form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    .form-input[disabled] {
+      background: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
     }
     
     @media (max-width: 900px) {
@@ -541,6 +545,11 @@
         font-size: 1.3rem;
       }
       
+      .extincteurs-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
       .extincteurs-table {
         overflow-x: auto;
       }
@@ -554,6 +563,26 @@
         padding: 0.75rem;
         font-size: 0.9rem;
       }
+    }
+    .modal-button.add-green {
+      background: #10b981;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 1.1rem 2.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 8px rgba(16,185,129,0.08);
+    }
+    .modal-button.add-green:hover {
+      background: #059669;
+      box-shadow: 0 4px 16px rgba(16,185,129,0.18);
+      transform: translateY(-2px);
     }
   </style>
 </head>
@@ -715,21 +744,17 @@
           });
         }
         
-                 // Ajouter le court_agent aux données
-         const extincteursWithAgent = data.map(ext => ({
-           ...ext,
-           court_agent: agentsMap[ext.agent_ext] || 'N/A'
-         }));
-         
-         extincteurs = extincteursWithAgent;
-         console.log(`✅ ${extincteurs.length} extincteurs chargés et triés avec agents:`, extincteurs);
-         
-       } catch (error) {
-         console.error('❌ Erreur lors du chargement des extincteurs:', error);
-       }
-     }
-     
-     // Fonction pour charger les extincteurs
+        // Ajouter le court_agent aux données
+        const extincteursWithAgent = data.map(ext => ({
+          ...ext,
+          court_agent: agentsMap[ext.agent_ext] || 'N/A'
+        }));
+        
+        extincteurs = extincteursWithAgent;
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+search_replace
+    
+    // Fonction pour charger les extincteurs
     async function loadExtincteurs(siteId) {
       try {
         console.log(`📥 Chargement des extincteurs pour le site: ${siteId}`);
