@@ -1,5 +1,67 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.37 - Interface Modale Extincteurs Modernisée
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### ✨ **Amélioration - Interface Modale Extincteurs**
+
+#### **Problème résolu**
+- ❌ **Interface basique** : La modale d'ajout d'extincteur était très basique et manquait de style
+- ❌ **Design incohérent** : Utilisation de styles inline et de classes CSS non optimisées
+- ❌ **Expérience utilisateur** : Interface peu engageante et difficile à utiliser
+
+#### **Solution implémentée**
+- ✅ **Design moderne** : Interface complètement repensée avec un design cohérent et professionnel
+- ✅ **Organisation claire** : Formulaire organisé en sections logiques avec icônes et titres
+- ✅ **Animations fluides** : Transitions et animations pour une expérience utilisateur agréable
+- ✅ **Responsive design** : Interface adaptée aux différentes tailles d'écran
+
+### 🎨 **Caractéristiques du Design**
+
+#### **Header de la modale**
+- 🔥 **Icône thématique** : Emoji feu pour représenter la sécurité incendie
+- 🎨 **Gradient moderne** : Header avec dégradé rouge JPSI et effets de transparence
+- 📱 **Bouton de fermeture** : Bouton moderne avec icône SVG et effets hover
+
+#### **Organisation du formulaire**
+- 📋 **Sections organisées** : Informations de base, certification, caractéristiques, etc.
+- 🏷️ **Titres avec icônes** : Chaque section a un titre descriptif avec emoji
+- 🎯 **Placeholders informatifs** : Exemples concrets dans les champs de saisie
+
+#### **Éléments interactifs**
+- 🔍 **Bouton de recherche** : Bouton de recherche de certification avec icône SVG
+- ⚡ **Switches modernes** : Toggles pour PAPP et panneau avec animations
+- 🎨 **Boutons d'action** : Boutons primaire et secondaire avec effets hover
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `extSite.html` - Interface modale complètement modernisée
+- `index.html` - Version 1.4.37
+- `manifest.json` - Version 1.4.37
+- `service-worker.js` - Version 1.4.37
+- `CHANGELOG.md` - Version 1.4.37
+
+### 🔧 **Détails Techniques**
+
+#### **Styles CSS ajoutés**
+- **Animations** : `modalFadeIn`, `modalSlideIn` pour les transitions
+- **Gradients** : Dégradés modernes pour les boutons et sections
+- **Effets visuels** : Ombres, bordures arrondies, effets de transparence
+- **Responsive** : Media queries pour l'adaptation mobile
+
+#### **Structure HTML améliorée**
+- **Sémantique** : Utilisation de `form-section` et `section-title`
+- **Accessibilité** : Labels associés aux champs avec `for`
+- **Icônes SVG** : Icônes vectorielles pour les boutons et actions
+
+### 🎯 **Résultat**
+Une modale d'ajout d'extincteur moderne, belle et professionnelle qui améliore significativement l'expérience utilisateur.
+
+---
+
 ## 🚀 Version 1.4.36 - Restauration Fonctionnement Modale Extincteurs
 
 **Date :** 2025-01-XX  

@@ -1,9 +1,9 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
 // Version v1.4.30 - Fix Groupement Extincteurs par Capacité
 
-const STATIC_CACHE = 'jpsi-static-v1.4.36';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.36';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.36';
+const STATIC_CACHE = 'jpsi-static-v1.4.37';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.37';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.37';
 
 // Pages principales de l'application (liste explicite)
 const ALL_PAGES = [
@@ -165,7 +165,7 @@ const utils = {
 
 // Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-            console.log('🔄 Service Worker: Installation v1.4.36...');
+            console.log('🔄 Service Worker: Installation v1.4.37...');
     
     evt.waitUntil(
         (async () => {
@@ -195,7 +195,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-            console.log('🔄 Service Worker: Activation v1.4.36...');
+            console.log('🔄 Service Worker: Activation v1.4.37...');
     
     evt.waitUntil(
         (async () => {
@@ -362,4 +362,4 @@ self.addEventListener('message', (event) => {
     }
 });
 
-        console.log('✅ Service Worker chargé v1.4.36 - Restauration Fonctionnement Modale Extincteurs');
+        console.log('✅ Service Worker chargé v1.4.37 - Interface Modale Extincteurs Modernisée');
