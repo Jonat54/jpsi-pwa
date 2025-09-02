@@ -629,22 +629,38 @@
       };
     }
     
-    // Fonction unifiée pour charger les données avec fallback offline
+    // Fonction pour charger les données du site
     async function loadSiteData(params) {
       try {
         console.log(`📥 Chargement des données pour le site: ${params.siteId}`);
         
-        // Utiliser le gestionnaire offline unifié
-        const result = await window.offlineManager.loadSiteDataWithFallback(
-          params.siteId, 
-          params.interventionId
-        );
-        
         if (params.interventionId) {
-          // Mode intervention
-          currentIntervention = result;
-          currentSite = result.sites;
-          currentClient = result.sites.clients;
+          // Mode intervention - charger depuis Supabase
+          const { data: intervention, error: interventionError } = await getSupabase()
+            .from('interventions')
+            .select(`
+              *,
+              sites!inner(
+                id_site,
+                nom_site,
+                clients!inner(
+                  id_client,
+                  nom_client
+                )
+              )
+            `)
+            .eq('id_intervention', params.interventionId)
+            .single();
+          
+          if (interventionError) {
+            console.error('❌ Erreur lors du chargement de l\'intervention:', interventionError);
+            showError('Erreur lors du chargement de l\'intervention');
+            return;
+          }
+          
+          currentIntervention = intervention;
+          currentSite = intervention.sites;
+          currentClient = intervention.sites.clients;
           
           console.log('✅ Intervention chargée:', currentIntervention);
           console.log('✅ Données du site chargées:', currentSite);
@@ -653,16 +669,34 @@
           // Charger les vérifications de l'intervention
           await loadVerifications(params.interventionId);
         } else {
-          // Mode création de parc
+          // Mode création de parc - charger directement le site
+          const { data: site, error: siteError } = await getSupabase()
+            .from('sites')
+            .select(`
+              *,
+              clients!inner(
+                id_client,
+                nom_client
+              )
+            `)
+            .eq('id_site', params.siteId)
+            .single();
+          
+          if (siteError) {
+            console.error('❌ Erreur lors du chargement du site:', siteError);
+            showError('Erreur lors du chargement du site');
+            return;
+          }
+          
           currentIntervention = null;
-          currentSite = result.site;
-          currentClient = result.client;
+          currentSite = site;
+          currentClient = site.clients;
           
           console.log('✅ Données du site chargées:', currentSite);
           console.log('✅ Données du client chargées:', currentClient);
         }
         
-        // Charger les extincteurs avec fallback offline
+        // Charger les extincteurs
         await loadExtincteurs(params.siteId);
         
         // Mettre à jour l'interface
@@ -696,40 +730,7 @@
       }
     }
     
-    // Fonction unifiée pour charger les extincteurs avec fallback offline
-    async function loadExtincteurs(siteId) {
-      try {
-        console.log(`📥 Chargement des extincteurs pour le site: ${siteId}`);
-        
-        // Utiliser le gestionnaire offline unifié
-        const data = await window.offlineManager.loadEquipmentsWithFallback('extincteurs', siteId);
-        
-        // Charger les agents avec fallback offline
-        const agentsData = await window.offlineManager.loadAgentsWithFallback('AgentExtincteur');
-        
-        // Créer un map des agents pour un accès rapide
-        const agentsMap = {};
-        if (agentsData) {
-          agentsData.forEach(agent => {
-            agentsMap[agent.id_agt] = agent.court_agt;
-          });
-        }
-        
-                 // Ajouter le court_agent aux données
-         const extincteursWithAgent = data.map(ext => ({
-           ...ext,
-           court_agent: agentsMap[ext.agent_ext] || 'N/A'
-         }));
-         
-         extincteurs = extincteursWithAgent;
-         console.log(`✅ ${extincteurs.length} extincteurs chargés et triés avec agents:`, extincteurs);
-         
-       } catch (error) {
-         console.error('❌ Erreur lors du chargement des extincteurs:', error);
-       }
-     }
-     
-     // Fonction pour charger les extincteurs
+    // Fonction pour charger les extincteurs
     async function loadExtincteurs(siteId) {
       try {
         console.log(`📥 Chargement des extincteurs pour le site: ${siteId}`);
@@ -782,64 +783,8 @@
         console.error('❌ Erreur lors du chargement des extincteurs:', error);
       }
     }
-    
-    // Fonction pour charger les extincteurs en mode hors ligne depuis IndexedDB
-    async function loadExtincteursOffline(siteId) {
-      try {
-        console.log(`📱 Chargement des extincteurs depuis le cache local pour le site: ${siteId}`);
-        
-        // Vérifier si IndexedDB est disponible
-        if (!window.indexedDBManager) {
-          console.error('❌ IndexedDB non disponible');
-          return;
-        }
-        
-        // Charger les extincteurs depuis IndexedDB
-        const allExtincteurs = await indexedDBManager.getAllData('extincteurs');
-        const siteExtincteurs = allExtincteurs.filter(ext => ext.id_site === siteId);
-        
-        if (siteExtincteurs.length === 0) {
-          console.log('📱 Aucun extincteur trouvé dans le cache local');
-          extincteurs = [];
-          return;
-        }
-        
-        // Trier les extincteurs par numéro de manière numérique
-        const sortedData = siteExtincteurs.sort((a, b) => {
-          const numA = parseInt(a.num_ext) || 0;
-          const numB = parseInt(b.num_ext) || 0;
-          return numA - numB;
-        });
-        
-        // Charger les agents depuis IndexedDB si disponible
-        let agentsMap = {};
-        try {
-          const allAgents = await indexedDBManager.getAllData('fire_extinguisher_certification_registry');
-          if (allAgents && allAgents.length > 0) {
-            allAgents.forEach(agent => {
-              if (agent.id_agt && agent.court_agt) {
-                agentsMap[agent.id_agt] = agent.court_agt;
-              }
-            });
-          }
-        } catch (e) {
-          console.log('⚠️ Agents non disponibles dans le cache local');
-        }
-        
-        // Ajouter le court_agent aux données
-        const extincteursWithAgent = sortedData.map(ext => ({
-          ...ext,
-          court_agent: agentsMap[ext.agent_ext] || 'N/A'
-        }));
-        
-        extincteurs = extincteursWithAgent;
-        console.log(`📱 ${extincteurs.length} extincteurs chargés depuis le cache local:`, extincteurs);
-        
-      } catch (error) {
-        console.error('❌ Erreur lors du chargement hors ligne des extincteurs:', error);
-        extincteurs = [];
-      }
-    }
+     
+
     
     // Fonction pour mettre à jour l'affichage
     function updateDisplay() {
@@ -1721,21 +1666,6 @@
     document.addEventListener('DOMContentLoaded', async () => {
       console.log('🚀 Initialisation de la page Extincteurs Site...');
       
-      // Vérifier d'abord si on est hors ligne
-      if (!navigator.onLine) {
-        console.log('📱 Mode hors ligne détecté - Chargement depuis le cache local');
-        await loadSiteDataOffline();
-        return;
-      }
-      
-      // Tester la connexion Supabase seulement si en ligne
-      const connectionOk = await testSupabaseConnection();
-      if (!connectionOk) {
-        console.log('⚠️ Connexion Supabase échouée - Tentative de chargement hors ligne');
-        await loadSiteDataOffline();
-        return;
-      }
-      
       // Récupérer l'ID du site et de l'intervention depuis l'URL
       const params = getSiteIdFromURL();
       
@@ -1751,22 +1681,7 @@
       console.log('✅ Page initialisée, agents à charger lors de l\'ouverture de la modal');
     });
     
-    // Écouter les changements de statut réseau
-    window.addEventListener('online', async () => {
-      console.log('🌐 Connexion rétablie - Tentative de rechargement depuis Supabase');
-      try {
-        const params = getSiteIdFromURL();
-        if (params) {
-          await loadSiteData(params);
-        }
-      } catch (error) {
-        console.error('❌ Erreur lors du rechargement en ligne:', error);
-      }
-    });
-    
-    window.addEventListener('offline', () => {
-      console.log('📱 Connexion perdue - Mode hors ligne activé');
-    });
+
   </script>
 </body>
 </html> 

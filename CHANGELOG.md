@@ -1,5 +1,39 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.36 - Restauration Fonctionnement Modale Extincteurs
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### 🔧 **Correction - Fonctionnement Modale Extincteurs**
+
+#### **Problème résolu**
+- ❌ **Fonctions offline inexistantes** : Références à `loadSiteDataOffline()` et `window.offlineManager` non définies
+- ❌ **Fonctions dupliquées** : Deux fonctions `loadExtincteurs` identiques causant des conflits
+- ❌ **Logique complexe** : Gestionnaire offline complexe non fonctionnel
+
+#### **Solution implémentée**
+- ✅ **Fonctions nettoyées** : Suppression des références aux fonctions offline inexistantes
+- ✅ **Logique simplifiée** : Utilisation directe de Supabase pour le chargement des données
+- ✅ **Code optimisé** : Suppression des fonctions dupliquées et du code mort
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `extSite.html` - Nettoyage et simplification des fonctions de chargement
+- `index.html` - Version 1.4.36
+- `manifest.json` - Version 1.4.36
+- `service-worker.js` - Version 1.4.36
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience améliorée**
+- 🚀 **Modale fonctionnelle** : La modale d'ajout d'extincteur fonctionne maintenant correctement
+- 📝 **Chargement stable** : Plus d'erreurs liées aux fonctions offline manquantes
+- 🔄 **Performance** : Code simplifié et plus rapide
+
+---
+
 ## 🚀 Version 1.4.35 - Correction Bouton Ajout Extincteur
 
 **Date :** 2025-01-XX  
