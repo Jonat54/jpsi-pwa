@@ -1,5 +1,39 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.35 - Correction Bouton Ajout Extincteur
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### 🐛 **Correction - Bouton Ajout Extincteur**
+
+#### **Problème résolu**
+- ❌ **Bouton manquant** : Le bouton d'ajout d'extincteur n'était pas affiché dans `extSite.html`
+- ❌ **Fonctionnalité perdue** : Impossible d'ajouter de nouveaux extincteurs depuis la liste
+- ❌ **Interface incomplète** : La nouvelle interface dynamique oubliait le bouton d'ajout
+
+#### **Solution implémentée**
+- ✅ **Bouton restauré** : Ajout du bouton "+ Ajouter un extincteur" après le tableau
+- ✅ **Positionnement optimal** : Bouton centré sous le tableau avec espacement approprié
+- ✅ **Style cohérent** : Utilisation de la classe `modal-button add-green` pour la cohérence visuelle
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `extSite.html` - Restauration du bouton d'ajout d'extincteur
+- `index.html` - Version 1.4.35
+- `manifest.json` - Version 1.4.35
+- `service-worker.js` - Version 1.4.35
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience restaurée**
+- 🚀 **Ajout d'extincteurs** : Possibilité d'ajouter de nouveaux extincteurs depuis la liste
+- 📝 **Interface complète** : Toutes les fonctionnalités de gestion des extincteurs disponibles
+- 🔄 **Workflow normal** : Processus d'ajout d'extincteur fonctionnel comme avant
+
+---
+
 ## 🚀 Version 1.4.34 - Notes Directes
 
 **Date :** 2025-01-XX  
