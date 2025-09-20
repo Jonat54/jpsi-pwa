@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/indexedDB.js"></script>
+  <script src="js/networkStatus.js"></script>
   <script src="js/syncManager.js"></script>
   <script>
     // Enregistrer le Service Worker pour le mode offline
@@ -263,11 +264,11 @@
         </span>
         <span class="tile-label">Création Parc</span>
       </div>
-      <div class="tile">
+      <div class="tile" id="catalogueTile" onclick="navigateToCatalogue()">
         <span class="tile-icon">
-          <img src="icons/appicon/codag.png" alt="Soon" class="icon-img" />
+          <img src="icons/appicon/codag.png" alt="Catalogue Équipements" class="icon-img" />
         </span>
-        <span class="tile-label">Soon</span>
+        <span class="tile-label">Catalogue Équipements</span>
       </div>
       <div class="tile">
         <span class="tile-icon">
@@ -382,6 +383,11 @@
       } else {
         alert('⚠️ Connexion non établie. Impossible d\'accéder à la création de parc.');
       }
+    }
+    
+    // Fonction de navigation vers le Catalogue des Équipements
+    function navigateToCatalogue() {
+      window.location.href = 'catalogue.html';
     }
     
 

@@ -1,21 +1,26 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
-// Version v1.4.30 - Fix Groupement Extincteurs par Capacité
+// Version v1.4.39 - Fix Mode Offline iPad Safari
 
-const STATIC_CACHE = 'jpsi-static-v1.4.37';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.37';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.37';
+const STATIC_CACHE = 'jpsi-static-v1.4.39';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.39';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.39';
 
-// Pages principales de l'application (liste explicite)
+// Pages ESSENTIELLES pour le terrain (intervention)
 const ALL_PAGES = [
+    // Pages de base
     '/index.html',
     '/accueil.html',
     '/login.html',
+    '/offline.html',
+    
+    // Vérifications des équipements (ESSENTIEL)
     '/verification.html',
     '/newVerification.html',
     '/ongoingVerification.html',
     '/verificationDetail.html',
     '/verificationSummary.html',
-    '/verificationHistory.html',
+    
+    // Équipements à vérifier
     '/verifSite.html',
     '/verifDes.html',
     '/extSite.html',
@@ -25,23 +30,14 @@ const ALL_PAGES = [
     '/alarmeSite.html',
     '/desenfumageList.html',
     '/desenfumageDetail.html',
-    '/desenfumageInstallation.html',
-    '/desenfumageHierarchie.html',
+    '/verifAlarme.html',
+    
+    // Navigation clients/sites (pour accéder aux équipements)
     '/ListClients.html',
-    '/addClient.html',
-    '/editClient.html',
-    '/client.html',
-    '/addSite.html',
-    '/editSite.html',
     '/detailSite.html',
-    '/audits.html',
-    '/newAudit.html',
-    '/auditDetail.html',
-    '/auditHistory.html',
-    '/inventairePDF.html',
-    '/stocks.html',
-    '/parametres.html',
-    '/offline.html'
+    
+    // Page de test
+    '/test-offline-ipad.html'
 ];
 
 // Ressources statiques critiques
@@ -51,6 +47,7 @@ const STATIC_RESOURCES = [
     '/supabase-config.js',
     '/simple_auth.js',
     '/js/indexedDB.js',
+    '/js/networkStatus.js',
     '/js/syncManager.js',
     '/manifest.json',
     '/icons/icon-192x192.png',
@@ -146,30 +143,57 @@ const utils = {
         return new Response('Page non disponible', { status: 404 });
     },
     
-    // Vérifier le quota de stockage (iPadOS)
+    // Vérifier le quota de stockage (iPadOS) - Version robuste
     async checkStorageQuota() {
         if ('storage' in navigator && 'estimate' in navigator.storage) {
             try {
                 const estimate = await navigator.storage.estimate();
-                const usagePercent = (estimate.usage / estimate.quota) * 100;
-                console.log(`💾 Stockage: ${usagePercent.toFixed(1)}% utilisé`);
-                return usagePercent < 90; // Garder 10% de marge
+                if (estimate.quota && estimate.usage !== undefined) {
+                    const usagePercent = (estimate.usage / estimate.quota) * 100;
+                    console.log(`💾 Stockage: ${usagePercent.toFixed(1)}% utilisé (${estimate.usage}/${estimate.quota})`);
+                    return usagePercent < 85; // Garder 15% de marge pour iPad
+                }
+                return true; // Si pas de quota défini, continuer
             } catch (error) {
                 console.warn('⚠️ Impossible de vérifier le quota:', error);
                 return true; // Continuer par défaut
             }
         }
         return true;
+    },
+    
+    // Nettoyer le cache si nécessaire (iPadOS)
+    async cleanupCacheIfNeeded() {
+        try {
+            const estimate = await navigator.storage.estimate();
+            if (estimate.quota && estimate.usage && (estimate.usage / estimate.quota) > 0.8) {
+                console.log('🧹 Nettoyage du cache - Quota élevé');
+                const cacheNames = await caches.keys();
+                const oldCaches = cacheNames.filter(name => 
+                    name.includes('jpsi-static-v1.4.') && !name.includes('v1.4.39')
+                );
+                
+                for (const cacheName of oldCaches) {
+                    await caches.delete(cacheName);
+                    console.log(`🗑️ Cache supprimé: ${cacheName}`);
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ Erreur nettoyage cache:', error);
+        }
     }
 };
 
 // Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-            console.log('🔄 Service Worker: Installation v1.4.37...');
+    console.log('🔄 Service Worker: Installation v1.4.39...');
     
     evt.waitUntil(
         (async () => {
             try {
+                // Nettoyer le cache avant installation
+                await utils.cleanupCacheIfNeeded();
+                
                 const cache = await caches.open(STATIC_CACHE);
                 const allResources = [...ALL_PAGES, ...STATIC_RESOURCES];
                 
@@ -185,6 +209,7 @@ self.addEventListener('install', (evt) => {
                 const fallbackCache = await caches.open(FALLBACK_CACHE);
                 await utils.cacheAddAllWithRetry(fallbackCache, FALLBACK_PAGES);
                 
+                console.log('✅ Installation terminée, activation...');
                 await self.skipWaiting();
             } catch (error) {
                 console.error('❌ Erreur installation:', error);
@@ -195,7 +220,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-            console.log('🔄 Service Worker: Activation v1.4.37...');
+    console.log('🔄 Service Worker: Activation v1.4.39...');
     
     evt.waitUntil(
         (async () => {
@@ -212,7 +237,15 @@ self.addEventListener('activate', (evt) => {
                 
                 await Promise.all(deletePromises);
                 console.log('✅ Service Worker activé');
+                
+                // Forcer l'activation immédiate pour iPad
                 await self.clients.claim();
+                
+                // Notifier tous les clients de l'activation
+                const clients = await self.clients.matchAll();
+                clients.forEach(client => {
+                    client.postMessage({ type: 'SW_ACTIVATED', version: 'v1.4.39' });
+                });
             } catch (error) {
                 console.error('❌ Erreur activation:', error);
             }
@@ -220,7 +253,7 @@ self.addEventListener('activate', (evt) => {
     );
 });
 
-// Interception des requêtes - Cache First simple pour iPadOS
+// Interception des requêtes - Cache First optimisé pour iPadOS
 self.addEventListener('fetch', (evt) => {
     const request = evt.request;
     const url = new URL(request.url);
@@ -242,83 +275,120 @@ self.addEventListener('fetch', (evt) => {
     evt.respondWith(
         (async () => {
             try {
-                // Stratégie Cache First simple
-                // Normaliser la navigation: si '/', servir '/index.html'
+                // Normaliser la navigation pour iPad Safari
                 let effectiveRequest = request;
                 if (request.mode === 'navigate') {
                     const isRoot = url.pathname === '/' || url.pathname === '';
                     if (isRoot) {
-                        effectiveRequest = new Request('/index.html', { headers: request.headers, mode: 'same-origin' });
+                        effectiveRequest = new Request('/index.html', { 
+                            headers: request.headers, 
+                            mode: 'same-origin',
+                            credentials: 'same-origin'
+                        });
                     }
                 }
+                
+                // Stratégie Cache First optimisée pour iPad
                 const cachedResponse = await caches.match(effectiveRequest);
                 
-                if (cachedResponse) {
-                    // Éviter de renvoyer une réponse redirigée depuis le cache
-                    if (cachedResponse.type === 'opaqueredirect' || cachedResponse.redirected) {
-                        console.warn('⚠️ Réponse redirigée détectée dans le cache, on l’ignore:', effectiveRequest.url);
-                    } else {
+                if (cachedResponse && cachedResponse.ok) {
+                    // Vérification stricte pour iPad Safari
+                    if (cachedResponse.type !== 'opaqueredirect' && 
+                        !cachedResponse.redirected && 
+                        cachedResponse.status === 200) {
                         console.log('✅ Ressource servie depuis le cache:', effectiveRequest.url);
                         return cachedResponse;
+                    } else {
+                        console.warn('⚠️ Réponse cache invalide détectée:', effectiveRequest.url, {
+                            type: cachedResponse.type,
+                            redirected: cachedResponse.redirected,
+                            status: cachedResponse.status
+                        });
                     }
                 }
                 
-                // Vérifier le quota avant de mettre en cache
-                const hasQuota = await utils.checkStorageQuota();
-                
+                // Tentative réseau avec gestion d'erreur robuste
                 try {
-                    const networkResponse = await fetch(effectiveRequest, { redirect: 'follow' });
+                    const networkResponse = await fetch(effectiveRequest, { 
+                        redirect: 'follow',
+                        credentials: 'same-origin',
+                        cache: 'no-cache' // Forcer la vérification réseau
+                    });
                     
-                    if (networkResponse && networkResponse.status === 200) {
+                    if (networkResponse && networkResponse.ok) {
+                        // Nettoyer les réponses redirigées pour iPad
+                        let responseToCache = networkResponse;
                         if (networkResponse.redirected) {
-                            // Nettoyer la réponse: supprimer les en-têtes de redirection
                             const body = await networkResponse.blob();
                             const headers = new Headers();
-                            const contentType = networkResponse.headers.get('Content-Type');
-                            if (contentType) headers.set('Content-Type', contentType);
-                            const cleanResponse = new Response(body, { status: 200, headers });
-                            return cleanResponse;
+                            headers.set('Content-Type', networkResponse.headers.get('Content-Type') || 'text/html');
+                            headers.set('Cache-Control', 'max-age=3600');
+                            responseToCache = new Response(body, { 
+                                status: 200, 
+                                statusText: 'OK',
+                                headers 
+                            });
                         }
-                        // Mettre en cache seulement si on a du quota
-                        if (hasQuota) {
-                            const responseClone = networkResponse.clone();
+                        
+                        // Mettre en cache avec vérification de quota
+                        const hasQuota = await utils.checkStorageQuota();
+                        if (hasQuota && !responseToCache.redirected) {
                             const cacheName = isStaticResource ? STATIC_CACHE : DYNAMIC_CACHE;
                             const cache = await caches.open(cacheName);
-                            if (responseClone.type !== 'opaqueredirect') {
-                                await cache.put(effectiveRequest, responseClone);
-                                console.log('✅ Ressource mise en cache:', effectiveRequest.url);
-                            } else {
-                                console.warn('⚠️ Réponse opaqueredirect non mise en cache:', effectiveRequest.url);
-                            }
+                            const responseClone = responseToCache.clone();
+                            await cache.put(effectiveRequest, responseClone);
+                            console.log('✅ Ressource mise en cache:', effectiveRequest.url);
                         }
-                        return networkResponse;
+                        
+                        return responseToCache;
+                    } else {
+                        throw new Error(`HTTP ${networkResponse?.status || 'Unknown'}`);
                     }
-                    
-                    // Réponse non-200, essayer le fallback
-                    throw new Error(`HTTP ${networkResponse.status}`);
                     
                 } catch (networkError) {
-                    console.log('❌ Erreur réseau:', effectiveRequest.url, networkError);
+                    console.log('❌ Erreur réseau:', effectiveRequest.url, networkError.message);
                     
-                    // Pour les pages, essayer le fallback
-                    if (request.destination === 'document') {
-                        return await utils.getFallbackPage();
+                    // Fallback pour les pages HTML
+                    if (request.destination === 'document' || request.mode === 'navigate') {
+                        console.log('🔄 Tentative de fallback pour page HTML...');
+                        const fallback = await utils.getFallbackPage();
+                        if (fallback && fallback.ok) {
+                            console.log('✅ Page de fallback servie');
+                            return fallback;
+                        }
                     }
                     
-                    // Pour les ressources statiques, essayer offline.html
-                    return await caches.match('/offline.html') || 
-                           new Response('Ressource non disponible', { status: 404 });
+                    // Fallback pour les ressources statiques
+                    const offlineResource = await caches.match('/offline.html');
+                    if (offlineResource) {
+                        return offlineResource;
+                    }
+                    
+                    // Dernier recours - réponse d'erreur simple
+                    return new Response('Ressource non disponible en mode offline', { 
+                        status: 503,
+                        statusText: 'Service Unavailable',
+                        headers: { 'Content-Type': 'text/plain' }
+                    });
                 }
                 
             } catch (error) {
-                console.error('❌ Erreur fetch:', error);
+                console.error('❌ Erreur fetch critique:', error);
                 
-                // Dernier recours
-                if (request.destination === 'document') {
-                    return await utils.getFallbackPage();
+                // Dernier recours absolu
+                if (request.destination === 'document' || request.mode === 'navigate') {
+                    const lastResort = await caches.match('/index.html') || 
+                                     await caches.match('/accueil.html');
+                    if (lastResort) {
+                        return lastResort;
+                    }
                 }
                 
-                return new Response('Erreur interne', { status: 500 });
+                return new Response('Erreur interne du service worker', { 
+                    status: 500,
+                    statusText: 'Internal Server Error',
+                    headers: { 'Content-Type': 'text/plain' }
+                });
             }
         })()
     );
@@ -331,7 +401,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.4.28' });
+        event.ports[0].postMessage({ version: 'v1.4.39' });
     }
     
     if (event.data && event.data.type === 'GET_STORAGE_INFO') {
@@ -362,4 +432,4 @@ self.addEventListener('message', (event) => {
     }
 });
 
-        console.log('✅ Service Worker chargé v1.4.37 - Interface Modale Extincteurs Modernisée');
+console.log('✅ Service Worker chargé v1.4.39 - Fix Mode Offline iPad Safari');

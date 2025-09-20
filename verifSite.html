@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/indexedDB.js"></script>
+  <script src="js/networkStatus.js"></script>
   <script src="js/syncManager.js"></script>
   <script src="js/offlineSync.js"></script>
   <script>
@@ -600,57 +601,7 @@
       }
     }
 
-    .sync-status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      padding: 0.8rem 1.2rem;
-      background: #f6f7f9;
-      border: 2px solid #9B2423;
-      border-radius: 20px;
-      font-size: 0.9rem;
-    }
-    
-    .sync-icon {
-      font-size: 1.2rem;
-      animation: spin 2s linear infinite;
-    }
-    
-    .sync-info {
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-    }
-    
-    .sync-text {
-      font-weight: 600;
-      color: #23272b;
-    }
-    
-    .sync-details {
-      font-size: 0.8rem;
-      color: #6b7280;
-    }
-    
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    .sync-status-indicator.offline {
-      border-color: #6b7280;
-      background: #f3f4f6;
-    }
-    
-    .sync-status-indicator.syncing {
-      border-color: #059669;
-      background: #ecfdf5;
-    }
-    
-    .sync-status-indicator.error {
-      border-color: #dc2626;
-      background: #fef2f2;
-    }
+    /* Les indicateurs de synchronisation sont maintenant gérés par NetworkStatusIndicator */
   </style>
 </head>
 <body>
@@ -683,14 +634,7 @@
       </div>
       </div>
       
-      <!-- Indicateur de synchronisation offline -->
-      <div id="syncStatusIndicator" class="sync-status-indicator" style="display: none;">
-        <div class="sync-icon">🔄</div>
-        <div class="sync-info">
-          <div class="sync-text">Synchronisation</div>
-          <div class="sync-details">En attente...</div>
-        </div>
-      </div>
+      <!-- L'indicateur de synchronisation est maintenant géré par NetworkStatusIndicator -->
     </div>
     
     
@@ -1936,37 +1880,21 @@
       }
     }
 
-    // Fonction pour mettre à jour le statut de synchronisation
+    // Fonction pour mettre à jour le statut de synchronisation (utilise NetworkStatusIndicator)
     function updateSyncStatus() {
-      if (!window.offlineSyncManager) return;
+      if (!window.offlineSyncManager || !window.networkStatus) return;
       
       const status = window.offlineSyncManager.getSyncStatus();
-      const indicator = document.getElementById('syncStatusIndicator');
-      
-      if (!indicator) return;
       
       if (status.total === 0) {
-        indicator.style.display = 'none';
+        window.networkStatus.stopSync();
         return;
       }
       
-      indicator.style.display = 'flex';
-      
-      // Retirer toutes les classes de statut
-      indicator.classList.remove('offline', 'syncing', 'error');
-      
-      if (status.failed > 0) {
-        indicator.classList.add('error');
-        indicator.querySelector('.sync-details').textContent = `${status.failed} erreur(s)`;
-      } else if (status.isSyncing) {
-        indicator.classList.add('syncing');
-        indicator.querySelector('.sync-details').textContent = `Synchronisation...`;
-      } else if (status.pending > 0) {
-        indicator.classList.add('offline');
-        indicator.querySelector('.sync-details').textContent = `${status.pending} en attente`;
+      if (status.failed > 0 || status.isSyncing || status.pending > 0) {
+        window.networkStatus.startSync();
       } else {
-        indicator.classList.add('syncing');
-        indicator.querySelector('.sync-details').textContent = 'À jour';
+        window.networkStatus.stopSync();
       }
     }
 

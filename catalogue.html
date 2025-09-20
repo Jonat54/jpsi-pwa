@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9B2423">
+  <meta name="description" content="Catalogue des équipements BMSI - JPSI">
+  <title>JPSI - Catalogue Équipements</title>
+  
+  <!-- PWA Meta Tags iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPSI">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/indexedDB.js"></script>
+  <script src="js/networkStatus.js"></script>
+  <script src="js/syncManager.js"></script>
+  <script>
+    // Enregistrer le Service Worker pour le mode offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {
+        scope: '/'
+      }).then(function(registration) {
+        console.log('✅ ServiceWorker enregistré:', registration.scope);
+      }).catch(function(err) {
+        console.log('❌ Échec ServiceWorker:', err);
+      });
+    }
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      background: repeating-linear-gradient(135deg, #23272b 0 10px, #262a2e 10px 20px);
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    
+    .header-card {
+      position: fixed;
+      top: 2rem;
+      left: 2rem;
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 50%;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 0;
+      z-index: 10;
+    }
+    
+    .back-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .back-button:hover {
+      background: #7a1d1c;
+      transform: scale(1.05);
+    }
+    
+    .main-container {
+      padding: 8rem 2rem 2rem 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .header-section {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+    
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .add-button {
+      background: linear-gradient(135deg, #9B2423 0%, #7a1d1c 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-left: auto;
+      box-shadow: 0 4px 12px rgba(155, 36, 35, 0.3);
+    }
+    
+    .add-button:hover {
+      background: #7a1d1c;
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(155, 36, 35, 0.4);
+    }
+    
+    .search-section {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    
+    .search-container {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    .search-input {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      transition: border-color 0.2s;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .refresh-button {
+      background: #9B2423;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .refresh-button:hover {
+      background: #7a1d1c;
+    }
+    
+    .table-card {
+      background: #f6f7f9;
+      border: 3.5px solid #9B2423;
+      border-radius: 38px;
+      box-shadow: 0 6px 24px 0 rgba(30,32,36,0.13), 0 1.5px 0 #e5e7eb inset;
+      padding: 2rem;
+      overflow: hidden;
+    }
+    
+    .equipements-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .equipements-table th {
+      background: #9B2423;
+      color: white;
+      padding: 1.2rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .equipements-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.95rem;
+    }
+    
+    .equipements-table tr:hover {
+      background: #f8f9fa;
+      cursor: pointer;
+    }
+    
+    .equipements-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .sortable-header {
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s;
+    }
+    
+    .sortable-header:hover {
+      background-color: #7a1d1c;
+    }
+    
+    .sort-icon {
+      margin-left: 6px;
+      opacity: 0.8;
+      font-size: 0.85em;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 4rem 3rem;
+      color: #6b7280;
+      background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+      border-radius: 20px;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      margin: 2rem 0;
+    }
+    
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.8;
+    }
+    
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #374151;
+    }
+    
+    .empty-state-description {
+      font-size: 1rem;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+      color: #6b7280;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+    
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 2rem;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .close-button {
+      background: #e5e7eb;
+      color: #374151;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: all 0.2s;
+    }
+    
+    .close-button:hover {
+      background: #d1d5db;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+    .form-select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-select:focus {
+      outline: none;
+      border-color: #9B2423;
+    }
+    
+         .switch-container {
+       display: flex;
+       align-items: center;
+       gap: 1rem;
+     }
+     
+     .switch {
+       position: relative;
+       display: inline-block;
+       width: 60px;
+       height: 30px;
+     }
+     
+     .switch-input {
+       opacity: 0;
+       width: 0;
+       height: 0;
+     }
+     
+     .slider {
+       position: absolute;
+       cursor: pointer;
+       top: 0;
+       left: 0;
+       right: 0;
+       bottom: 0;
+       background-color: #e5e7eb;
+       transition: 0.3s;
+       border-radius: 30px;
+       border: 2px solid #d1d5db;
+     }
+     
+     .slider:before {
+       position: absolute;
+       content: "";
+       height: 22px;
+       width: 22px;
+       left: 2px;
+       bottom: 2px;
+       background-color: white;
+       transition: 0.3s;
+       border-radius: 50%;
+       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+     }
+     
+     .switch-input:checked + .slider {
+       background-color: #9B2423;
+       border-color: #7a1d1c;
+     }
+     
+     .switch-input:checked + .slider:before {
+       transform: translateX(30px);
+     }
+     
+     .switch-label {
+       font-weight: 600;
+       color: #374151;
+       min-width: 30px;
+     }
+    
+    .modal-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid #e5e7eb;
+    }
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #9B2423;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #7a1d1c;
+    }
+    
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+    
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    
+    @media (max-width: 768px) {
+      .main-container {
+        padding: 6rem 1rem 1rem 1rem;
+      }
+      
+      .header-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
+      
+      .add-button {
+        margin-left: 0;
+      }
+      
+      .search-container {
+        flex-direction: column;
+      }
+      
+      .equipements-table {
+        font-size: 0.9rem;
+      }
+      
+      .equipements-table th,
+      .equipements-table td {
+        padding: 0.75rem 0.5rem;
+      }
+      
+      .modal-content {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header Card -->
+  <div class="header-card">
+    <button class="back-button" onclick="goBack()" title="Retour">
+      ‹
+    </button>
+  </div>
+
+  <div class="main-container">
+    <!-- Header Section -->
+    <div class="header-section">
+      <div>
+        <h1 class="header-title">Catalogue des Équipements</h1>
+        <p class="header-subtitle">Gestion et modification des équipements de sécurité</p>
+      </div>
+      <button class="add-button" onclick="openAddModal()" title="Ajouter un équipement">
+        +
+      </button>
+    </div>
+    
+    <!-- Search Section -->
+    <div class="search-section">
+      <div class="search-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un équipement..." oninput="filterEquipements()">
+        <button class="refresh-button" onclick="refreshData()">
+          🔄 Rafraîchir
+        </button>
+      </div>
+    </div>
+    
+    <!-- Table Section -->
+    <div class="table-card">
+      <div id="tableContainer">
+        <div class="loading">Chargement des équipements...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal d'édition/ajout -->
+  <div id="equipmentModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Modifier l'équipement</h2>
+        <button class="close-button" onclick="closeModal()">×</button>
+      </div>
+      
+      <form id="equipmentForm">
+        <div class="form-group">
+          <label class="form-label" for="editMarque">Marque *</label>
+          <input type="text" class="form-input" id="editMarque" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="editModele">Modèle *</label>
+          <input type="text" class="form-input" id="editModele" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="editCertification">Certification *</label>
+          <input type="text" class="form-input" id="editCertification" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="editCapacit">Capacité (kg) *</label>
+          <input type="number" class="form-input" id="editCapacit" min="1" max="200" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="editIdAgent">Type d'agent *</label>
+          <select class="form-select" id="editIdAgent" required>
+            <option value="">Sélectionner un type</option>
+            <option value="1">CO2</option>
+            <option value="2">Eau + Additif</option>
+            <option value="3">Poudre ABC</option>
+            <option value="4">Mousse AFFF</option>
+            <option value="5">Dioxyde de carbone</option>
+            <option value="6">Eau pulvérisée</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Pression permanente</label>
+          <div class="switch-container">
+            <label class="switch">
+              <input type="checkbox" id="editPression" class="switch-input">
+              <span class="slider"></span>
+            </label>
+            <span class="switch-label" id="pressionLabel">Non</span>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+          <button type="button" class="btn btn-danger" id="deleteButton" onclick="deleteEquipment()" style="display: none;">Supprimer</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Supabase
+    const SUPABASE_URL = 'https://anyzqzhjvankvbbajahj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXpxemhqdmFua3ZiYmFqYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NTIzMjgsImV4cCI6MjA2NjMyODMyOH0.74pICcGtU_Ks0COTtPsSOQ8qtLfOzRHTNa1A41BAiMU';
+    
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Variables globales
+    let equipements = [];
+    let filteredEquipements = [];
+    let currentEquipment = null;
+    let isEditMode = false;
+    let sortColumn = 'marque';
+    let sortDirection = 'asc';
+    
+    // Fonction pour retourner à la page précédente
+    function goBack() {
+      window.location.href = 'verification.html';
+    }
+    
+    // Fonction pour charger les équipements
+    async function loadEquipements() {
+      try {
+        console.log('🔍 Chargement des équipements...');
+        
+        // Charger les données SANS tri côté serveur pour éviter les conflits
+        const { data, error } = await supabase
+          .from('fire_extinguisher_certification_registry')
+          .select('*');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement:', error);
+          showError('Erreur lors du chargement des équipements');
+          return;
+        }
+        
+        equipements = data || [];
+        
+        // Appliquer le tri côté client après chargement
+        if (sortColumn && sortDirection) {
+          equipements.sort((a, b) => {
+            let aVal = a[sortColumn];
+            let bVal = b[sortColumn];
+            
+            if (aVal === null || aVal === undefined) aVal = '';
+            if (bVal === null || bVal === undefined) bVal = '';
+            
+            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+            
+            if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+          });
+        }
+        
+        filteredEquipements = [...equipements];
+        
+        console.log('✅ Équipements chargés:', equipements.length);
+        console.log('🔍 Données brutes de la base:', equipements);
+        console.log('🔍 Premier équipement (pression):', equipements[0]?.pression, typeof equipements[0]?.pression);
+        displayEquipements();
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        showError('Erreur lors du chargement des équipements');
+      }
+    }
+    
+    // Fonction pour afficher les équipements
+    function displayEquipements() {
+      const container = document.getElementById('tableContainer');
+      
+      if (filteredEquipements.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">Aucun équipement trouvé</div>
+            <div class="empty-state-description">
+              ${equipements.length === 0 ? 'Aucun équipement dans la base de données' : 'Aucun équipement ne correspond à votre recherche'}
+            </div>
+          </div>
+        `;
+        return;
+      }
+      
+      const tableHTML = `
+        <table class="equipements-table">
+          <thead>
+            <tr>
+              <th class="sortable-header" onclick="sortTable('marque')">
+                Marque ${getSortIcon('marque')}
+              </th>
+              <th class="sortable-header" onclick="sortTable('modele')">
+                Modèle ${getSortIcon('modele')}
+              </th>
+              <th class="sortable-header" onclick="sortTable('certification')">
+                Certification ${getSortIcon('certification')}
+              </th>
+              <th class="sortable-header" onclick="sortTable('capacit')">
+                Capacité ${getSortIcon('capacit')}
+              </th>
+              <th class="sortable-header" onclick="sortTable('id_agent')">
+                Type d'agent ${getSortIcon('id_agent')}
+              </th>
+              <th>Pression</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredEquipements.map(equip => `
+              <tr onclick="editEquipment(${equip.id})">
+                <td>${equip.marque || 'N/A'}</td>
+                <td>${equip.modele || 'N/A'}</td>
+                <td>${equip.certification || 'N/A'}</td>
+                <td>${equip.capacit ? equip.capacit + ' kg' : 'N/A'}</td>
+                <td>${getAgentType(equip.id_agent)}</td>
+                <td>${equip.pression ? 'Oui' : 'Non'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      container.innerHTML = tableHTML;
+    }
+    
+         // Fonction pour obtenir le type d'agent
+     function getAgentType(idAgent) {
+       const agentTypes = {
+         1: 'CO2',
+         2: 'Eau + Additif',
+         3: 'Poudre ABC',
+         4: 'Mousse AFFF',
+         5: 'Dioxyde de carbone',
+         6: 'Eau pulvérisée'
+       };
+       return agentTypes[idAgent] || 'Standard';
+     }
+    
+    // Fonction pour filtrer les équipements
+    function filterEquipements() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      
+      if (!searchTerm) {
+        filteredEquipements = [...equipements];
+      } else {
+        filteredEquipements = equipements.filter(equip =>
+          (equip.marque && equip.marque.toLowerCase().includes(searchTerm)) ||
+          (equip.modele && equip.modele.toLowerCase().includes(searchTerm)) ||
+          (equip.certification && equip.certification.toLowerCase().includes(searchTerm)) ||
+          (equip.capacit && equip.capacit.toString().includes(searchTerm))
+        );
+      }
+      
+      displayEquipements();
+    }
+    
+         // Fonction pour trier le tableau
+     function sortTable(column) {
+       if (sortColumn === column) {
+         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+       } else {
+         sortColumn = column;
+         sortDirection = 'asc';
+       }
+       
+       // Créer une copie pour le tri sans modifier l'original
+       const sortedEquipements = [...equipements].sort((a, b) => {
+         let aVal = a[column];
+         let bVal = b[column];
+         
+         if (aVal === null || aVal === undefined) aVal = '';
+         if (bVal === null || bVal === undefined) bVal = '';
+         
+         if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+         if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+         
+         if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+         if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+         return 0;
+       });
+       
+       filteredEquipements = sortedEquipements;
+       displayEquipements();
+     }
+    
+    // Fonction pour obtenir l'icône de tri
+    function getSortIcon(column) {
+      if (sortColumn !== column) return '↕️';
+      return sortDirection === 'asc' ? '↑' : '↓';
+    }
+    
+         // Fonction pour ouvrir la modale d'ajout
+     function openAddModal() {
+       isEditMode = false;
+       currentEquipment = null;
+       
+       document.getElementById('modalTitle').textContent = 'Ajouter un équipement';
+       document.getElementById('equipmentForm').reset();
+       document.getElementById('deleteButton').style.display = 'none';
+       
+       // Réinitialiser le label de pression
+       updatePressionLabel();
+       
+       document.getElementById('equipmentModal').style.display = 'flex';
+     }
+    
+         // Fonction pour éditer un équipement
+     function editEquipment(id) {
+       const equip = equipements.find(e => e.id === id);
+       if (!equip) return;
+       
+       isEditMode = true;
+       currentEquipment = equip;
+       
+       document.getElementById('modalTitle').textContent = 'Modifier l\'équipement';
+       document.getElementById('deleteButton').style.display = 'block';
+       
+       // Remplir le formulaire
+       document.getElementById('editMarque').value = equip.marque || '';
+       document.getElementById('editModele').value = equip.modele || '';
+       document.getElementById('editCertification').value = equip.certification || '';
+       document.getElementById('editCapacit').value = equip.capacit || '';
+       document.getElementById('editIdAgent').value = equip.id_agent || '';
+       document.getElementById('editPression').checked = equip.pression || false;
+       
+       // Mettre à jour le label de pression
+       updatePressionLabel();
+       
+       document.getElementById('equipmentModal').style.display = 'flex';
+     }
+    
+    // Fonction pour fermer la modale
+    function closeModal() {
+      document.getElementById('equipmentModal').style.display = 'none';
+    }
+    
+    // Fonction pour supprimer un équipement
+    async function deleteEquipment() {
+      if (!currentEquipment || !confirm('Êtes-vous sûr de vouloir supprimer cet équipement ?')) {
+        return;
+      }
+      
+      try {
+        const { error } = await supabase
+          .from('fire_extinguisher_certification_registry')
+          .delete()
+          .eq('id', currentEquipment.id);
+        
+        if (error) {
+          console.error('❌ Erreur lors de la suppression:', error);
+          alert('Erreur lors de la suppression de l\'équipement');
+          return;
+        }
+        
+        console.log('✅ Équipement supprimé');
+        closeModal();
+        loadEquipements();
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        alert('Erreur lors de la suppression de l\'équipement');
+      }
+    }
+    
+    // Fonction pour rafraîchir les données
+    async function refreshData() {
+      await loadEquipements();
+    }
+    
+    // Fonction pour afficher une erreur
+    function showError(message) {
+      const container = document.getElementById('tableContainer');
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">❌</div>
+          <div class="empty-state-title">Erreur</div>
+          <div class="empty-state-description">${message}</div>
+        </div>
+      `;
+    }
+    
+         // Gestion du formulaire
+     document.getElementById('equipmentForm').addEventListener('submit', async (e) => {
+       e.preventDefault();
+       
+       const formData = {
+         marque: document.getElementById('editMarque').value.trim(),
+         modele: document.getElementById('editModele').value.trim(),
+         certification: document.getElementById('editCertification').value.trim(),
+         capacit: parseInt(document.getElementById('editCapacit').value),
+         id_agent: parseInt(document.getElementById('editIdAgent').value),
+         pression: document.getElementById('editPression').checked
+       };
+       
+               // Debug: afficher les données du formulaire
+        console.log('📝 Données du formulaire:', formData);
+        console.log('🔍 État de la pression:', document.getElementById('editPression').checked);
+        console.log('🔍 Type de pression:', typeof document.getElementById('editPression').checked);
+        
+        try {
+          if (isEditMode && currentEquipment) {
+            // Mise à jour
+            console.log('🔄 Mise à jour de l\'équipement ID:', currentEquipment.id);
+            console.log('🔄 Données envoyées à Supabase:', JSON.stringify(formData));
+            
+                         // Essayer d'abord la mise à jour normale
+             console.log('🔄 Tentative de mise à jour normale...');
+             const { error: updateError } = await supabase
+               .from('fire_extinguisher_certification_registry')
+               .update(formData)
+               .eq('id', currentEquipment.id);
+            
+            if (updateError) {
+              console.error('❌ Erreur mise à jour normale:', updateError);
+              throw updateError;
+            }
+            console.log('✅ Équipement mis à jour avec succès');
+            
+            // Vérifier que la mise à jour a bien eu lieu
+            const { data: verifyData, error: verifyError } = await supabase
+              .from('fire_extinguisher_certification_registry')
+              .select('*')
+              .eq('id', currentEquipment.id)
+              .single();
+            
+            if (verifyError) {
+              console.error('❌ Erreur lors de la vérification:', verifyError);
+            } else {
+              console.log('✅ Vérification de la mise à jour:', verifyData);
+              console.log('✅ Pression après mise à jour:', verifyData.pression);
+              
+              // Si la pression n'a pas été mise à jour, essayer une approche alternative
+              if (verifyData.pression !== formData.pression) {
+                console.log('⚠️ La pression n\'a pas été mise à jour, tentative alternative...');
+                
+                                 // Essayer avec une requête SQL brute directe
+                 console.log('🔄 Tentative avec requête SQL brute...');
+                 const { error: sqlError } = await supabase
+                   .from('fire_extinguisher_certification_registry')
+                   .update({ pression: formData.pression })
+                   .eq('id', currentEquipment.id);
+                 
+                 if (sqlError) {
+                   console.error('❌ Erreur requête SQL alternative:', sqlError);
+                   
+                   // Dernière tentative : essayer de forcer la mise à jour
+                   console.log('🔄 Dernière tentative : mise à jour forcée...');
+                   try {
+                     const { error: forceError } = await supabase
+                       .from('fire_extinguisher_certification_registry')
+                       .update({ 
+                         marque: formData.marque,
+                         modele: formData.modele,
+                         certification: formData.certification,
+                         capacit: formData.capacit,
+                         id_agent: formData.id_agent,
+                         pression: formData.pression
+                       })
+                       .eq('id', currentEquipment.id);
+                     
+                     if (forceError) {
+                       console.error('❌ Erreur mise à jour forcée:', forceError);
+                     } else {
+                       console.log('✅ Mise à jour forcée réussie');
+                     }
+                   } catch (forceCatch) {
+                     console.error('❌ Exception mise à jour forcée:', forceCatch);
+                   }
+                 } else {
+                   console.log('✅ Mise à jour alternative réussie');
+                 }
+              }
+            }
+            
+          } else {
+            // Ajout
+            console.log('➕ Ajout d\'un nouvel équipement');
+            const { data, error } = await supabase
+              .from('fire_extinguisher_certification_registry')
+              .insert([formData])
+              .select();
+            
+            if (error) throw error;
+            console.log('✅ Équipement ajouté avec succès');
+            console.log('✅ Données retournées par Supabase:', data);
+          }
+          
+          closeModal();
+          await loadEquipements();
+          
+        } catch (error) {
+          console.error('❌ Erreur lors de la sauvegarde:', error);
+          alert('Erreur lors de la sauvegarde de l\'équipement');
+        }
+     });
+    
+         // Fonction pour mettre à jour le label de pression
+     function updatePressionLabel() {
+       const pressionCheckbox = document.getElementById('editPression');
+       const pressionLabel = document.getElementById('pressionLabel');
+       const isChecked = pressionCheckbox.checked;
+       pressionLabel.textContent = isChecked ? 'Oui' : 'Non';
+       console.log('🔄 Label pression mis à jour:', isChecked ? 'Oui' : 'Non');
+     }
+     
+     // Événement pour le switch de pression
+     document.getElementById('editPression').addEventListener('change', updatePressionLabel);
+     
+     // Fermer la modale en cliquant sur l'overlay
+     document.getElementById('equipmentModal').addEventListener('click', (e) => {
+       if (e.target === e.currentTarget) {
+         closeModal();
+       }
+     });
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 Initialisation de la page Catalogue...');
+      loadEquipements();
+    });
+  </script>
+</body>
+</html>

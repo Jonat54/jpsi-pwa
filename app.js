@@ -166,31 +166,12 @@ const App = {
 
     // 📱 Mettre à jour l'interface utilisateur
     updateUI() {
-        // Créer ou mettre à jour l'indicateur de statut réseau
-        let statusIndicator = document.getElementById('networkStatus');
-        if (!statusIndicator) {
-            statusIndicator = document.createElement('div');
-            statusIndicator.id = 'networkStatus';
-            statusIndicator.style.cssText = `
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                background: ${this.isOnline ? '#4CAF50' : '#f44336'};
-                color: white;
-                padding: 8px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: bold;
-                z-index: 1000;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            `;
-            document.body.appendChild(statusIndicator);
+        // Utiliser le composant NetworkStatusIndicator unifié
+        if (window.networkStatus) {
+            // Le composant gère automatiquement l'affichage
         }
-        
-        statusIndicator.textContent = this.isOnline ? '🌐 En ligne' : '❌ Hors ligne';
-        statusIndicator.style.background = this.isOnline ? '#4CAF50' : '#f44336';
 
-        // Mettre à jour les indicateurs de statut
+        // Mettre à jour les indicateurs de statut dans les pages
         const statusElements = document.querySelectorAll('.status-indicator');
         statusElements.forEach(element => {
             if (element.id === 'connectionStatus') {
@@ -211,35 +192,12 @@ const App = {
                 element.className = 'status-indicator status-offline';
             }
         });
-
-        // Afficher/masquer les indicateurs de statut réseau
-        this.showNetworkStatus();
     },
 
-    // 📡 Afficher le statut réseau
+    // 📡 Afficher le statut réseau (utilise le composant unifié)
     showNetworkStatus() {
-        let statusIndicator = document.getElementById('networkStatus');
-        if (!statusIndicator) {
-            statusIndicator = document.createElement('div');
-            statusIndicator.id = 'networkStatus';
-            statusIndicator.style.cssText = `
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                background: ${this.isOnline ? '#4CAF50' : '#f44336'};
-                color: white;
-                padding: 8px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: bold;
-                z-index: 1000;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            `;
-            document.body.appendChild(statusIndicator);
-        }
-        
-        statusIndicator.textContent = this.isOnline ? '🌐 En ligne' : '❌ Hors ligne';
-        statusIndicator.style.background = this.isOnline ? '#4CAF50' : '#f44336';
+        // Le composant NetworkStatusIndicator gère automatiquement l'affichage
+        // Cette méthode est conservée pour la compatibilité mais ne fait plus rien
     },
 
     // 📥 Pré-charger les données essentielles

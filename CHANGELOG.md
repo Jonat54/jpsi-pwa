@@ -1,5 +1,120 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.39 - Fix Mode Offline iPad Safari
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### 🔧 **Correction Critique - Mode Offline iPad Safari**
+
+#### **Problème résolu**
+- ❌ **Pages non accessibles offline** : Les pages HTML n'étaient pas correctement mises en cache sur iPad Safari
+- ❌ **Gestion quota insuffisante** : Problèmes de quota de stockage sur iPad causant des échecs de cache
+- ❌ **Stratégie cache défaillante** : Cache First ne fonctionnait pas correctement pour les pages HTML
+- ❌ **Fallbacks inefficaces** : Les pages de secours n'étaient pas correctement servies
+
+#### **Solution implémentée**
+- ✅ **Stratégie cache optimisée** : Cache First robuste spécifiquement pour iPad Safari
+- ✅ **Gestion quota améliorée** : Vérification et nettoyage automatique du cache
+- ✅ **Fallbacks robustes** : Chaîne de fallback améliorée avec vérifications strictes
+- ✅ **Gestion d'erreur renforcée** : Logs détaillés et récupération d'erreur
+
+### 🎯 **Améliorations Techniques**
+
+#### **Service Worker v1.4.39**
+- **Cache First optimisé** : Vérifications strictes des réponses cache pour iPad
+- **Nettoyage automatique** : Suppression des anciens caches si quota élevé
+- **Gestion redirections** : Nettoyage des réponses redirigées problématiques
+- **Fallbacks en chaîne** : index.html → accueil.html → offline.html
+
+#### **Gestion Quota iPad**
+- **Vérification robuste** : Gestion des cas où quota n'est pas défini
+- **Marge de sécurité** : 15% de marge au lieu de 10% pour iPad
+- **Nettoyage préventif** : Suppression automatique des anciens caches
+- **Logs détaillés** : Affichage de l'usage et quota en console
+
+#### **Stratégie de Cache**
+- **Vérification stricte** : Contrôle de type, redirection et statut
+- **Cache no-cache** : Force la vérification réseau pour les mises à jour
+- **Headers optimisés** : Cache-Control et Content-Type corrects
+- **Gestion credentials** : Credentials same-origin pour Safari
+
+### 📱 **Composants Modifiés**
+
+#### **Fichiers mis à jour**
+- `service-worker.js` - Version 1.4.39 avec optimisations iPad
+- `manifest.json` - Version 1.4.39
+- `index.html` - Version splash 1.4.39
+- `test-offline-ipad.html` - Nouvelle page de test iPad
+
+### 🧪 **Page de Test iPad**
+
+#### **Nouvelle fonctionnalité**
+- **Test complet** : Service Worker, cache, navigation, mode offline
+- **Interface dédiée** : Tests spécifiques pour iPad Safari
+- **Logs détaillés** : Diagnostic complet des problèmes
+- **Simulation offline** : Test du mode hors ligne
+
+#### **Tests disponibles**
+- **Service Worker** : Vérification d'activation et communication
+- **Cache Storage** : Inspection des caches et calcul de taille
+- **Navigation** : Test d'accès aux pages en cache
+- **Mode Offline** : Simulation et validation du mode hors ligne
+
+### 🎯 **Impact Utilisateur**
+
+#### **Expérience améliorée**
+- 🚀 **Mode offline fonctionnel** : Les pages sont maintenant accessibles hors ligne sur iPad
+- 📱 **Navigation fluide** : Plus de blocage lors de la navigation offline
+- 🔄 **Cache fiable** : Mise en cache robuste des pages HTML
+- 💾 **Gestion quota** : Évite les erreurs de stockage sur iPad
+
+#### **Cas d'usage corrigés**
+- **Intervention sous-sol** : Navigation offline complète sur iPad
+- **Zone sans réseau** : Accès à toutes les pages préchargées
+- **Gestion mémoire** : Nettoyage automatique du cache
+- **Récupération d'erreur** : Fallbacks efficaces en cas de problème
+
+---
+
+## 🚀 Version 1.4.38 - Standardisation des Indicateurs de Statut Réseau
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### ✨ **Amélioration - Indicateurs de Statut Réseau Unifiés**
+
+#### **Problème résolu**
+- ❌ **Indicateurs multiples** : Plusieurs implémentations différentes d'indicateurs réseau dans le projet
+- ❌ **Design incohérent** : Bulles vertes/rouges avec du texte, styles disparates
+- ❌ **Code redondant** : Duplication de code pour la gestion des statuts réseau
+- ❌ **Interface encombrée** : Indicateurs complexes avec trop d'informations
+
+#### **Solution implémentée**
+- ✅ **Composant unifié** : `NetworkStatusIndicator` standardisé pour tout le projet
+- ✅ **Design minimaliste** : Voyant vert (connecté), rouge (hors ligne), roulette (synchronisation)
+- ✅ **Code propre** : Suppression de tous les indicateurs redondants
+- ✅ **Interface épurée** : Design simple et efficace, non-intrusif
+
+#### **Fichiers modifiés**
+- ✅ `js/networkStatus.js` - Composant unifié (déjà existant, optimisé)
+- ✅ `js/syncManager.js` - Utilisation du composant unifié
+- ✅ `app.js` - Suppression des indicateurs redondants
+- ✅ `verifSite.html` - Nettoyage des styles complexes
+- ✅ `testOffline.html` - Suppression des styles redondants
+- ✅ `offline.html` - Nettoyage des indicateurs
+- ✅ Tous les fichiers HTML - Ajout de l'import `js/networkStatus.js`
+- ✅ `service-worker.js` - Mise à jour du cache
+- ✅ `manifest.json` - Version 1.4.38
+
+#### **Avantages**
+- 🎯 **Simplicité** : Un seul indicateur clair et compréhensible
+- 🎨 **Cohérence** : Design uniforme sur toute l'application
+- 🚀 **Performance** : Code optimisé, moins de redondance
+- 👥 **UX améliorée** : Interface plus propre et professionnelle
+
+---
+
 ## 🚀 Version 1.4.37 - Interface Modale Extincteurs Modernisée
 
 **Date :** 2025-01-XX  

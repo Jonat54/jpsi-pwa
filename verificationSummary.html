@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Résumé Vérification - JPSI</title>
+  <title>Résumé Vérification - JPSI v1.4.38</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
@@ -113,6 +113,167 @@
       background: #7a1d1c;
       transform: scale(1.1);
       box-shadow: 0 6px 16px rgba(155, 36, 35, 0.4);
+    }
+    
+    /* Bouton de modification discret */
+    .settings-button {
+      background: #6b7280;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-left: 10px;
+      box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+      opacity: 0.7;
+    }
+    
+    .settings-button:hover {
+      background: #4b5563;
+      transform: scale(1.05);
+      opacity: 1;
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+    }
+    
+    /* Modale de modification */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #23272b;
+      margin: 0;
+    }
+    
+    .modal-close {
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover {
+      background: #dc2626;
+      transform: scale(1.1);
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #9B2423;
+      box-shadow: 0 0 0 3px rgba(155, 36, 35, 0.1);
+    }
+    
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 2px solid #f3f4f6;
+    }
+    
+    .btn-save {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-save:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+    
+    .btn-cancel {
+      background: #6b7280;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-cancel:hover {
+      background: #4b5563;
     }
     
     .info-grid {
@@ -1018,6 +1179,9 @@
         <span id="clientName">Résumé Vérification</span>
         <span class="header-subtitle" id="siteName">Chargement...</span>
       </div>
+      <button onclick="openEditModal()" class="settings-button" title="Modifier les informations du rapport">
+        ⚙️
+      </button>
     </div>
 
     <!-- Sections d'information -->
@@ -1736,12 +1900,16 @@
         // Mettre à jour l'affichage
         if (earliestDate) {
           document.getElementById('startDate').textContent = earliestDate.toLocaleDateString('fr-FR');
+          // Initialiser les données modifiables
+          editableData.startDate = earliestDate.toISOString().split('T')[0];
         } else {
           document.getElementById('startDate').textContent = 'Non définie';
         }
         
         if (latestDate) {
           document.getElementById('endDate').textContent = latestDate.toLocaleDateString('fr-FR');
+          // Initialiser les données modifiables
+          editableData.endDate = latestDate.toISOString().split('T')[0];
         } else {
           document.getElementById('endDate').textContent = 'Non définie';
         }
@@ -2527,14 +2695,15 @@
           // Récupérer le nom long depuis le premier extincteur du groupe
           const firstExtincteur = extincteurs[0];
           const agentName = firstExtincteur.agent_long_name || `Agent ${firstExtincteur.agent_ext}`;
-          const capacite = firstExtincteur.capacite_ext || 'Non spécifiée';
+          const capacite = firstExtincteur.capa_ext || '';
           const count = extincteurs.length;
+          const displayText = capacite ? `${agentName} ${capacite}` : agentName;
           
-          console.log(`🔍 Ajout extincteur vérifié: ${agentName} ${capacite} - ${count} unités`);
+          console.log(`🔍 Ajout extincteur vérifié: ${displayText} - ${count} unités`);
           
           html += `
             <tr>
-              <td>Extincteur - ${agentName} ${capacite}</td>
+              <td>Extincteur - ${displayText}</td>
               <td class="equipment-count">${count}</td>
             </tr>
           `;
@@ -2626,9 +2795,9 @@
       
       extincteurs.forEach(ext => {
         const agentId = ext.agent_ext || 'Autre';
-        const capacite = ext.capacite_ext || 'Non spécifiée';
-        const groupKey = `${agentId}_${capacite}`;
-        console.log(`🔍 Extincteur agent_ext: ${agentId}, capacité: ${capacite}`);
+        const capacite = ext.capa_ext || '';
+        const groupKey = capacite ? `${agentId}_${capacite}` : `${agentId}`;
+        console.log(`🔍 Extincteur agent_ext: ${agentId}, capacité: ${capacite || 'Non spécifiée'}`);
         if (!groups[groupKey]) groups[groupKey] = [];
         groups[groupKey].push(ext);
       });
@@ -2938,9 +3107,10 @@
           Object.entries(extincteursByAgent).forEach(([groupKey, extincteurs]) => {
             const firstExtincteur = extincteurs[0];
             const agentName = getAgentLongName(firstExtincteur.agent_ext);
-            const capacite = firstExtincteur.capacite_ext || 'Non spécifiée';
+            const capacite = firstExtincteur.capa_ext || '';
             const count = extincteurs.length;
-            tableData.push([`Extincteur - ${agentName} ${capacite}`, count.toString()]);
+            const displayText = capacite ? `${agentName} ${capacite}` : agentName;
+            tableData.push([`Extincteur - ${displayText}`, count.toString()]);
           });
         }
         
@@ -3450,8 +3620,8 @@
             const extincteursByAgent = {};
             verifiedEquipment.extincteurs.forEach(ext => {
               const agentId = ext.agent_ext || 'Autre';
-              const capacite = ext.capacite_ext || 'Non spécifiée';
-              const groupKey = `${agentId}_${capacite}`;
+              const capacite = ext.capa_ext || '';
+              const groupKey = capacite ? `${agentId}_${capacite}` : `${agentId}`;
               if (!extincteursByAgent[groupKey]) extincteursByAgent[groupKey] = [];
               extincteursByAgent[groupKey].push(ext);
             });
@@ -3459,8 +3629,9 @@
             Object.entries(extincteursByAgent).forEach(([groupKey, extincteurs]) => {
               const firstExtincteur = extincteurs[0];
               const agentName = firstExtincteur.agent_long_name || `Agent ${firstExtincteur.agent_ext}`;
-              const capacite = firstExtincteur.capacite_ext || 'Non spécifiée';
-              equipements.push(`Extincteur - ${agentName} ${capacite}`);
+              const capacite = firstExtincteur.capa_ext || '';
+              const displayText = capacite ? `${agentName} ${capacite}` : agentName;
+              equipements.push(`Extincteur - ${displayText}`);
               quantites.push(extincteurs.length);
             });
           }
@@ -3475,7 +3646,7 @@
             });
             
             Object.entries(eclairagesByFamily).forEach(([family, eclairages]) => {
-              equipements.push(`Éclairage de secours - ${family}`);
+              equipements.push(`Éclairage de sécurité - ${family}`);
               quantites.push(eclairages.length);
             });
           }
@@ -3943,6 +4114,162 @@
       
       loadVerificationData();
     });
+    
+    // Variables pour stocker les informations modifiables
+    let editableData = {
+      startDate: null,
+      endDate: null,
+      technician: '',
+      observations: '',
+      notes: ''
+    };
+    
+    // Fonction pour ouvrir la modale
+    function openEditModal() {
+      console.log('🔧 Ouverture de la modale de modification');
+      
+      // Remplir les champs avec les données actuelles
+      document.getElementById('editStartDate').value = editableData.startDate || '';
+      document.getElementById('editEndDate').value = editableData.endDate || '';
+      document.getElementById('editTechnician').value = editableData.technician || '';
+      document.getElementById('editObservations').value = editableData.observations || '';
+      document.getElementById('editNotes').value = editableData.notes || '';
+      
+      // Afficher la modale
+      document.getElementById('editModal').style.display = 'flex';
+    }
+    
+    // Fonction pour fermer la modale
+    function closeEditModal() {
+      console.log('❌ Fermeture de la modale de modification');
+      document.getElementById('editModal').style.display = 'none';
+    }
+    
+    // Fonction pour sauvegarder les modifications
+    function saveEditChanges() {
+      console.log('💾 Sauvegarde des modifications');
+      
+      // Récupérer les valeurs des champs
+      editableData.startDate = document.getElementById('editStartDate').value;
+      editableData.endDate = document.getElementById('editEndDate').value;
+      editableData.technician = document.getElementById('editTechnician').value;
+      editableData.observations = document.getElementById('editObservations').value;
+      editableData.notes = document.getElementById('editNotes').value;
+      
+      // Mettre à jour l'affichage
+      updateDisplayWithEditableData();
+      
+      // Fermer la modale
+      closeEditModal();
+      
+      // Afficher un message de confirmation
+      if (window.Notifier) {
+        Notifier.success('Modifications enregistrées avec succès');
+      } else {
+        alert('Modifications enregistrées avec succès');
+      }
+    }
+    
+    // Fonction pour mettre à jour l'affichage avec les données modifiées
+    function updateDisplayWithEditableData() {
+      // Mettre à jour les dates si elles ont été modifiées
+      if (editableData.startDate) {
+        const startDateElement = document.getElementById('startDate');
+        if (startDateElement) {
+          const date = new Date(editableData.startDate);
+          startDateElement.textContent = date.toLocaleDateString('fr-FR');
+        }
+      }
+      
+      if (editableData.endDate) {
+        const endDateElement = document.getElementById('endDate');
+        if (endDateElement) {
+          const date = new Date(editableData.endDate);
+          endDateElement.textContent = date.toLocaleDateString('fr-FR');
+        }
+      }
+      
+      // Mettre à jour le technicien si spécifié
+      if (editableData.technician) {
+        // Chercher un élément pour afficher le technicien ou en créer un
+        let technicianElement = document.getElementById('technicianName');
+        if (!technicianElement) {
+          // Créer un élément pour afficher le technicien
+          const infoSection = document.querySelector('.info-section h3');
+          if (infoSection) {
+            const technicianDiv = document.createElement('div');
+            technicianDiv.innerHTML = `
+              <div class="info-line">
+                <span class="info-label">Technicien :</span>
+                <span class="info-name" id="technicianName">${editableData.technician}</span>
+              </div>
+            `;
+            infoSection.parentNode.insertBefore(technicianDiv, infoSection.nextSibling);
+          }
+        } else {
+          technicianElement.textContent = editableData.technician;
+        }
+      }
+      
+      console.log('✅ Affichage mis à jour avec les données modifiées:', editableData);
+    }
+    
+    // Fermer la modale en cliquant sur l'overlay
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('editModal');
+      if (event.target === modal) {
+        closeEditModal();
+      }
+    });
+    
+    // Fermer la modale avec la touche Escape
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeEditModal();
+      }
+    });
   </script>
+  
+  <!-- Modale de modification des informations -->
+  <div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Modifier les informations du rapport</h3>
+        <button class="modal-close" onclick="closeEditModal()">×</button>
+      </div>
+      
+      <form id="editForm">
+        <div class="form-group">
+          <label class="form-label" for="editStartDate">Date de début d'intervention</label>
+          <input type="date" id="editStartDate" class="form-input" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="editEndDate">Date de fin d'intervention</label>
+          <input type="date" id="editEndDate" class="form-input" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="editTechnician">Nom du technicien</label>
+          <input type="text" id="editTechnician" class="form-input" placeholder="Nom du technicien" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="editObservations">Observations générales</label>
+          <textarea id="editObservations" class="form-input form-textarea" placeholder="Observations générales sur l'intervention..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="editNotes">Notes internes</label>
+          <textarea id="editNotes" class="form-input form-textarea" placeholder="Notes internes (non visibles sur le rapport client)..."></textarea>
+        </div>
+      </form>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeEditModal()">Annuler</button>
+        <button type="button" class="btn-save" onclick="saveEditChanges()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html> 

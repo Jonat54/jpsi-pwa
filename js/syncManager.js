@@ -24,30 +24,16 @@ class SyncManager {
         });
     }
 
-    // 📊 Afficher le statut réseau
+    // 📊 Afficher le statut réseau (utilise le composant unifié)
     showNetworkStatus(status) {
-        // Créer ou mettre à jour l'indicateur de statut
-        let statusIndicator = document.getElementById('networkStatus');
-        if (!statusIndicator) {
-            statusIndicator = document.createElement('div');
-            statusIndicator.id = 'networkStatus';
-            statusIndicator.style.cssText = `
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                background: ${this.isOnline ? '#4CAF50' : '#f44336'};
-                color: white;
-                padding: 8px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: bold;
-                z-index: 1000;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            `;
-            document.body.appendChild(statusIndicator);
+        // Utiliser le composant NetworkStatusIndicator unifié
+        if (window.networkStatus) {
+            if (status.includes('Synchronisation') || status.includes('🔄')) {
+                window.networkStatus.startSync();
+            } else {
+                window.networkStatus.stopSync();
+            }
         }
-        statusIndicator.textContent = status;
-        statusIndicator.style.background = this.isOnline ? '#4CAF50' : '#f44336';
     }
 
     // 📥 Charger les données du site dans IndexedDB
@@ -349,36 +335,17 @@ class SyncManager {
         this.showSyncStatus(status);
     }
 
-    // 📊 Afficher le statut de synchronisation
+    // 📊 Afficher le statut de synchronisation (utilise le composant unifié)
     showSyncStatus(status) {
-        let syncIndicator = document.getElementById('syncStatus');
-        if (!syncIndicator) {
-            syncIndicator = document.createElement('div');
-            syncIndicator.id = 'syncStatus';
-            syncIndicator.style.cssText = `
-                position: fixed;
-                bottom: 10px;
-                right: 10px;
-                background: #2196F3;
-                color: white;
-                padding: 8px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: bold;
-                z-index: 1000;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            `;
-            document.body.appendChild(syncIndicator);
-        }
-
-        const totalPending = status.pendingVerifications + status.pendingNewEquipments + status.pendingModifiedEquipments;
-        
-        if (totalPending > 0) {
-            syncIndicator.textContent = `📤 ${totalPending} en attente`;
-            syncIndicator.style.background = '#FF9800';
-        } else {
-            syncIndicator.textContent = '✅ Synchronisé';
-            syncIndicator.style.background = '#4CAF50';
+        // Utiliser le composant NetworkStatusIndicator unifié
+        if (window.networkStatus) {
+            const totalPending = status.pendingVerifications + status.pendingNewEquipments + status.pendingModifiedEquipments;
+            
+            if (totalPending > 0) {
+                window.networkStatus.startSync();
+            } else {
+                window.networkStatus.stopSync();
+            }
         }
     }
 
@@ -397,5 +364,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('✅ SyncManager supporté');
     } else {
         console.error('❌ SyncManager non supporté sur ce navigateur');
+    }
+    
+    // S'assurer que le composant NetworkStatusIndicator est chargé
+    if (!window.networkStatus) {
+        console.log('🔄 Initialisation du NetworkStatusIndicator...');
+        window.networkStatus = new NetworkStatusIndicator();
     }
 });

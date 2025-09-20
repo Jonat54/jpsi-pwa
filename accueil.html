@@ -329,17 +329,22 @@
         console.log('🔄 Début du préchargement du cache...');
         alert('🔄 Début du préchargement du cache...');
         
-        // Liste des pages à précharger
+        // Liste des pages ESSENTIELLES pour intervention terrain
         const pagesToCache = [
+          // Pages de base
           '/index.html',
           '/accueil.html',
           '/login.html',
+          '/offline.html',
+          
+          // Vérifications (ESSENTIEL pour terrain)
           '/verification.html',
           '/newVerification.html',
           '/ongoingVerification.html',
           '/verificationDetail.html',
           '/verificationSummary.html',
-          '/verificationHistory.html',
+          
+          // Équipements à vérifier
           '/verifSite.html',
           '/verifDes.html',
           '/extSite.html',
@@ -347,27 +352,13 @@
           '/eclairageSite.html',
           '/eclairageDetail.html',
           '/alarmeSite.html',
+          '/verifAlarme.html',
           '/desenfumageList.html',
           '/desenfumageDetail.html',
-          '/desenfumageInstallation.html',
-          '/desenfumageHierarchie.html',
-          '/clients.html',
+          
+          // Navigation (pour accéder aux équipements)
           '/ListClients.html',
-          '/addClient.html',
-          '/editClient.html',
-          '/client.html',
-          '/sites.html',
-          '/addSite.html',
-          '/editSite.html',
-          '/detailSite.html',
-          '/audits.html',
-          '/newAudit.html',
-          '/auditDetail.html',
-          '/auditHistory.html',
-          '/inventairePDF.html',
-          '/stocks.html',
-          '/parametres.html',
-          '/offline.html'
+          '/detailSite.html'
         ];
 
         // Liste des ressources à précharger
@@ -377,6 +368,7 @@
           '/supabase-config.js',
           '/simple_auth.js',
           '/js/indexedDB.js',
+          '/js/networkStatus.js',
           '/js/syncManager.js',
           '/manifest.json',
           '/icons/icon-192x192.png',

@@ -1,0 +1,251 @@
+📋 File de synchronisation chargée: 2 éléments offlineSync.js:250:21
+✅ OfflineSyncManager initialisé offlineSync.js:31:21
+✅ IndexedDB supporté indexedDB.js:296:17
+✅ SyncManager supporté syncManager.js:397:17
+🚀 Page de test initialisée test_offline_first.html:173:15
+📱 User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0 test_offline_first.html:173:15
+🌐 En ligne: true test_offline_first.html:173:15
+💾 IndexedDB supporté: true test_offline_first.html:173:15
+GET
+http://localhost:8000/favicon.ico
+[HTTP/1 404 File not found 6ms]
+
+🔧 Service Worker supporté: true test_offline_first.html:173:15
+✅ IndexedDB initialisé indexedDB.js:25:25
+✅ IndexedDB initialisé avec succès indexedDB.js:299:21
+✅ IndexedDB initialisé indexedDB.js:25:25
+✅ IndexedDB initialisé correctement test_offline_first.html:173:15
+🧹 Nettoyage de la file d'attente de synchronisation... test_offline_first.html:173:15
+🧹 File d'attente de synchronisation vidée offlineSync.js:305:21
+✅ File d'attente de synchronisation nettoyée test_offline_first.html:173:15
+🧹 Nettoyage de la file d'attente de synchronisation... test_offline_first.html:173:15
+🧹 File d'attente de synchronisation vidée offlineSync.js:305:21
+✅ File d'attente de synchronisation nettoyée test_offline_first.html:173:15
+🧪 Test IndexedDB... test_offline_first.html:173:15
+✅ IndexedDB initialisé indexedDB.js:25:25
+✅ IndexedDB initialisé test_offline_first.html:173:15
+✅ Données sauvegardées dans clients indexedDB.js:145:25
+✅ Test de sauvegarde réussi test_offline_first.html:173:15
+✅ Test de lecture réussi: [{"id_client":1,"nom_client":"Test Client"}] test_offline_first.html:173:15
+🧪 Test SyncManager... test_offline_first.html:173:15
+✅ SyncManager disponible test_offline_first.html:173:15
+📡 Statut réseau: En ligne test_offline_first.html:173:15
+🧪 Test OfflineFirstManager... test_offline_first.html:173:15
+✅ OfflineFirstManager disponible test_offline_first.html:173:15
+📊 Statut préchargement: {"isPreloading":false,"progress":0,"preloadedSites":0,"preloadedInterventions":0} test_offline_first.html:173:15
+🚀 Test préchargement pour site 1, intervention 1... test_offline_first.html:173:15
+🚀 Début du préchargement intelligent pour l'intervention 1 offlineSync.js:381:21
+📊 Progression: 10% - 📚 Chargement des catalogues... test_offline_first.html:173:15
+✅ Catalogues déjà en cache offlineSync.js:426:25
+📊 Progression: 30% - 🏢 Chargement des données du site... test_offline_first.html:173:15
+🏢 Préchargement des données du site 1... offlineSync.js:462:21
+✅ Données sauvegardées dans sites indexedDB.js:145:25
+✅ Données sauvegardées dans clients indexedDB.js:145:25
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 453, id_site: 1, num_ext: "R2-11", niv_ext: "3", loc_ext: "Machinerie ascenceur", marque_ext: "MIM", modele_ext: "CO2 2kg", agent_ext: "3", mes_ext: "2018-01-01", rcm_ext: "2018-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 383, id_site: 1, num_ext: "EXT-01", niv_ext: "ext", loc_ext: "Devant local froid", marque_ext: "MIM", modele_ext: "P6P", agent_ext: "PP6", mes_ext: "2012-01-01", rcm_ext: "2012-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 391, id_site: 1, num_ext: "????", niv_ext: "-1", loc_ext: "Circulation devant lingerie", marque_ext: "MIM", modele_ext: "E6A15EV", agent_ext: "2", mes_ext: null, rcm_ext: null, … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 390, id_site: 1, num_ext: "SS-02", niv_ext: "1", loc_ext: "Lingerie", marque_ext: "MIM", modele_ext: "CO2 2kg", agent_ext: "3", mes_ext: "2014-01-01", rcm_ext: "2014-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 388, id_site: 1, num_ext: "EXT-06", niv_ext: "ext", loc_ext: "Poste H.T.", marque_ext: "MIM", modele_ext: "CO2 5kg", agent_ext: "3", mes_ext: "2011-01-01", rcm_ext: "2011-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 384, id_site: 1, num_ext: "EXT-02", niv_ext: "ext", loc_ext: "Devant chaufferie", marque_ext: "MIM", modele_ext: "P6P", agent_ext: "PP6", mes_ext: "2013-01-01", rcm_ext: "2013-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 385, id_site: 1, num_ext: "EXT-03", niv_ext: "ext", loc_ext: "Groupe ‚lectrogŠne", marque_ext: "MIM", modele_ext: "P6P", agent_ext: "PP6", mes_ext: "2012-01-01", rcm_ext: "2012-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 386, id_site: 1, num_ext: "EXT-04", niv_ext: "ext", loc_ext: "Porte ext‚rieur magasin", marque_ext: "MIM", modele_ext: "P6P", agent_ext: "PP6", mes_ext: "2013-01-01", rcm_ext: "2013-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 387, id_site: 1, num_ext: "EXT-05", niv_ext: "ext", loc_ext: "D‚p“t oxygŠne liquide", marque_ext: "MIM", modele_ext: "P6P", agent_ext: "PP6", mes_ext: "2017-01-01", rcm_ext: "2017-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 401, id_site: 1, num_ext: "RC-02", niv_ext: "0", loc_ext: "Entr‚e ateliers", marque_ext: "MIM", modele_ext: "P6P", agent_ext: "PP6", mes_ext: "2013-01-01", rcm_ext: "2013-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 397, id_site: 1, num_ext: "????", niv_ext: "-1", loc_ext: "Local baie de brassage", marque_ext: "ANAF", modele_ext: "CS2-AB", agent_ext: "5", mes_ext: "2025-01-01", rcm_ext: null, … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 394, id_site: 1, num_ext: "SS-05", niv_ext: "-1", loc_ext: "T.G.B.T.", marque_ext: "MIM", modele_ext: "CO2 2kg", agent_ext: "3", mes_ext: "2015-01-01", rcm_ext: "2015-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 396, id_site: 1, num_ext: "SS-07", niv_ext: "-1", loc_ext: "Local CTA", marque_ext: "MIM", modele_ext: "CO2 2kg", agent_ext: "3", mes_ext: "2011-01-01", rcm_ext: "2011-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 399, id_site: 1, num_ext: "SS-09", niv_ext: "-1", loc_ext: "Atelier", marque_ext: "MIM", modele_ext: "CO2 2kg", agent_ext: "3", mes_ext: "2012-01-01", rcm_ext: "2012-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 400, id_site: 1, num_ext: "RC-01", niv_ext: "0", loc_ext: "Chaufferie", marque_ext: "MIM", modele_ext: "CO2 2kg", agent_ext: "3", mes_ext: "2015-01-01", rcm_ext: "2015-01-01", … }
+indexedDB.js:175:33
+❌ Erreur put dans extincteurs: DOMException: Data provided to an operation does not meet requirements.
+    putAll http://localhost:8000/js/indexedDB.js:173
+    putAll http://localhost:8000/js/indexedDB.js:171
+    onsuccess http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:182
+    saveBulk http://localhost:8000/js/indexedDB.js:160
+    preloadSiteData http://localhost:8000/js/offlineSync.js:488
+    preloadInterventionData http://localhost:8000/js/offlineSync.js:390
+    testPreload http://localhost:8000/test_offline_first.html:267
+    onclick http://localhost:8000/test_offline_first.html:1
+ 
+Object { id_ext: 404, id_site: 1, num_ext: "RC-05", niv_ext: "0", loc_ext: "Administration", marque_ext: "MIM", modele_ext: "CO2 2kg", agent_ext: "3", mes_ext: "2013-01-01", rcm_ext: "2013-01-01", … }
+indexedDB.js:175:33
