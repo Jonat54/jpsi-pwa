@@ -1,9 +1,9 @@
 // Service Worker pour JPSI PWA - Optimisé iPadOS/Safari
-// Version v1.4.39 - Fix Mode Offline iPad Safari
+// Version v1.4.40 - Fix Redirection iPad Safari
 
-const STATIC_CACHE = 'jpsi-static-v1.4.39';
-const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.39';
-const FALLBACK_CACHE = 'jpsi-fallback-v1.4.39';
+const STATIC_CACHE = 'jpsi-static-v1.4.40';
+const DYNAMIC_CACHE = 'jpsi-dynamic-v1.4.40';
+const FALLBACK_CACHE = 'jpsi-fallback-v1.4.40';
 
 // Pages ESSENTIELLES pour le terrain (intervention)
 const ALL_PAGES = [
@@ -130,12 +130,28 @@ const utils = {
         return results;
     },
     
-    // Fallback en chaîne pour les pages
+    // Fallback en chaîne pour les pages - Éviter accueil.html pour iPad
     async getFallbackPage() {
+        // Pour iPad Safari, essayer d'abord offline.html au lieu d'accueil.html
+        const ipadFallbacks = ['/offline.html', '/index.html'];
+        
+        for (const fallbackPage of ipadFallbacks) {
+            try {
+                const response = await caches.match(fallbackPage);
+                if (response && response.ok) {
+                    console.log(`✅ Fallback iPad: ${fallbackPage}`);
+                    return response;
+                }
+            } catch (error) {
+                console.warn(`⚠️ Fallback iPad ${fallbackPage} non disponible:`, error);
+            }
+        }
+        
+        // Si pas trouvé, essayer les fallbacks normaux
         for (const fallbackPage of FALLBACK_PAGES) {
             try {
                 const response = await caches.match(fallbackPage);
-                if (response) return response;
+                if (response && response.ok) return response;
             } catch (error) {
                 console.warn(`⚠️ Fallback ${fallbackPage} non disponible:`, error);
             }
@@ -170,7 +186,7 @@ const utils = {
                 console.log('🧹 Nettoyage du cache - Quota élevé');
                 const cacheNames = await caches.keys();
                 const oldCaches = cacheNames.filter(name => 
-                    name.includes('jpsi-static-v1.4.') && !name.includes('v1.4.39')
+                    name.includes('jpsi-static-v1.4.') && !name.includes('v1.4.40')
                 );
                 
                 for (const cacheName of oldCaches) {
@@ -186,7 +202,7 @@ const utils = {
 
 // Installation - Cache des ressources avec gestion d'erreur robuste
 self.addEventListener('install', (evt) => {
-    console.log('🔄 Service Worker: Installation v1.4.39...');
+    console.log('🔄 Service Worker: Installation v1.4.40...');
     
     evt.waitUntil(
         (async () => {
@@ -220,7 +236,7 @@ self.addEventListener('install', (evt) => {
 
 // Activation - Nettoyage des caches
 self.addEventListener('activate', (evt) => {
-    console.log('🔄 Service Worker: Activation v1.4.39...');
+    console.log('🔄 Service Worker: Activation v1.4.40...');
     
     evt.waitUntil(
         (async () => {
@@ -244,7 +260,7 @@ self.addEventListener('activate', (evt) => {
                 // Notifier tous les clients de l'activation
                 const clients = await self.clients.matchAll();
                 clients.forEach(client => {
-                    client.postMessage({ type: 'SW_ACTIVATED', version: 'v1.4.39' });
+                    client.postMessage({ type: 'SW_ACTIVATED', version: 'v1.4.40' });
                 });
             } catch (error) {
                 console.error('❌ Erreur activation:', error);
@@ -288,14 +304,13 @@ self.addEventListener('fetch', (evt) => {
                     }
                 }
                 
-                // Stratégie Cache First optimisée pour iPad
+                // Stratégie Cache First optimisée pour iPad Safari
                 const cachedResponse = await caches.match(effectiveRequest);
                 
-                if (cachedResponse && cachedResponse.ok) {
-                    // Vérification stricte pour iPad Safari
-                    if (cachedResponse.type !== 'opaqueredirect' && 
-                        !cachedResponse.redirected && 
-                        cachedResponse.status === 200) {
+                if (cachedResponse) {
+                    // Pour iPad Safari, être moins strict sur les vérifications
+                    if (cachedResponse.status === 200 && 
+                        cachedResponse.type !== 'opaqueredirect') {
                         console.log('✅ Ressource servie depuis le cache:', effectiveRequest.url);
                         return cachedResponse;
                     } else {
@@ -310,9 +325,8 @@ self.addEventListener('fetch', (evt) => {
                 // Tentative réseau avec gestion d'erreur robuste
                 try {
                     const networkResponse = await fetch(effectiveRequest, { 
-                        redirect: 'follow',
-                        credentials: 'same-origin',
-                        cache: 'no-cache' // Forcer la vérification réseau
+                        redirect: 'manual', // Gérer les redirections manuellement pour iPad
+                        credentials: 'same-origin'
                     });
                     
                     if (networkResponse && networkResponse.ok) {
@@ -348,8 +362,23 @@ self.addEventListener('fetch', (evt) => {
                 } catch (networkError) {
                     console.log('❌ Erreur réseau:', effectiveRequest.url, networkError.message);
                     
-                    // Fallback pour les pages HTML
+                    // Pour iPad Safari, éviter les redirections vers accueil.html
                     if (request.destination === 'document' || request.mode === 'navigate') {
+                        // Essayer d'abord de servir la page demandée depuis le cache
+                        const directCache = await caches.match(request.url);
+                        if (directCache && directCache.ok) {
+                            console.log('✅ Page demandée servie directement depuis le cache:', request.url);
+                            return directCache;
+                        }
+                        
+                        // Si pas trouvée, essayer avec le nom de fichier
+                        const fileName = request.url.split('/').pop();
+                        const fileCache = await caches.match(`/${fileName}`);
+                        if (fileCache && fileCache.ok) {
+                            console.log('✅ Page trouvée par nom de fichier:', fileName);
+                            return fileCache;
+                        }
+                        
                         console.log('🔄 Tentative de fallback pour page HTML...');
                         const fallback = await utils.getFallbackPage();
                         if (fallback && fallback.ok) {
@@ -401,7 +430,7 @@ self.addEventListener('message', (event) => {
     }
     
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: 'v1.4.39' });
+        event.ports[0].postMessage({ version: 'v1.4.40' });
     }
     
     if (event.data && event.data.type === 'GET_STORAGE_INFO') {
@@ -432,4 +461,4 @@ self.addEventListener('message', (event) => {
     }
 });
 
-console.log('✅ Service Worker chargé v1.4.39 - Fix Mode Offline iPad Safari');
+console.log('✅ Service Worker chargé v1.4.40 - Fix Redirection iPad Safari');
