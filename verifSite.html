@@ -20,6 +20,20 @@
   <script src="js/syncManager.js"></script>
   <script src="js/offlineSync.js"></script>
   <script>
+    // Vérifier que tous les composants sont chargés
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof NetworkStatusIndicator === 'undefined') {
+        console.error('❌ NetworkStatusIndicator non chargé');
+      }
+      if (typeof SyncManager === 'undefined') {
+        console.error('❌ SyncManager non chargé');
+      }
+      if (!window.networkStatus) {
+        console.warn('⚠️ window.networkStatus non initialisé');
+      }
+    });
+  </script>
+  <script>
     // Enregistrer le Service Worker pour le mode offline
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js', {

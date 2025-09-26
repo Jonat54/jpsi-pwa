@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Résumé Vérification - JPSI v1.4.38</title>
+  <title>Résumé Vérification - JPSI v1.4.40</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
@@ -3369,6 +3369,13 @@
       try {
         document.getElementById('generateBtn2').classList.add('loading');
         
+        // ✅ CORRECTION MINIMALE : Alias de compatibilité pour éviter l'erreur nomClient
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientName = urlParams.get('clientName') || 'Client_Inconnu';
+        const siteName = urlParams.get('siteName') || 'Site_Inconnu';
+        const nomClient = clientName;
+        const nomSite = siteName;
+        
         // Récupérer les équipements vérifiés et observations de cette intervention
         const verifiedEquipment = await getVerifiedEquipment();
         const verifiedObservations = await getVerifiedObservations();
@@ -3509,7 +3516,7 @@
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         const numSite = siteData?.num_site || '';
-        const nomSite = siteData?.nom_site || '';
+        // nomSite déjà déclaré plus haut
         // Formater le numéro du site sur 3 chiffres avec des zéros en tête
         const formattedNumSite = numSite.toString().padStart(3, '0');
         doc.text(`        ${formattedNumSite} - ${nomSite}`, siteX + 4, vignetteY + 20); // 4 tabulations
@@ -3840,12 +3847,12 @@
         
         // Nom du signataire client
         const clientNameInput = document.getElementById('clientNameInput');
-        const clientName = clientNameInput ? clientNameInput.value.trim() : '';
-        if (clientName) {
+        const clientNameValue = clientNameInput ? clientNameInput.value.trim() : '';
+        if (clientNameValue) {
           doc.setFontSize(8);
           doc.setFont('courier', 'normal');
           doc.setTextColor(0, 0, 0);
-          doc.text(clientName, clientX + 2, clientY + 17);
+          doc.text(clientNameValue, clientX + 2, clientY + 17);
         }
         
         // Technicien (droite) - finit à 10mm du bord droit
@@ -3942,8 +3949,37 @@
         // Clôturer l'intervention avant de sauvegarder le PDF
         await closeIntervention();
         
-        // Sauvegarder le PDF
-        doc.save('images-seules.pdf');
+        // Sauvegarder le PDF avec le bon nom de fichier
+        const fileName = `${numeroDeBon} - ${nomClient} - ${nomSite}.pdf`;
+        doc.save(fileName);
+        
+        // Upload vers Supabase Storage
+        try {
+          console.log('☁️ Upload du PDF vers Supabase Storage...');
+          const pdfBlob = doc.output('blob');
+          const urlParams = new URLSearchParams(window.location.search);
+          const interventionId = urlParams.get('intervention');
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('rapports-pdf')
+            .upload(`interventions/${interventionId}/${fileName}`, pdfBlob, {
+              contentType: 'application/pdf',
+              upsert: true
+            });
+
+          if (uploadError) {
+            console.error('❌ Erreur lors de l\'upload:', uploadError);
+          } else {
+            console.log('✅ PDF uploadé avec succès:', uploadData);
+            const { data: urlData } = supabase.storage
+              .from('rapports-pdf')
+              .getPublicUrl(`interventions/${interventionId}/${fileName}`);
+            await savePDFUrl(interventionId, urlData.publicUrl, fileName);
+          }
+        } catch (error) {
+          console.error('❌ Erreur lors de l\'upload du PDF:', error);
+        }
+        
         document.getElementById('generateBtn2').classList.remove('loading');
         
         // Redirection vers verification.html après la génération du PDF
@@ -3983,7 +4019,9 @@
         const { error: interventionError } = await supabase
           .from('interventions')
           .update({ 
-            etat_intervention: 'Terminé'
+            etat_intervention: 'Terminé',
+            date_fin: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           })
           .eq('id_intervention', interventionId);
         
@@ -3995,6 +4033,9 @@
         // 2. Enregistrer le numéro de bon dans la table BV (désactivé temporairement à cause des RLS)
         // Extraire seulement le numéro (sans l'année) et le convertir en nombre
         const numeroOnly = parseInt(numeroDeBon.split('-')[1]); // 86 au lieu de "2025-0086"
+        // Récupérer le nom du signataire client (si saisi)
+        const clientNameInputEl = document.getElementById('clientNameInput');
+        const nomSignataire = clientNameInputEl ? (clientNameInputEl.value || '').trim() : null;
         
         console.log('🔢 Numéro extrait pour BV:', numeroOnly);
         console.log('📋 Enregistrement du bon dans la table BV...');
@@ -4004,7 +4045,9 @@
           .from('BV')
           .insert({
             num_bv: numeroOnly,
-            client_BV: clientId
+            client_BV: clientId,
+            inter: interventionId,
+            nom_signataire: nomSignataire || null
           });
         
         if (bvError) {
@@ -4029,6 +4072,28 @@
       } catch (error) {
         console.error('❌ Erreur lors de la clôture:', error);
         throw error;
+      }
+    }
+
+    // Persister l'URL du PDF sur l'intervention (si les colonnes existent)
+    async function savePDFUrl(interventionId, publicUrl, fileName) {
+      try {
+        const { error } = await supabase
+          .from('interventions')
+          .update({
+            pdf_url: publicUrl,
+            pdf_filename: fileName,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id_intervention', interventionId);
+
+        if (error) {
+          console.warn('⚠️ Impossible d\'enregistrer l\'URL du PDF (colonnes manquantes ?):', error);
+        } else {
+          console.log('✅ URL du PDF enregistrée pour l\'intervention', interventionId);
+        }
+      } catch (e) {
+        console.warn('⚠️ savePDFUrl a échoué:', e);
       }
     }
     

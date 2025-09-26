@@ -1,5 +1,35 @@
 # 📋 CHANGELOG - JPSI
 
+## 🚀 Version 1.4.40 - Fix NetworkStatusIndicator Error
+
+**Date :** 2025-01-XX  
+**Statut :** ✅ Déployé
+
+### 🔧 **Correction Critique - Erreur NetworkStatusIndicator**
+
+#### **Problème résolu**
+- ❌ **NetworkStatusIndicator is not defined** : Erreur JavaScript dans verifSite.html
+- ❌ **Ordre de chargement des scripts** : NetworkStatusIndicator utilisé avant d'être chargé
+- ❌ **Initialisation défaillante** : Problème d'initialisation des composants réseau
+
+#### **Solution implémentée**
+- ✅ **Vérification robuste** : Contrôle de disponibilité avant utilisation de NetworkStatusIndicator
+- ✅ **Système de retry** : Retry automatique avec délai si la classe n'est pas encore chargée
+- ✅ **Initialisation améliorée** : Gestion d'erreur plus gracieuse avec messages de débogage
+- ✅ **Ordre de chargement optimisé** : Scripts chargés dans le bon ordre
+
+#### **Fichiers modifiés**
+- `js/syncManager.js` - Ajout de vérifications robustes
+- `js/networkStatus.js` - Amélioration de l'initialisation
+- `verifSite.html` - Ajout de scripts de diagnostic
+
+#### **Impact**
+- ✅ Plus d'erreur NetworkStatusIndicator dans verifSite.html
+- ✅ Indicateurs de statut réseau fonctionnels
+- ✅ Synchronisation offline/online robuste
+
+---
+
 ## 🚀 Version 1.4.39 - Fix Mode Offline iPad Safari
 
 **Date :** 2025-01-XX  

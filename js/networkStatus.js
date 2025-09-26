@@ -136,10 +136,15 @@ class NetworkStatusIndicator {
 window.NetworkStatusIndicator = NetworkStatusIndicator;
 
 // 🚀 Initialisation automatique si le DOM est prêt
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+function initializeNetworkStatus() {
+    if (!window.networkStatus) {
         window.networkStatus = new NetworkStatusIndicator();
-    });
+        console.log('✅ NetworkStatusIndicator initialisé');
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeNetworkStatus);
 } else {
-    window.networkStatus = new NetworkStatusIndicator();
+    initializeNetworkStatus();
 }

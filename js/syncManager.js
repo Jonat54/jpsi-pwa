@@ -367,8 +367,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // S'assurer que le composant NetworkStatusIndicator est chargé
-    if (!window.networkStatus) {
+    if (!window.networkStatus && typeof NetworkStatusIndicator !== 'undefined') {
         console.log('🔄 Initialisation du NetworkStatusIndicator...');
         window.networkStatus = new NetworkStatusIndicator();
+    } else if (!window.networkStatus) {
+        console.warn('⚠️ NetworkStatusIndicator non disponible, initialisation différée...');
+        // Attendre que NetworkStatusIndicator soit disponible
+        const checkNetworkStatus = () => {
+            if (typeof NetworkStatusIndicator !== 'undefined' && !window.networkStatus) {
+                window.networkStatus = new NetworkStatusIndicator();
+                console.log('✅ NetworkStatusIndicator initialisé avec délai');
+            } else if (typeof NetworkStatusIndicator === 'undefined') {
+                setTimeout(checkNetworkStatus, 100);
+            }
+        };
+        checkNetworkStatus();
     }
 });
